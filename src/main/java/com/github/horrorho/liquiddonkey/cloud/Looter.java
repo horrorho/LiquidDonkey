@@ -28,6 +28,7 @@ import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.HttpFactory;
+import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import java.io.Closeable;
@@ -64,7 +65,9 @@ public class Looter implements Closeable {
     }
 
     public void loot() {
+        printer.println(Level.VV, "Authenticating: " + config.authentication().id());
         Client client = Authenticator.authenticate(http, config.authentication());
+        
         UnaryOperator<List<Backup>> backupSelector = BackupSelector.newInstance(config.selection().backups(), printer);
         DonkeyFactory donkeyFactory = DonkeyFactory.newInstance(config.donkeyFactory(), config.directory(), printer);
         DonkeyExecutor donkeyExecutor = DonkeyExecutor.newInstance(donkeyFactory, config.donkeyExecutor());
@@ -79,8 +82,7 @@ public class Looter implements Closeable {
         backupSelector.apply(account.backups()).stream()
                 .map(backupDownloaderFactory::newInstance)
                 .filter(Objects::nonNull)
-                .forEach(BackupDownloader::backup);
-    }
+                .forEach(BackupDownloader::backup);    }
 
     @Override
     public void close() throws IOException {

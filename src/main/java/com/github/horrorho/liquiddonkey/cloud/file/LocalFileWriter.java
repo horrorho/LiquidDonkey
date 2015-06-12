@@ -140,7 +140,8 @@ public final class LocalFileWriter {
 
             if (writeFile(path, writer) == -1) {
                 logger.warn("-- write() > missing data: {}", file.getRelativePath());
-                print.println(Level.VV, file.getDomain() + " " + file.getRelativePath() + " Failed. Missing data.");
+                print.println(
+                        Level.VV, "\t" + file.getDomain() + " " + file.getRelativePath() + " Failed. Missing data.");
                 return;
             }
 
@@ -148,7 +149,7 @@ public final class LocalFileWriter {
                 decrypt(path, file);
             } else {
                 logger.debug("-- write() > success: {}", file.getRelativePath());
-                print.println(Level.VV, file.getDomain() + " " + file.getRelativePath());
+                print.println(Level.VV, "\t" + file.getDomain() + " " + file.getRelativePath());
             }
 
             setLastModifiedTime(path, file);
@@ -161,7 +162,7 @@ public final class LocalFileWriter {
         ByteString key = keyBagTools.fileKey(file);
         if (key == null) {
             logger.warn("-- write() > failed to derive key: {}", file.getRelativePath());
-            print.println(Level.VV, file.getDomain() + " " + file.getRelativePath() + " Failed. No key.");
+            print.println(Level.VV, "\t" + file.getDomain() + " " + file.getRelativePath() + " Failed. No key.");
             return;
         }
 

@@ -32,6 +32,7 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.settings.config.BackupDownloaderFactoryConfig;
+import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -115,6 +116,8 @@ public final class BackupDownloader {
      */
     public void backup() {
         logger.trace("<< backup() < snaphots: {}", snapshots);
+        printer.println(Level.VV, "Downloading backup: " + backup.udidString());
+
         snapshots.stream().forEach(this::download);
         logger.trace(">> backup()");
     }
@@ -130,6 +133,7 @@ public final class BackupDownloader {
                 logger.warn("-- download() > snapshot not found: {}", snapshot);
                 printer.println(Level.WARN, "Snapshot not found: " + snapshot);
             } else {
+                printer.println(Level.V, "Retrieving snapshot: " + snapshot);
                 download(snapshot, files);
             }
         } catch (IOException ex) {

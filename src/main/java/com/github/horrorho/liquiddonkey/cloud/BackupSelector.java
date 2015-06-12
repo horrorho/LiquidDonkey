@@ -83,7 +83,6 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
                 : selected.stream()
                 .map(Backup::udid)
                 .map(Bytes::hex)
-                .map(String::toUpperCase)
                 .collect(Collectors.joining(" "));
 
         printer.println(Level.V, "Selected backups: " + selectedStr);
