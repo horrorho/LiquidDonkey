@@ -134,14 +134,14 @@ public class Property {
         }
     }
 
-    private static boolean parseBoolean(String property, boolean defaultValue) {
+    static boolean parseBoolean(String property, boolean defaultValue) {
         String value = property(property, null);
         return value == null
                 ? defaultValue
                 : Boolean.parseBoolean(value);
     }
 
-    private static int parseInteger(String property, int defaultValue) {
+    static int parseInteger(String property, int defaultValue) {
         String value = property(property, null);
         if (value == null) {
             return defaultValue;
@@ -154,14 +154,14 @@ public class Property {
         }
     }
 
-    private static List<String> list(String prefix, String name, String... defaultValues) {
+    static List<String> list(String prefix, String name, String... defaultValues) {
         String values = property(prefix + "." + name, null);
         return values == null
                 ? Arrays.asList(defaultValues)
                 : Arrays.asList(values.split("\\s")).stream().collect(Collectors.toList());
     }
 
-    private static String property(String name, String defaultValue) {
+    static String property(String name, String defaultValue) {
         String value = SettingsProperties.INSTANCE.getProperty(name.toLowerCase(Locale.getDefault()));
         if (value == null) {
             LoggerFactory.getLogger(Property.class)
