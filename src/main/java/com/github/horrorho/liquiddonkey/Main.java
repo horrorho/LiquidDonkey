@@ -1,4 +1,4 @@
-/*
+/* 
  * The MIT License
  *
  * Copyright 2015 Ahseya.
@@ -23,17 +23,55 @@
  */
 package com.github.horrorho.liquiddonkey;
 
+import com.github.horrorho.liquiddonkey.util.DumpStackTraceHook;
+import com.github.horrorho.liquiddonkey.cloud.Looter;
+import com.github.horrorho.liquiddonkey.exception.FatalException;
+import com.github.horrorho.liquiddonkey.printer.Level;
+import com.github.horrorho.liquiddonkey.printer.Printer;
+import com.github.horrorho.liquiddonkey.settings.config.ConfigFactory;
+import com.github.horrorho.liquiddonkey.settings.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
+ * Main.
  *
- * @author Ahseya
+ * @author ahseya
  */
 public class Main {
+
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        System.out.println("Hi!");
+        Config config = ConfigFactory.getInstance().from(args);
+
+        logger.debug("-- main() > options: {}", config);
+
+        if (config == null) {
+            return;
+        } 
+        
+        if (config.print().toPrintStackTrace()) {
+            DumpStackTraceHook.add();
+        }
+
+        Printer printer = Printer.instanceOf(config.print());
+
+        try (Looter looter = Looter.newInstance(config, printer)) {
+            looter.loot();
+        } catch (FatalException ex) {
+            logger.warn("-- main() > FatalException", ex);
+            printer.println(Level.ERROR, ex);
+        } catch (Exception ex) {
+            logger.warn("-- main() > Exception", ex);
+            printer.println(Level.ERROR, ex);
+        }
+
+        if (config.print().toPrintStackTrace()) {
+            DumpStackTraceHook.remove();
+        }
     }
-    
 }
