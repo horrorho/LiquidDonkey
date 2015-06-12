@@ -34,8 +34,26 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Main.
+ * iCloud file backup tool.
+ * <p>
+ * <b>This tool is for educational purposes only. Before you start, make sure it's not illegal in your country.</b>
+ * <p>
+ * Java implementation reworked from iLoot, iphone-dataprotection and mobileme scripts. All copyrights belong to their
+ * respective owners.
+ * <p>
  *
+ * GitHub: https://github.com/horrorho/LiquidDonkey
+ * <p>
+ * @see <a href="https://github.com/hackappcom/iloot">iLoot</a>
+ * @see <a href="https://code.google.com/p/iphone-dataprotection/">iphone-dataprotection</a>
+ * @see <a href="https://code.google.com/p/mobileme/">mobileme</a>
+ * @see <a href="https://github.com/Taconut/Icew1nd">Icew1nd</a>
+ * @see <a href="http://esec-lab.sogeti.com/static/publications/11-hitbamsterdam-iphonedataprotection.pdf">iPhone data
+ * protection in depth</a>
+ * @see
+ * <a href="https://deepsec.net/docs/Slides/2013/DeepSec_2013_Vladimir_Katalov_-_Cracking_And_Analyzing_Apple_iCloud_Protocols.pdf">Apple
+ * iCloud inside out</a>
+ * <p>
  * @author ahseya
  */
 public class Main {
@@ -52,8 +70,8 @@ public class Main {
 
         if (config == null) {
             return;
-        } 
-        
+        }
+
         if (config.print().toPrintStackTrace()) {
             DumpStackTraceHook.add();
         }
