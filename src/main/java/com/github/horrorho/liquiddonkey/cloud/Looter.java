@@ -67,7 +67,7 @@ public class Looter implements Closeable {
     public void loot() {
         printer.println(Level.VV, "Authenticating: " + config.authentication().id());
         Client client = Authenticator.authenticate(http, config.authentication());
-        
+
         UnaryOperator<List<Backup>> backupSelector = BackupSelector.newInstance(config.selection().backups(), printer);
         DonkeyFactory donkeyFactory = DonkeyFactory.newInstance(config.donkeyFactory(), config.directory(), printer);
         DonkeyExecutor donkeyExecutor = DonkeyExecutor.newInstance(donkeyFactory, config.donkeyExecutor());
@@ -82,7 +82,8 @@ public class Looter implements Closeable {
         backupSelector.apply(account.backups()).stream()
                 .map(backupDownloaderFactory::newInstance)
                 .filter(Objects::nonNull)
-                .forEach(BackupDownloader::backup);    }
+                .forEach(BackupDownloader::backup);
+    }
 
     @Override
     public void close() throws IOException {

@@ -25,7 +25,7 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
-import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
+import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagFactory;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.printer.Level;
@@ -102,7 +102,7 @@ public final class BackupDownloaderFactory {
                     backup,
                     donkeyExecutor,
                     fileFilter,
-                    KeyBag.newInstance(
+                    KeyBagFactory.from(
                             client.getKeys(
                                     backup.udid())),
                     printer,
