@@ -130,6 +130,6 @@ Although it works wonderfully, consider this project to be in the alpha state. I
 
 ### Help!
 I would be grateful if any knowledgeable persons would be able to assist with:
-- The iCloud API call for retrieving all the available snapshots, rather than just the latest.
+- Rather than relying on the latest MBSBackup/ MBSSnapshot and deriving the other two, what is the iCloud API call for retrieving all the available snapshots? 
 - The MBSFile block specifies a 160-bit file checksum/ signature.  It's not plain SHA-1. What is the algorithm?
 
