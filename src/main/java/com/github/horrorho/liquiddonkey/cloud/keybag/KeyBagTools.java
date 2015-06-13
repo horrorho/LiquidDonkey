@@ -138,7 +138,7 @@ public final class KeyBagTools {
         try {
             return ByteString.copyFrom(aesWrap.unwrap(hash, key.substring(0x20, key.size()).toByteArray()));
         } catch (IllegalStateException | InvalidCipherTextException ex) {
-            logger.warn("-- unwrapCurve25519() > failed to unwrap key: {} protection class: {}",
+            logger.warn("-- unwrapCurve25519() > failed to unwrap key: {} protection class: {} exception: {}",
                     Bytes.hex(key), protectionClass, ex);
             return null;
         }
