@@ -89,13 +89,13 @@ public final class KeyBag {
         uuid = attributeOrFail("UUID");
         type = KeyBagType.from(integerOrFail(attributeOrFail("TYPE")));
 
-        logger.debug("** KeyBag() < iterations: {}", iterations);
-        logger.debug("** KeyBag() < salt: {}", hex(salt));
-        logger.debug("** KeyBag() < type: {}", type);
-        logger.debug("** KeyBag() < uuid: {}", hex(uuid));
+        logger.trace("** KeyBag() < iterations: {}", iterations);
+        logger.trace("** KeyBag() < salt: {}", hex(salt));
+        logger.trace("** KeyBag() < type: {}", type);
+        logger.trace("** KeyBag() < uuid: {}", hex(uuid));
 
         unlock(keySet.getKey(0).getKeyData());
-        logger.debug("** KeyBag() > KeyBag unlocked.");
+        logger.trace("** KeyBag() > KeyBag unlocked.");
 
         if (logger.isTraceEnabled()) {
             classKeys.entrySet().stream().forEach(keys -> {
