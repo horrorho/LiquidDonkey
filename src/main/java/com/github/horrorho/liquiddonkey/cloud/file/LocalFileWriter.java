@@ -169,8 +169,10 @@ public final class LocalFileWriter {
         try {
             decrypter.decrypt(path, key, file.getAttributes().getDecryptedSize());
             logger.debug("-- decrypt() > success: {}", file.getRelativePath());
+            print.println(Level.VV, "\t" + file.getDomain() + " " + file.getRelativePath() + " Decrypted.");
         } catch (BadDataException ex) {
             logger.warn("-- decrypt() > failed: {} exception: {}", file.getRelativePath(), ex);
+            print.println(Level.VV, "\t" + file.getDomain() + " " + file.getRelativePath() + " Failed. Decrypt error.");
         }
     }
 
