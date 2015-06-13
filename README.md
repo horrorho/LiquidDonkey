@@ -105,11 +105,6 @@ Fetching 1780/1780.
 	CameraRollDomain Media/DCIM/102APPLE/IMG_2078.JPG
 	CameraRollDomain Media/DCIM/101APPLE/IMG_1887.JPG
 ```
-Download all files:
-
-```bash
-~/LiquidDonkey/target $ java -jar LiquidDonkey/target/LiquidDonkey.jar me@icloud.com password
-```
 Download photos only to the specified output folder:
 
 ```bash
