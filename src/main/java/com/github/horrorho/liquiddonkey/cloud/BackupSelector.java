@@ -85,7 +85,7 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
                 .map(Bytes::hex)
                 .collect(Collectors.joining(" "));
 
-        printer.println(Level.V, "Selected backups: " + selectedStr);
+        printer.println(Level.V, "Selected backup/s: " + selectedStr);
         logger.trace(">> apply > selected: {}", selected);
         return selected;
     }
