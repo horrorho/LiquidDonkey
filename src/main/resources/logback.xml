@@ -25,7 +25,7 @@
     </turboFilter>
     
     <!-- DEBUG/ TRACE switches WILL log sensitive information. Use with caution. -->
-    <logger name="com.cain.donkeylooter" level="off" additivity="false">
+    <logger name="com.github.horrorho.liquiddonkey" level="off" additivity="false">
         <appender-ref ref="STDOUT" />
     </logger>
 

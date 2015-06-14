@@ -187,7 +187,7 @@ public final class DonkeyExecutor {
     void stagger() {
         try {
             // Stagger to avoid triggering sensitive anti-flood protection with high thread counts,
-            // or to disrupt the initial conciding download/ decrypt phases between threads.
+            // or to disrupt the initial coinciding download/ decrypt phases between threads.
             TimeUnit.MILLISECONDS.sleep(staggerDelayMs);
         } catch (InterruptedException ex) {
             throw new FatalException(ex);
