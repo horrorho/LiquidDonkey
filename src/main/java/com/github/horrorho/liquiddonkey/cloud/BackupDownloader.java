@@ -31,7 +31,6 @@ import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.settings.config.BackupDownloaderFactoryConfig;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -59,15 +58,30 @@ public final class BackupDownloader {
 
     private static final Logger logger = LoggerFactory.getLogger(BackupDownloader.class);
 
+    /**
+     * Returns a new instance.
+     *
+     * @param client not null
+     * @param backup not null
+     * @param executor not null
+     * @param filter not null
+     * @param keyBag not null
+     * @param printer not null
+     * @param snapshots the required snapshots, not null
+     * @param toHuntFirstSnapshot true to enable first snapshot hunting
+     * @return a new instance, not null
+     * @throws IOException
+     * @throws BadDataException
+     */
     public static BackupDownloader newInstance(
             Client client,
-            BackupDownloaderFactoryConfig config,
             Backup backup,
             DonkeyExecutor executor,
             Predicate<ICloud.MBSFile> filter,
             KeyBag keyBag,
             Printer printer,
-            List<Integer> snapshots
+            List<Integer> snapshots,
+            boolean toHuntFirstSnapshot
     ) throws IOException, BadDataException {
 
         return new BackupDownloader(
@@ -78,7 +92,7 @@ public final class BackupDownloader {
                 keyBag,
                 printer,
                 snapshots,
-                config.toHuntFirstSnapshot());
+                toHuntFirstSnapshot);
     }
 
     private final Client client;

@@ -51,8 +51,8 @@ public final class Account {
      * <p>
      * Thread safe if the supplied Client is thread safe.
      *
-     * @param client the Client, not null
-     * @param printer the Printer, not null
+     * @param client not null
+     * @param printer not null
      * @return a new instance, not null
      * @throws NullPointerException if the client or printer arguments are null
      * @throws FatalException if an IOException occurs

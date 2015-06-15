@@ -131,6 +131,7 @@ public final class SnapshotDownloader implements Consumer<Map<ByteString, Set<MB
         }
     }
 
+    // Recursive.
     void write(
             int snapshot,
             Collection<MBSFile> files,

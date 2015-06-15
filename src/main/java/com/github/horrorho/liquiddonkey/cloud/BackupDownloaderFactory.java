@@ -47,6 +47,17 @@ public final class BackupDownloaderFactory {
 
     private static final Logger logger = LoggerFactory.getLogger(BackupDownloaderFactory.class);
 
+    /**
+     * Returns a new instance.
+     *
+     * @param client not null
+     * @param config not null
+     * @param donkeyExecutor not null
+     * @param fileFilter not null
+     * @param printer not null
+     * @param snapshotSelector not null
+     * @return a new instance, not null
+     */
     public static BackupDownloaderFactory newInstance(
             Client client,
             BackupDownloaderFactoryConfig config,
@@ -87,18 +98,24 @@ public final class BackupDownloaderFactory {
         this.snapshotSelector = Objects.requireNonNull(snapshotSelector);
     }
 
-    public BackupDownloader newInstance(Backup backup) {
+    /**
+     * Returns a new instance.
+     *
+     * @param backup not null
+     * @return a new instance, or null if it could not be created
+     */
+    public BackupDownloader of(Backup backup) {
         List<Integer> snapshots = snapshotSelector.apply(backup);
+        String backupUdid = backup.udidString();
 
         if (snapshots.isEmpty()) {
-            logger.warn("-- newInstance() > no resolved snapshots, backup: {}", backup.udidString());
+            logger.warn("-- newInstance() > no resolved snapshots, backup: {}", backupUdid);
             return null;
         }
 
         try {
             return BackupDownloader.newInstance(
                     client,
-                    config,
                     backup,
                     donkeyExecutor,
                     fileFilter,
@@ -106,10 +123,14 @@ public final class BackupDownloaderFactory {
                             client.getKeys(
                                     backup.udid())),
                     printer,
-                    snapshots);
+                    snapshots,
+                    config.toHuntFirstSnapshot());
 
-        } catch (IOException | BadDataException ex) {
-            String backupUdid = backup.udidString();
+        } catch (IOException ex) {
+            logger.warn("-- newInstance() > unable to create instance, backup: {} exception: {}", backupUdid, ex);
+            printer.println(Level.WARN, "Unable to acquire backup: " + backupUdid, ex);
+            return null;
+        } catch (BadDataException ex) {
             logger.warn("-- newInstance() > unable to acquire keybag, backup: {} exception: {}", backupUdid, ex);
             printer.println(Level.WARN, "Unable to acquire keybag for backup: " + backupUdid);
             return null;

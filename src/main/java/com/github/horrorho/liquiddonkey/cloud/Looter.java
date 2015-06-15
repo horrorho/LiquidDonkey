@@ -80,7 +80,7 @@ public class Looter implements Closeable {
         Account account = Account.newInstance(client, printer);
 
         backupSelector.apply(account.backups()).stream()
-                .map(backupDownloaderFactory::newInstance)
+                .map(backupDownloaderFactory::of)
                 .filter(Objects::nonNull)
                 .forEach(BackupDownloader::backup);
     }
