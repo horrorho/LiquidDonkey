@@ -16,7 +16,7 @@ Java command-line tool to download iCloud backups, reworked from [iLoot](https:/
 - Free! MIT license.
 
 ### Build
-Requires [Java 8](https://www.java.com) and [Maven](https://maven.apache.org).
+Requires [Java 8 JRE/ JDK](http://www.oracle.com/technetwork/java/javase/downloads/index.html) and [Maven](https://maven.apache.org).
 
 [Download](https://github.com/horrorho/LiquidDonkey/archive/master.zip), extract and navigate to the LiquidDonkey folder:
 
