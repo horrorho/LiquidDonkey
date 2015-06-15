@@ -41,17 +41,11 @@ import net.jcip.annotations.ThreadSafe;
 public final class SelectionConfig {
 
     public static SelectionConfig newInstance(CommandLineHelper line) {
-        List<String> udids = line.getOptionList(UDID, null, line.asHex());
-        // No UDID option: () / Empty list
-        // No UDID parameters : ("") / Match all
-        List<String> backups = udids == null
-                ? new ArrayList<>()
-                : udids.isEmpty()
-                        ? Arrays.asList("")
-                        : udids;
 
         return newInstance(
-                backups,
+                line.line().hasOption(UDID)
+                        ? line.getOptionList(UDID, Arrays.asList(""), line.asHex())
+                        : new ArrayList<>(),
                 line.getOptionList(Args.SNAPSHOT, Arrays.asList(1, -2, -1), line.asInteger())
         );
     }
