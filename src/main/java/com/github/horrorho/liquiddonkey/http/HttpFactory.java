@@ -25,6 +25,7 @@ package com.github.horrorho.liquiddonkey.http;
 
 import com.github.horrorho.liquiddonkey.http.retryhandler.PersistentHttpRequestRetryHandler;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
+import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.HttpConfig;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -54,7 +55,7 @@ import org.apache.http.ssl.SSLContextBuilder;
 @ThreadSafe
 public final class HttpFactory {
 
-    public static Http newInstance(HttpConfig config) {
+    public static Http newInstance(HttpConfig config, Printer printer) {
 
         PoolingHttpClientConnectionManager connectionManager = config.isRelaxedSSL()
                 ? new PoolingHttpClientConnectionManager(relaxedSocketFactoryRegistry())
@@ -72,8 +73,14 @@ public final class HttpFactory {
 
         HttpRequestRetryHandler httpRequestRetryHandler = config.isPersistent()
                 ? new PersistentHttpRequestRetryHandler(
-                        config.retryCount(), config.retryDelayMs(), config.timeoutMs(), true)
-                : new DefaultHttpRequestRetryHandler(config.retryCount(), false);
+                        config.retryCount(),
+                        config.retryDelayMs(),
+                        config.timeoutMs(),
+                        true,
+                        printer)
+                : new DefaultHttpRequestRetryHandler(
+                        config.retryCount(),
+                        false);
 
         CloseableHttpClient client = HttpClients.custom()
                 .setRetryHandler(httpRequestRetryHandler)
@@ -87,8 +94,14 @@ public final class HttpFactory {
 
     static Registry<ConnectionSocketFactory> relaxedSocketFactoryRegistry() {
         return RegistryBuilder.<ConnectionSocketFactory>create()
-                .register("http", PlainConnectionSocketFactory.getSocketFactory())
-                .register("https", new SSLConnectionSocketFactory(relaxedSSLContext(), (hostname, session) -> true))
+                .register(
+                        "http",
+                        PlainConnectionSocketFactory.getSocketFactory())
+                .register(
+                        "https",
+                        new SSLConnectionSocketFactory(
+                                relaxedSSLContext(),
+                                (hostname, session) -> true))
                 .build();
     }
 
