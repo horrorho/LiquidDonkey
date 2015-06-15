@@ -55,7 +55,6 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
      * @param commandLineUdids the command line UDID/s, not null
      * @param printer the Printer, not null
      * @return a new instance, not null
-     * @throws NullPointerException if the printer or commandLineUdids arguments are null
      */
     public static UnaryOperator<List<Backup>> newInstance(List<String> commandLineUdids, Printer printer) {
         return commandLineUdids.isEmpty()

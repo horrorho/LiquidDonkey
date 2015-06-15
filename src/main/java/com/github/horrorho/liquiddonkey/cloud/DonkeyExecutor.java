@@ -3,15 +3,15 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * Permission is hereby granted, free from charge, to any person obtaining a copy
+ * from this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * copies from the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * all copies or substantial portions from the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -67,6 +67,13 @@ public final class DonkeyExecutor {
 
     private static final Logger logger = LoggerFactory.getLogger(DonkeyExecutor.class);
 
+    /**
+     * Returns a new instance.
+     *
+     * @param factory not null
+     * @param config not null
+     * @return a new instance, not null
+     */
     public static DonkeyExecutor newInstance(DonkeyFactory factory, DonkeyExecutorConfig config) {
 
         return new DonkeyExecutor(
@@ -88,6 +95,16 @@ public final class DonkeyExecutor {
         this.retryCount = retryCount;
     }
 
+    /**
+     * Concurrently download the specified backup/ snapshot/ files.
+     *
+     * @param client not null
+     * @param backup not null
+     * @param keyBag not null
+     * @param snapshot the required snapshot
+     * @param signatureToFileList the required files, not null
+     * @return failures, not null
+     */
     public ConcurrentMap<ByteString, Set<ICloud.MBSFile>> execute(
             Client client,
             Backup backup,
@@ -125,7 +142,7 @@ public final class DonkeyExecutor {
         ExecutorService executor = Executors.newFixedThreadPool(threads);
 
         List<Map<ByteString, Set<ICloud.MBSFile>>> failed
-                = Stream.generate(() -> factory.newInstance(client, backup, keyBag, snapshot, signatureToFileList))
+                = Stream.generate(() -> factory.from(client, backup, keyBag, snapshot, signatureToFileList))
                 .limit(threads)
                 .map(executor::submit)
                 .peek(x -> stagger())

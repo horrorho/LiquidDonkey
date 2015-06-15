@@ -44,6 +44,13 @@ public class ChunkListDownloader {
 
     private static final Logger logger = LoggerFactory.getLogger(ChunkListDownloader.class);
 
+    /**
+     * Returns a new instance.
+     *
+     * @param client not null
+     * @param isAggressive not null
+     * @return a new instance, not null
+     */
     public static ChunkListDownloader newInstance(Client client, boolean isAggressive) {
         return new ChunkListDownloader(
                 client,
@@ -63,6 +70,13 @@ public class ChunkListDownloader {
         this.attempts = attempts;
     }
 
+    /**
+     * Download the specified group/ chunk lists.
+     *
+     * @param group not null
+     * @return the downloaded chunks, not null
+     * @throws IOException
+     */
     public ChunkListStore download(ChunkServer.FileChecksumStorageHostChunkLists group) throws IOException {
         logger.trace("<< download() < group count : {}", group.getStorageHostChunkListCount());
 

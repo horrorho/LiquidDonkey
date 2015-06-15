@@ -3,15 +3,15 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * Permission is hereby granted, free from charge, to any person obtaining a copy
+ * from this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * copies from the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * all copies or substantial portions from the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -64,6 +64,14 @@ public final class DonkeyFactory {
 
     private static final Logger logger = LoggerFactory.getLogger(DonkeyFactory.class);
 
+    /**
+     * Returns a new instance.
+     *
+     * @param config not null
+     * @param directoryConfig not null
+     * @param printer not null
+     * @return a new instance, not null
+     */
     public static DonkeyFactory newInstance(DonkeyFactoryConfig config, DirectoryConfig directoryConfig, Printer printer) {
 
         return new DonkeyFactory(
@@ -106,8 +114,19 @@ public final class DonkeyFactory {
         this.toSetLastModifiedTime = toSetLastModifiedTime;
     }
 
-    CallableFunction<Iterator<Map<ByteString, Set<ICloud.MBSFile>>>, List<ArgumentExceptionPair<Map<ByteString, Set<ICloud.MBSFile>>>>>
-            newInstance(
+    /**
+     * Returns a new instance.
+     *
+     * @param client not null
+     * @param backup not null
+     * @param keyBag not null
+     * @param snapshot the required snapshot
+     * @param signatureToFileList the required files, not null
+     * @return a new instance, not null
+     */
+    public
+            CallableFunction<Iterator<Map<ByteString, Set<ICloud.MBSFile>>>, List<ArgumentExceptionPair<Map<ByteString, Set<ICloud.MBSFile>>>>>
+            from(
                     Client client,
                     Backup backup,
                     KeyBag keyBag,

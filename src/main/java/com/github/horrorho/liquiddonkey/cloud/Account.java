@@ -54,7 +54,6 @@ public final class Account {
      * @param client not null
      * @param printer not null
      * @return a new instance, not null
-     * @throws NullPointerException if the client or printer arguments are null
      * @throws FatalException if an IOException occurs
      */
     public static Account newInstance(Client client, Printer printer) {

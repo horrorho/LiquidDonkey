@@ -47,16 +47,23 @@ public final class SnapshotSelector implements Function<Backup, List<Integer>> {
 
     private static final Logger logger = LoggerFactory.getLogger(SnapshotSelector.class);
 
-    public static SnapshotSelector newInstance(Printer printer, Collection<Integer> commandLineSnapshots) {
-        return new SnapshotSelector(printer, commandLineSnapshots);
+    /**
+     * Returns a new instance.
+     *
+     * @param printer not null
+     * @param requestedSnapshots the requests snapshots, not null
+     * @return a new instance, not null
+     */
+    public static SnapshotSelector newInstance(Printer printer, Collection<Integer> requestedSnapshots) {
+        return new SnapshotSelector(printer, requestedSnapshots);
     }
 
     private final Printer printer;
-    private final List<Integer> commandLineRequestedSnapshots;
+    private final List<Integer> requestedSnapshots;
 
-    SnapshotSelector(Printer printer, Collection<Integer> commandLineSnapshots) {
+    SnapshotSelector(Printer printer, Collection<Integer> requestedSnapshots) {
         this.printer = Objects.requireNonNull(printer);
-        this.commandLineRequestedSnapshots = new ArrayList<>(commandLineSnapshots);
+        this.requestedSnapshots = new ArrayList<>(requestedSnapshots);
     }
 
     @Override
@@ -66,7 +73,7 @@ public final class SnapshotSelector implements Function<Backup, List<Integer>> {
         List<Integer> available = backup.snapshots();
         int latestSnapshot = available.stream().mapToInt(Integer::intValue).max().orElse(0);
 
-        List<Integer> selection = parseUserSelection(latestSnapshot, available, commandLineRequestedSnapshots);
+        List<Integer> selection = parseUserSelection(latestSnapshot, available, requestedSnapshots);
         List<Integer> resolved = selection.isEmpty()
                 ? available
                 : resolve(selection, available, printer);

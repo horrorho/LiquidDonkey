@@ -52,14 +52,24 @@ import org.slf4j.LoggerFactory;
 @NotThreadSafe
 public final class SnapshotDownloader implements Consumer<Map<ByteString, Set<MBSFile>>> {
 
+    /**
+     * Returns a new instance.
+     *
+     * @param client not null
+     * @param backupUdid not null
+     * @param snapshot not null
+     * @param writer not null
+     * @param chunkListDownloader not null
+     * @return a new instance, not null
+     */
     public static SnapshotDownloader newInstance(
             Client client,
             ByteString backupUdid,
             int snapshot,
             LocalFileWriter writer,
-            ChunkListDownloader chunker) {
+            ChunkListDownloader chunkListDownloader) {
 
-        return new SnapshotDownloader(client, backupUdid, snapshot, writer, chunker);
+        return new SnapshotDownloader(client, backupUdid, snapshot, writer, chunkListDownloader);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(SnapshotDownloader.class);
@@ -70,18 +80,18 @@ public final class SnapshotDownloader implements Consumer<Map<ByteString, Set<MB
     private final ChunkListDownloader chunkListDownloader;
     private final int snapshot;
 
-    public SnapshotDownloader(
+    SnapshotDownloader(
             Client client,
             ByteString backupUdid,
             int snapshot,
             LocalFileWriter writer,
-            ChunkListDownloader chunkGroup) {
+            ChunkListDownloader chunkListDownloader) {
 
         this.client = Objects.requireNonNull(client);
         this.backupUdid = Objects.requireNonNull(backupUdid);
         this.snapshot = Objects.requireNonNull(snapshot);
         this.writer = Objects.requireNonNull(writer);
-        this.chunkListDownloader = chunkGroup;
+        this.chunkListDownloader = chunkListDownloader;
     }
 
     @Override
@@ -96,7 +106,7 @@ public final class SnapshotDownloader implements Consumer<Map<ByteString, Set<MB
         try {
             List<ICloud.MBSFile> download = signatureToFileSet.entrySet().stream()
                     .map(Map.Entry::getValue)
-                    .flatMap(Set::stream) // TODO test
+                    .flatMap(Set::stream)
                     .collect(Collectors.toList());
 
             FileGroups fileGroups = client.getFileGroups(backupUdid, snapshot, download);
@@ -131,7 +141,6 @@ public final class SnapshotDownloader implements Consumer<Map<ByteString, Set<MB
         }
     }
 
-    // Recursive.
     void write(
             int snapshot,
             Collection<MBSFile> files,
@@ -141,7 +150,7 @@ public final class SnapshotDownloader implements Consumer<Map<ByteString, Set<MB
         files.stream().forEach(file -> write(snapshot, file, storage, chunkReferences));
     }
 
-    public void write(
+    void write(
             int snapshot,
             MBSFile file,
             ChunkListStore storage,
