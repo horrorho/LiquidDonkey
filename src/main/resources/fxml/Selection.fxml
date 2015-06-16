@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.net.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.control.cell.*?>
+<?import javafx.scene.layout.*?>
+<?import com.github.horrorho.liquiddonkey.gui.*?>
+
+<AnchorPane id="AnchorPane" prefHeight="400.0" prefWidth="600.0" styleClass="mainFxmlClass" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.github.horrorho.liquiddonkey.gui.controller.SelectionController">
+    <stylesheets>
+        <URL value="@/styles/Styles.css" />
+    </stylesheets>
+    <children>
+        <Button layoutX="520.0" layoutY="361.0" mnemonicParsing="false" onAction="#handleButtonAction" text="Button" />
+        <TableView fx:id="tableView" editable="true" layoutX="14.0" layoutY="14.0" prefHeight="312.0" prefWidth="572.0">
+            <columns>
+                <TableColumn prefWidth="75.0" sortable="false">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="checked" />
+                    </cellValueFactory>
+                    <cellFactory>
+                        <CheckBoxCellFactory />
+                    </cellFactory>
+                </TableColumn>
+                <TableColumn editable="false" prefWidth="75.0" sortable="false" text="Device">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="device" />
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn editable="false" prefWidth="75.0" sortable="false" text="Info">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="info" />
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn editable="false" prefWidth="75.0" sortable="false" text="Update">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="updated" />
+                    </cellValueFactory>
+                </TableColumn>
+            </columns>
+        </TableView>
+    </children>
+</AnchorPane>

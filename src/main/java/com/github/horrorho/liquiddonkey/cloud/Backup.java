@@ -64,7 +64,75 @@ public final class Backup {
      * @throws NullPointerException if the backup argument is null
      */
     public static Backup newInstance(ICloud.MBSBackup backup) {
-        return new Backup(backup, availableSnapshots(latestSnapshot(backup)));
+
+        String size = Bytes.humanize(backup.getQuotaUsed());
+
+        String hardwareModel;
+        String marketingName;
+        String serialNumber;
+
+        if (backup.hasAttributes()) {
+            ICloud.MBSBackupAttributes attributes = backup.getAttributes();
+            hardwareModel = attributes.getHardwareModel();
+            marketingName = attributes.getMarketingName();
+            serialNumber = attributes.getSerialNumber();
+        } else {
+            hardwareModel = NA;
+            marketingName = NA;
+            serialNumber = NA;
+        }
+
+        String lastModified = backup.hasSnapshot() && backup.getSnapshot().hasLastModified()
+                ? dateTimeFormatter.format(Instant.ofEpochSecond(backup.getSnapshot().getLastModified()))
+                : NA;
+
+        String deviceName;
+        String productVerson;
+        if (backup.hasSnapshot() && backup.getSnapshot().hasAttributes()) {
+            ICloud.MBSSnapshotAttributes snapshotAttributes = backup.getSnapshot().getAttributes();
+            deviceName = snapshotAttributes.getDeviceName();
+            productVerson = snapshotAttributes.getProductVersion();
+        } else {
+            deviceName = NA;
+            productVerson = NA;
+        }
+
+        return new Backup(
+                backup,
+                availableSnapshots(latestSnapshot(backup)),
+                size,
+                hardwareModel,
+                marketingName,
+                serialNumber,
+                deviceName,
+                lastModified,
+                productVerson,
+                Bytes.hex(backup.getBackupUDID()));
+    }
+
+    public static Backup newInstance(
+            ICloud.MBSBackup backup,
+            List<Integer> snapshots,
+            String size,
+            String hardwareModel,
+            String marketingName,
+            String serialNumber,
+            String deviceName,
+            String lastModified,
+            String productVerson,
+            String udid) {
+
+        return new Backup(
+                backup,
+                snapshots,
+                size,
+                hardwareModel,
+                marketingName,
+                serialNumber,
+                deviceName,
+                lastModified,
+                productVerson,
+                udid);
     }
 
     static int latestSnapshot(ICloud.MBSBackup backup) {
@@ -95,12 +163,44 @@ public final class Backup {
 
     private static final Logger logger = LoggerFactory.getLogger(Backup.class);
 
+    public static Logger getLogger() {
+        return logger;
+    }
+
     private final ICloud.MBSBackup backup;
     private final List<Integer> snapshots;
 
-    Backup(ICloud.MBSBackup backup, List<Integer> snapshots) {
+    private final String size;
+    private final String hardwareModel;
+    private final String marketingName;
+    private final String serialNumber;
+    private final String deviceName;
+    private final String lastModified;
+    private final String productVerson;
+    private final String udid;
+
+    Backup(
+            ICloud.MBSBackup backup,
+            List<Integer> snapshots,
+            String size,
+            String hardwareModel,
+            String marketingName,
+            String serialNumber,
+            String deviceName,
+            String lastModified,
+            String productVerson,
+            String udid) {
+
         this.backup = Objects.requireNonNull(backup);
         this.snapshots = new ArrayList<>(Objects.requireNonNull(snapshots));
+        this.size = size;
+        this.hardwareModel = hardwareModel;
+        this.marketingName = marketingName;
+        this.serialNumber = serialNumber;
+        this.deviceName = deviceName;
+        this.lastModified = lastModified;
+        this.productVerson = productVerson;
+        this.udid = udid;
     }
 
     /**
@@ -136,7 +236,7 @@ public final class Backup {
      * @return the MBSBackup's core UDID as a lower-case hex-encoded String, not null
      */
     public String udidString() {
-        return Bytes.hex(udid());
+        return udid;
     }
 
     /**
@@ -145,37 +245,6 @@ public final class Backup {
      * @return the MBSBackup's core formatted String summary, not null
      */
     public String format() {
-        String size = Bytes.humanize(backup.getQuotaUsed());
-
-        String hardwareModel;
-        String marketingName;
-        String serialNumber;
-        if (backup.hasAttributes()) {
-            ICloud.MBSBackupAttributes attributes = backup.getAttributes();
-            hardwareModel = attributes.getHardwareModel();
-            marketingName = attributes.getMarketingName();
-            serialNumber = attributes.getSerialNumber();
-        } else {
-            hardwareModel = NA;
-            marketingName = NA;
-            serialNumber = NA;
-        }
-
-        String lastModified = backup.hasSnapshot() && backup.getSnapshot().hasLastModified()
-                ? dateTimeFormatter.format(Instant.ofEpochSecond(backup.getSnapshot().getLastModified()))
-                : NA;
-
-        String deviceName;
-        String productVerson;
-        if (backup.hasSnapshot() && backup.getSnapshot().hasAttributes()) {
-            ICloud.MBSSnapshotAttributes snapshotAttributes = backup.getSnapshot().getAttributes();
-            deviceName = snapshotAttributes.getDeviceName();
-            productVerson = snapshotAttributes.getProductVersion();
-        } else {
-            deviceName = NA;
-            productVerson = NA;
-        }
-
         StringWriter stringWriter = new StringWriter();
         PrintWriter print = new PrintWriter(stringWriter);
 
@@ -194,8 +263,39 @@ public final class Backup {
         return stringWriter.toString();
     }
 
+    public String size() {
+        return size;
+    }
+
+    public String hardwareModel() {
+        return hardwareModel;
+    }
+
+    public String marketingName() {
+        return marketingName;
+    }
+
+    public String serialNumber() {
+        return serialNumber;
+    }
+
+    public String deviceName() {
+        return deviceName;
+    }
+
+    public String lastModified() {
+        return lastModified;
+    }
+
+    public String productVerson() {
+        return productVerson;
+    }
+
     @Override
     public String toString() {
-        return "Backup{" + "backup=" + backup + ", snapshots=" + snapshots + '}';
+        return "Backup{" + "backup=" + backup + ", snapshots=" + snapshots + ", size=" + size + ", hardwareModel="
+                + hardwareModel + ", marketingName=" + marketingName + ", serialNumber=" + serialNumber
+                + ", deviceName=" + deviceName + ", lastModified=" + lastModified + ", productVerson="
+                + productVerson + ", udid=" + udid + '}';
     }
 }

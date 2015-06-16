@@ -1,0 +1,8 @@
+.button {
+    -fx-font-weight: bold;
+}
+
+.text-field:error {
+    -fx-text-box-border: red;
+    -fx-focus-color: red;
+}

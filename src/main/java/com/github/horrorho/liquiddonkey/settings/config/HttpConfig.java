@@ -37,10 +37,15 @@ import net.jcip.annotations.ThreadSafe;
 public final class HttpConfig {
 
     public static HttpConfig newInstance(CommandLineHelper helper) {
-        boolean isPersistent = helper.line().hasOption(Args.PERSISTENT);
+        return newInstance(
+                helper.line().hasOption(Args.PERSISTENT),
+                helper.line().hasOption(Args.RELAX_SSL));
+    }
+
+    public static HttpConfig newInstance(boolean isPersistent, boolean isRelaxedSSL) {
         return newInstance(
                 isPersistent,
-                helper.line().hasOption(Args.RELAX_SSL),
+                isRelaxedSSL,
                 Property.Int.HTTP_MAX_CONNECTIONS.integer(),
                 isPersistent
                         ? Property.Int.HTTP_PERSISTENT_RETRY_COUNT.integer()

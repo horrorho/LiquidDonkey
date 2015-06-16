@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.image.*?>
+<?import javafx.scene.text.*?>
+<?import java.lang.*?>
+<?import java.net.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane id="AnchorPane" prefHeight="320.0" prefWidth="400.0" styleClass="mainFxmlClass" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.github.horrorho.liquiddonkey.gui.controller.AuthenticationController">
+    <stylesheets>
+        <URL value="@/styles/Styles.css" />
+    </stylesheets>
+   <children>
+      <VBox alignment="CENTER" layoutX="57.0" layoutY="14.0" prefHeight="164.0" prefWidth="287.0">
+         <children>
+            <ImageView fitHeight="82.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
+               <image>
+                  <Image url="@../images/lqea.png" />
+               </image>
+            </ImageView>
+            <Label alignment="CENTER" prefHeight="45.0" prefWidth="322.0" text="LiquidDonkey">
+               <font>
+                  <Font size="26.0" />
+               </font>
+            </Label>
+         </children>
+      </VBox>
+      <VBox layoutX="61.0" layoutY="188.0" prefHeight="104.0" prefWidth="279.0" spacing="16.0">
+         <children>
+            <TextField fx:id="appleId" onAction="#handleAppleId" promptText="AppleId" />
+            <PasswordField fx:id="password" onAction="#handlePassword" promptText="Password" />
+            <HBox alignment="TOP_RIGHT" prefHeight="100.0" prefWidth="200.0">
+               <children>
+                  <Button fx:id="go" mnemonicParsing="false" onAction="#handleGoButton" onKeyPressed="#handleGoButton" text="Go" />
+               </children>
+            </HBox>
+         </children>
+      </VBox>
+   </children>
+</AnchorPane>

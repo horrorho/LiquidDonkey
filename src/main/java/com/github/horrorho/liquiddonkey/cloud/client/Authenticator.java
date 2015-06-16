@@ -62,7 +62,7 @@ public final class Authenticator {
         } catch (HttpResponseException ex) {
             logger.warn("-- authenticate() >  HttpResponseException", ex);
             if (ex.getStatusCode() == 401) {
-                throw new AuthenticationException("Check appleid/ password", ex);
+                throw new AuthenticationException("Not an iCloud account or bad appleid/ password.", ex);
             }
             if (ex.getStatusCode() == 409) {
                 throw new AuthenticationException("Is two-step authentication enabled?", ex);
