@@ -7,8 +7,10 @@ package com.github.horrorho.liquiddonkey.gui.controller.data;
 
 import com.github.horrorho.liquiddonkey.cloud.Backup;
 import java.util.stream.Collectors;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 
 /**
  *
@@ -27,10 +29,10 @@ public class BackupProperties {
                 + "SN: " + backup.serialNumber() + "\n"
                 + "UDID: " + backup.udidString() + "\n"
                 + "iOS: " + backup.productVerson() + "\n"
-                + "Size: " + backup.size() + " (Snapshot/s: " + snapshotsString + ")" +"\n";
+                + "Size: " + backup.size() + " (Snapshot/s: " + snapshotsString + ")" + "\n";
 
         return newInstance(
-                false,
+                true,
                 backup.hardwareModel(),
                 info,
                 backup.lastModified());
@@ -40,10 +42,10 @@ public class BackupProperties {
         return new BackupProperties(checked, device, info, updated);
     }
 
-    private final SimpleBooleanProperty checked;
-    private final SimpleStringProperty device;
-    private final SimpleStringProperty info;
-    private final SimpleStringProperty updated;
+    private final BooleanProperty checked;
+    private final StringProperty device;
+    private final StringProperty info;
+    private final StringProperty updated;
 
     private BackupProperties(boolean checked, String device, String info, String updated) {
         this.checked = new SimpleBooleanProperty(checked);
@@ -52,19 +54,25 @@ public class BackupProperties {
         this.updated = new SimpleStringProperty(updated);
     }
 
-    public SimpleBooleanProperty checkedProperty() {
+    public BooleanProperty checkedProperty() {
         return checked;
     }
 
-    public SimpleStringProperty deviceProperty() {
+    public StringProperty deviceProperty() {
         return device;
     }
 
-    public SimpleStringProperty infoProperty() {
+    public StringProperty infoProperty() {
         return info;
     }
 
-    public SimpleStringProperty updatedProperty() {
+    public StringProperty updatedProperty() {
         return updated;
+    }
+
+    @Override
+    public String toString() {
+        return "BackupProperties{" + "checked=" + checked + ", device=" + device + ", info=" + info
+                + ", updated=" + updated + '}';
     }
 }

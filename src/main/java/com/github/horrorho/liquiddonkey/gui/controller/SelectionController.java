@@ -30,12 +30,17 @@ import com.github.horrorho.liquiddonkey.gui.controller.data.BackupProperties;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Button;
 import javafx.scene.control.TableView;
+import static javafx.scene.input.KeyCode.T;
 
 /**
  * FXML Controller class
@@ -46,13 +51,24 @@ public class SelectionController implements Initializable {
 
     private final ObservableList<BackupProperties> backups = FXCollections.observableArrayList();
     private Client client;
-    
+
+    @FXML
+    private Button button;
+
     @FXML
     private TableView<BackupProperties> tableView;
 
     @FXML
     private void handleButtonAction(ActionEvent event) throws IOException {
 
+        backups.stream().forEach(System.out::println);
+    }
+
+    private void buttonDisable() {
+        button.setDisable(
+                backups.stream()
+                .map(BackupProperties::checkedProperty)
+                .noneMatch(BooleanProperty::get));
     }
 
     /**
@@ -61,15 +77,29 @@ public class SelectionController implements Initializable {
     @Override
     public void initialize(URL url, ResourceBundle rb) {
 
-        
-        ICloud.MBSBackup.getDefaultInstance();
-        
+        backups.addListener((ListChangeListener.Change<? extends BackupProperties> c) -> {
+            while (c.next()) {
+                if (c.wasAdded()) {
+                    c.getAddedSubList().stream().map(BackupProperties::checkedProperty)
+                            .forEach(property -> property.addListener(
+                                            (observable, oldValue, newValue) -> buttonDisable()));
+                }
+            }
+        });
+
         for (int i = 0; i < 5; i++) {
             backups.add(BackupProperties.newInstance(Backup.newInstance(ICloud.MBSBackup.getDefaultInstance())));
         }
         tableView.setItems(backups);
-        
-        
+        buttonDisable();
+
+//        backups.stream().map(BackupProperties::checkedProperty)
+//                .forEach(x -> x.addListener(
+//                                (observable, oldValue, newValue)
+//                                -> button.setDisable(
+//                                        backups.stream()
+//                                        .map(BackupProperties::checkedProperty)
+//                                        .noneMatch(BooleanProperty::get))));
     }
 
     public void initData(Client client) {
