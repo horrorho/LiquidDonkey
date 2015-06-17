@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.shape.*?>
+<?import javafx.scene.text.*?>
 <?import java.lang.*?>
 <?import java.net.*?>
 <?import java.util.*?>
@@ -14,33 +16,46 @@
         <URL value="@/styles/Styles.css" />
     </stylesheets>
     <children>
-        <Button fx:id="button" layoutX="545.0" layoutY="441.0" mnemonicParsing="false" onAction="#handleButtonAction" text="Download" />
-        <TableView fx:id="tableView" editable="true" layoutX="14.0" layoutY="14.0" prefHeight="413.0" prefWidth="614.0">
-            <columns>
-                <TableColumn prefWidth="30.0" sortable="false">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="checked" />
-                    </cellValueFactory>
-                    <cellFactory>
-                        <CheckBoxCellFactory />
-                    </cellFactory>
-                </TableColumn>
-                <TableColumn editable="false" prefWidth="143.0" resizable="false" sortable="false" text="Device">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="device" />
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn editable="false" prefWidth="344.0" resizable="false" sortable="false" text="Info">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="info" />
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn editable="false" prefWidth="96.0" resizable="false" sortable="false" text="Updated">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="updated" />
-                    </cellValueFactory>
-                </TableColumn>
-            </columns>
-        </TableView>
+      <VBox layoutX="13.0" layoutY="14.0" prefHeight="455.0" prefWidth="615.0" spacing="8.0">
+         <children>
+            <Text fx:id="text" fontSmoothingType="LCD" strokeType="OUTSIDE" strokeWidth="0.0" text="Text" wrappingWidth="615.0">
+               <font>
+                  <Font name="System Bold" size="16.0" />
+               </font>
+            </Text>
+              <TableView fx:id="tableView" editable="true" prefHeight="396.0" prefWidth="615.0">
+                  <columns>
+                      <TableColumn prefWidth="30.0" sortable="false">
+                          <cellValueFactory>
+                              <PropertyValueFactory property="checked" />
+                          </cellValueFactory>
+                          <cellFactory>
+                              <CheckBoxCellFactory />
+                          </cellFactory>
+                      </TableColumn>
+                      <TableColumn editable="false" prefWidth="143.0" resizable="false" sortable="false" text="Device">
+                          <cellValueFactory>
+                              <PropertyValueFactory property="device" />
+                          </cellValueFactory>
+                      </TableColumn>
+                      <TableColumn editable="false" prefWidth="344.0" resizable="false" sortable="false" text="Info">
+                          <cellValueFactory>
+                              <PropertyValueFactory property="info" />
+                          </cellValueFactory>
+                      </TableColumn>
+                      <TableColumn editable="false" prefWidth="96.0" resizable="false" sortable="false" text="Updated">
+                          <cellValueFactory>
+                              <PropertyValueFactory property="updated" />
+                          </cellValueFactory>
+                      </TableColumn>
+                  </columns>
+              </TableView>
+            <HBox alignment="TOP_RIGHT" prefHeight="45.0" prefWidth="615.0">
+               <children>
+                    <Button fx:id="button" mnemonicParsing="false" onAction="#handleButtonAction" text="Download" />
+               </children>
+            </HBox>
+         </children>
+      </VBox>
     </children>
 </AnchorPane>

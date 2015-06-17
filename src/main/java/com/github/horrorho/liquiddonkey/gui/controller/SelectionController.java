@@ -23,15 +23,14 @@ package com.github.horrorho.liquiddonkey.gui.controller;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+import com.github.horrorho.liquiddonkey.cloud.Authentication;
 import com.github.horrorho.liquiddonkey.cloud.Backup;
-import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.gui.controller.data.BackupProperties;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -40,7 +39,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableView;
-import static javafx.scene.input.KeyCode.T;
+import javafx.scene.text.Text;
 
 /**
  * FXML Controller class
@@ -50,7 +49,10 @@ import static javafx.scene.input.KeyCode.T;
 public class SelectionController implements Initializable {
 
     private final ObservableList<BackupProperties> backups = FXCollections.observableArrayList();
-    private Client client;
+    private Authentication authentication;
+
+    @FXML
+    private Text text;
 
     @FXML
     private Button button;
@@ -76,6 +78,7 @@ public class SelectionController implements Initializable {
      */
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+        System.out.println("INITIALIZE");
 
         backups.addListener((ListChangeListener.Change<? extends BackupProperties> c) -> {
             while (c.next()) {
@@ -102,7 +105,13 @@ public class SelectionController implements Initializable {
 //                                        .noneMatch(BooleanProperty::get))));
     }
 
-    public void initData(Client client) {
-        this.client = client;
+    public void initData(Authentication authentication) {
+        System.out.println("INITDATA");
+        this.authentication = authentication;
+        //text.setText(authentication.fullName() + " (" + authentication.client().dsPrsID() + ") - " + authentication.appleId());
+
+              text.setText(authentication.fullName() + " (" +"123123123" + ") - " + authentication.appleId());
+  
+        
     }
 }

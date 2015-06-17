@@ -112,7 +112,7 @@ public class AuthenticationController implements Initializable {
             password.requestFocus();
         } else {
             //authenticate();
-            toSelection(null);
+            toSelection(Authentication.newInstance(null, "test@apple.com", "jon snow"));
         }
     }
 
@@ -140,7 +140,7 @@ public class AuthenticationController implements Initializable {
         alert.showAndWait();
     }
 
-    void toSelection(Client client) {
+    void toSelection(Authentication authentication) {
         Stage stage = (Stage) go.getScene().getWindow();
         Parent root;
 
@@ -148,7 +148,7 @@ public class AuthenticationController implements Initializable {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Selection.fxml"));
             root = loader.load();
             SelectionController controller = loader.<SelectionController>getController();
-            controller.initData(client);
+            controller.initData(authentication);
             Scene scene = new Scene(root);
             stage.setScene(scene);
             stage.show();
