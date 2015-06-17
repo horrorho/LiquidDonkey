@@ -27,7 +27,6 @@ import com.github.horrorho.liquiddonkey.cloud.Authentication;
 import com.github.horrorho.liquiddonkey.cloud.Backup;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.gui.controller.data.BackupProperties;
-import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 import javafx.beans.property.BooleanProperty;
@@ -38,6 +37,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.TableView;
 import javafx.scene.text.Text;
 
@@ -47,26 +47,35 @@ import javafx.scene.text.Text;
  * @author Ahseya
  */
 public class SelectionController implements Initializable {
-
+    
     private final ObservableList<BackupProperties> backups = FXCollections.observableArrayList();
     private Authentication authentication;
-
+    
     @FXML
     private Text user;
-
+    
     @FXML
     private Button button;
-
+    
+    @FXML
+    private CheckBox checkAll;
+    
     @FXML
     private TableView<BackupProperties> tableView;
-
+    
     @FXML
-    private void handleButtonAction(ActionEvent event) throws IOException {
-
+    private void checkAllHandler(ActionEvent event) {
+        backups.stream()
+                .forEach(property -> property.checkedProperty().setValue(checkAll.isSelected()));
+    }
+    
+    @FXML
+    private void handleButtonAction(ActionEvent event) {
+        
         backups.stream().forEach(System.out::println);
     }
-
-    private void buttonDisable() {
+    
+    private void downloadButtonEnabledHandler() {
         button.setDisable(
                 backups.stream()
                 .map(BackupProperties::checkedProperty)
@@ -78,31 +87,33 @@ public class SelectionController implements Initializable {
      */
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-
+        
         backups.addListener((ListChangeListener.Change<? extends BackupProperties> c) -> {
             while (c.next()) {
                 if (c.wasAdded()) {
                     c.getAddedSubList().stream().map(BackupProperties::checkedProperty)
                             .forEach(property -> property.addListener(
-                                            (observable, oldValue, newValue) -> buttonDisable()));
+                                            (observable, oldValue, newValue) -> downloadButtonEnabledHandler()));
                 }
             }
         });
-
+        
         for (int i = 0; i < 4; i++) {
             backups.add(BackupProperties.newInstance(Backup.newInstance(ICloud.MBSBackup.getDefaultInstance())));
         }
         tableView.setPlaceholder(new Text("No backups."));
         tableView.setItems(backups);
         tableView.getSelectionModel().clearSelection();
-        buttonDisable();
+        downloadButtonEnabledHandler();
+        checkAll.setSelected(true);
+        
     }
-
+    
     public void initData(Authentication authentication) {
         this.authentication = authentication;
         //text.setText(authentication.fullName() + " (" + authentication.client().dsPrsID() + ") - " + authentication.appleId());
 
         user.setText(authentication.fullName() + " (" + "123123123" + ") - " + authentication.appleId());
-
+        
     }
 }

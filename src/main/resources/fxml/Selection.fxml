@@ -26,6 +26,9 @@
                     <cellValueFactory>
                         <PropertyValueFactory property="checked" />
                     </cellValueFactory>
+               <graphic>
+                  <CheckBox fx:id="checkAll" mnemonicParsing="false" onAction="#checkAllHandler" />
+               </graphic>
                 </TableColumn>
                 <TableColumn editable="false" minWidth="73.0" prefWidth="127.0" resizable="false" sortable="false" text="Device">
                     <cellValueFactory>
@@ -74,8 +77,12 @@
             <left>
                 <HBox BorderPane.alignment="CENTER">
                     <children>
-                        <CheckBox mnemonicParsing="false" />
                         <Button mnemonicParsing="false" text="Filter" />
+                        <CheckBox mnemonicParsing="false">
+                     <HBox.margin>
+                        <Insets left="8.0" />
+                     </HBox.margin>
+                  </CheckBox>
                     </children>
                     <BorderPane.margin>
                         <Insets bottom="8.0" left="8.0" />
