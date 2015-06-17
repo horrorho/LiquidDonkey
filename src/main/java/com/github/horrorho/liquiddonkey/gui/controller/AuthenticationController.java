@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.gui.controller;
 
-import com.github.horrorho.liquiddonkey.cloud.client.Authenticator;
+import com.github.horrorho.liquiddonkey.cloud.Authentication;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
@@ -122,7 +122,7 @@ public class AuthenticationController implements Initializable {
                     HttpConfig.newInstance(true, false),
                     Printer.instanceOf(false));
 
-            Authenticator.authenticate(
+            Authentication.of(
                     http,
                     AuthenticationConfig.newInstance(appleId.getText(), password.getText()));
 

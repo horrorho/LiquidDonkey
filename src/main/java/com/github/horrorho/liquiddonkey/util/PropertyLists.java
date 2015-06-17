@@ -33,6 +33,8 @@ import java.text.ParseException;
 import javax.xml.parsers.ParserConfigurationException;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 /**
@@ -43,7 +45,18 @@ import org.xml.sax.SAXException;
 @ThreadSafe
 public final class PropertyLists {
 
-    public static String stringValue(final NSDictionary dictionary, final String... path) throws PropertyListFormatException {
+    private static final Logger logger = LoggerFactory.getLogger(PropertyLists.class);
+
+    public static String stringValue(String defaultValue, NSDictionary dictionary, String... path) {
+        try {
+            return stringValue(dictionary, path);
+        } catch (PropertyListFormatException ex) {
+            logger.warn("-- stringValue() > exception: ", ex);
+            return defaultValue;
+        }
+    }
+
+    public static String stringValue(NSDictionary dictionary, String... path) throws PropertyListFormatException {
         NSObject object = dictionary;
 
         for (String key : path) {

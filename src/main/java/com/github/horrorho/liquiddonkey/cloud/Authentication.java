@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.cloud.client;
+package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
@@ -32,10 +32,11 @@ import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import com.github.horrorho.liquiddonkey.util.PropertyLists;
 import com.dd.plist.NSDictionary;
 import com.dd.plist.PropertyListFormatException;
+import com.github.horrorho.liquiddonkey.cloud.client.Client;
+import com.github.horrorho.liquiddonkey.cloud.client.Headers;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
@@ -43,20 +44,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Authenticator.
+ * Authentication.
  *
  * @author Ahseya
  */
-@Immutable
 @ThreadSafe
-public final class Authenticator {
+public final class Authentication {
 
-    private static final Logger logger = LoggerFactory.getLogger(Authenticator.class);
+    private static final Logger logger = LoggerFactory.getLogger(Authentication.class);
 
     // Thread safe.
     private static final ResponseHandler<byte[]> byteArrayResponseHandler = ResponseHandlerFactory.toByteArray();
 
-    public static Client authenticate(Http http, AuthenticationConfig config) {
+    public static Authentication of(Http http, AuthenticationConfig config) {
         try {
             return doAuthenticate(http, config.id(), config.password());
         } catch (HttpResponseException ex) {
@@ -73,7 +73,8 @@ public final class Authenticator {
         }
     }
 
-    static Client doAuthenticate(Http http, String id, String password) throws IOException, BadDataException {
+    static Authentication doAuthenticate(Http http, String id, String password) throws IOException, BadDataException {
+
         try {
             String authBasic = authorization("Basic", id, password);
             logger.trace("-- authenticate() > authentication basic token: {}", authBasic);
@@ -100,13 +101,45 @@ public final class Authenticator {
             String authMme = authorization("X-MobileMe-AuthToken", dsPrsID, mmeAuthToken);
             logger.trace("-- authenticate() >  authentication x-MobileMetoken token: {}", authMme);
 
-            return new Client(http, settings, dsPrsID, authMme, Property.Int.LIST_FILES_LIMIT.integer());
+            String fullName = PropertyLists.stringValue("Unknown", settings, "appleAccountInfo", "fullName");
+            String appleId = PropertyLists.stringValue("Unknown", settings, "appleAccountInfo", "appleId");
+
+            Client client = new Client(http, settings, dsPrsID, authMme, Property.Int.LIST_FILES_LIMIT.integer());
+
+            return newInstance(client, appleId, fullName);
+
         } catch (PropertyListFormatException ex) {
             throw new BadDataException("Unexpected authentication data.", ex);
         }
     }
 
-    private static String authorization(String type, String left, String right) {
+    static String authorization(String type, String left, String right) {
         return type + " " + Base64.getEncoder().encodeToString((left + ":" + right).getBytes(StandardCharsets.UTF_8));
+    }
+
+    public static Authentication newInstance(Client client, String appleId, String fullName) {
+        return new Authentication(client, appleId, fullName);
+    }
+
+    private final Client client;
+    private final String appleId;
+    private final String fullName;
+
+    Authentication(Client client, String appleId, String fullName) {
+        this.client = client;
+        this.appleId = appleId;
+        this.fullName = fullName;
+    }
+
+    public Client client() {
+        return client;
+    }
+
+    public String appleId() {
+        return appleId;
+    }
+
+    public String fullName() {
+        return fullName;
     }
 }

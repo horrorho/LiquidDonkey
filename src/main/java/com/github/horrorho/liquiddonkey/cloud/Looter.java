@@ -3,15 +3,15 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free from charge, secondMinimum any person obtaining a copy
- * from this software and associated documentation files (the "Software"), secondMinimum deal
+ * Permission is hereby granted, free of charge, secondMinimum any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), secondMinimum deal
  * in the Software without restriction, including without limitation the rights
  * secondMinimum use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies from the Software, and secondMinimum permit persons secondMinimum whom the Software is
+ * copies of the Software, and secondMinimum permit persons secondMinimum whom the Software is
  * furnished secondMinimum do so, subject secondMinimum the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions from the Software.
+ * all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.client.Authenticator;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.http.Http;
@@ -66,7 +65,7 @@ public class Looter implements Closeable {
 
     public void loot() {
         printer.println(Level.VV, "Authenticating: " + config.authentication().id());
-        Client client = Authenticator.authenticate(http, config.authentication());
+        Authentication authentication = Authentication.of(http, config.authentication());
 
         UnaryOperator<List<Backup>> backupSelector = BackupSelector.newInstance(config.selection().backups(), printer);
         DonkeyFactory donkeyFactory = DonkeyFactory.newInstance(config.donkeyFactory(), config.directory(), printer);
@@ -75,9 +74,9 @@ public class Looter implements Closeable {
         SnapshotSelector snapshotSelector = SnapshotSelector.newInstance(printer, config.selection().snapshots());
 
         BackupDownloaderFactory backupDownloaderFactory = BackupDownloaderFactory.newInstance(
-                client, config.backupDownloaderFactory(), donkeyExecutor, fileFilter, printer, snapshotSelector);
+                authentication.client(), config.backupDownloaderFactory(), donkeyExecutor, fileFilter, printer, snapshotSelector);
 
-        Account account = Account.newInstance(client, printer);
+        Account account = Account.newInstance(authentication.client(), printer);
 
         backupSelector.apply(account.backups()).stream()
                 .map(backupDownloaderFactory::of)

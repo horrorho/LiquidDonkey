@@ -272,7 +272,11 @@ public final class Client {
         logger.trace(">> chunks() > size: {}", data.length);
         return data;
     }
-    
+
+    public String dsPrsID() {
+        return dsPrsID;
+    }
+
     String path(String... parts) {
         return Arrays.asList(parts).stream().collect(Collectors.joining("/"));
     }
