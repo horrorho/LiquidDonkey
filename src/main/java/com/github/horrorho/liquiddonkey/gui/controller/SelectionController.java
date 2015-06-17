@@ -52,7 +52,7 @@ public class SelectionController implements Initializable {
     private Authentication authentication;
 
     @FXML
-    private Text text;
+    private Text user;
 
     @FXML
     private Button button;
@@ -78,7 +78,6 @@ public class SelectionController implements Initializable {
      */
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        System.out.println("INITIALIZE");
 
         backups.addListener((ListChangeListener.Change<? extends BackupProperties> c) -> {
             while (c.next()) {
@@ -90,28 +89,20 @@ public class SelectionController implements Initializable {
             }
         });
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 4; i++) {
             backups.add(BackupProperties.newInstance(Backup.newInstance(ICloud.MBSBackup.getDefaultInstance())));
         }
+        tableView.setPlaceholder(new Text("No backups."));
         tableView.setItems(backups);
+        tableView.getSelectionModel().clearSelection();
         buttonDisable();
-
-//        backups.stream().map(BackupProperties::checkedProperty)
-//                .forEach(x -> x.addListener(
-//                                (observable, oldValue, newValue)
-//                                -> button.setDisable(
-//                                        backups.stream()
-//                                        .map(BackupProperties::checkedProperty)
-//                                        .noneMatch(BooleanProperty::get))));
     }
 
     public void initData(Authentication authentication) {
-        System.out.println("INITDATA");
         this.authentication = authentication;
         //text.setText(authentication.fullName() + " (" + authentication.client().dsPrsID() + ") - " + authentication.appleId());
 
-              text.setText(authentication.fullName() + " (" +"123123123" + ") - " + authentication.appleId());
-  
-        
+        user.setText(authentication.fullName() + " (" + "123123123" + ") - " + authentication.appleId());
+
     }
 }

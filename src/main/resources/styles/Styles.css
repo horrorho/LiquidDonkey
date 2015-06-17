@@ -6,3 +6,21 @@
     -fx-text-box-border: red;
     -fx-focus-color: red;
 }
+
+.table-row-cell:empty {
+    -fx-background-color: aliceblue;
+}
+
+.table-row-cell:empty .table-cell {
+    -fx-border-width: 0px;
+}
+
+.table-row-cell:filled:selected { 
+    -fx-background: -fx-control-inner-background ;
+    -fx-background-color: -fx-table-cell-border-color, -fx-background ;
+    -fx-background-insets: 0, 0 0 1 0 ;
+}
+
+.table-row-cell:odd:filled:selected {
+    -fx-background: -fx-control-inner-background-alt ;
+}

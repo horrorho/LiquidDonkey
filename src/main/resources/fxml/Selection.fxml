@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.*?>
 <?import javafx.scene.shape.*?>
 <?import javafx.scene.text.*?>
 <?import java.lang.*?>
@@ -11,51 +12,79 @@
 <?import javafx.scene.layout.*?>
 <?import com.github.horrorho.liquiddonkey.gui.*?>
 
-<AnchorPane id="AnchorPane" prefHeight="480.0" prefWidth="640.0" styleClass="mainFxmlClass" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.github.horrorho.liquiddonkey.gui.controller.SelectionController">
+<BorderPane prefHeight="320.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.github.horrorho.liquiddonkey.gui.controller.SelectionController">
     <stylesheets>
         <URL value="@/styles/Styles.css" />
     </stylesheets>
-    <children>
-      <VBox layoutX="13.0" layoutY="14.0" prefHeight="455.0" prefWidth="615.0" spacing="8.0">
-         <children>
-            <Text fx:id="text" fontSmoothingType="LCD" strokeType="OUTSIDE" strokeWidth="0.0" text="Text" wrappingWidth="615.0">
-               <font>
-                  <Font name="System Bold" size="16.0" />
-               </font>
-            </Text>
-              <TableView fx:id="tableView" editable="true" prefHeight="396.0" prefWidth="615.0">
-                  <columns>
-                      <TableColumn prefWidth="30.0" sortable="false">
-                          <cellValueFactory>
-                              <PropertyValueFactory property="checked" />
-                          </cellValueFactory>
-                          <cellFactory>
-                              <CheckBoxCellFactory />
-                          </cellFactory>
-                      </TableColumn>
-                      <TableColumn editable="false" prefWidth="143.0" resizable="false" sortable="false" text="Device">
-                          <cellValueFactory>
-                              <PropertyValueFactory property="device" />
-                          </cellValueFactory>
-                      </TableColumn>
-                      <TableColumn editable="false" prefWidth="344.0" resizable="false" sortable="false" text="Info">
-                          <cellValueFactory>
-                              <PropertyValueFactory property="info" />
-                          </cellValueFactory>
-                      </TableColumn>
-                      <TableColumn editable="false" prefWidth="96.0" resizable="false" sortable="false" text="Updated">
-                          <cellValueFactory>
-                              <PropertyValueFactory property="updated" />
-                          </cellValueFactory>
-                      </TableColumn>
-                  </columns>
-              </TableView>
-            <HBox alignment="TOP_RIGHT" prefHeight="45.0" prefWidth="615.0">
-               <children>
-                    <Button fx:id="button" mnemonicParsing="false" onAction="#handleButtonAction" text="Download" />
-               </children>
-            </HBox>
-         </children>
-      </VBox>
-    </children>
-</AnchorPane>
+    <center>
+        <TableView fx:id="tableView" editable="true" BorderPane.alignment="CENTER">
+            <columns>
+                <TableColumn maxWidth="32.0" minWidth="32.0" prefWidth="32.0" sortable="false">
+                    <cellFactory>
+                        <CheckBoxCellFactory />
+                    </cellFactory>
+                    <cellValueFactory>
+                        <PropertyValueFactory property="checked" />
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn editable="false" minWidth="73.0" prefWidth="127.0" resizable="false" sortable="false" text="Device">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="device" />
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn editable="false" prefWidth="353.0" resizable="false" sortable="false" text="Info">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="info" />
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn editable="false" prefWidth="96.0" resizable="false" sortable="false" text="Updated">
+                    <cellValueFactory>
+                        <PropertyValueFactory property="updated" />
+                    </cellValueFactory>
+                </TableColumn>
+            </columns>
+            <BorderPane.margin>
+                <Insets left="8.0" right="8.0" />
+            </BorderPane.margin>
+        </TableView>
+    </center>
+    <top>
+        <VBox BorderPane.alignment="CENTER">
+            <children>
+                <Text fx:id="user" fontSmoothingType="LCD" strokeType="OUTSIDE" strokeWidth="0.0" text="Text" wrappingWidth="615.0">
+                    <font>
+                        <Font name="System Bold" size="16.0" />
+                    </font>
+                </Text>
+            </children>
+            <BorderPane.margin>
+                <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+            </BorderPane.margin>
+        </VBox>
+    </top>
+    <bottom>
+        <BorderPane BorderPane.alignment="CENTER">
+            <right>
+                <Button fx:id="button" mnemonicParsing="false" text="Download" BorderPane.alignment="CENTER">
+                    <BorderPane.margin>
+                        <Insets bottom="8.0" right="8.0" />
+                    </BorderPane.margin>
+                </Button>
+            </right>
+            <left>
+                <HBox BorderPane.alignment="CENTER">
+                    <children>
+                        <CheckBox mnemonicParsing="false" />
+                        <Button mnemonicParsing="false" text="Filter" />
+                    </children>
+                    <BorderPane.margin>
+                        <Insets bottom="8.0" left="8.0" />
+                    </BorderPane.margin>
+                </HBox>
+            </left>
+            <BorderPane.margin>
+                <Insets top="32.0" />
+            </BorderPane.margin>
+        </BorderPane>
+    </bottom>
+</BorderPane>
