@@ -41,9 +41,8 @@ public class MainGui {
      */
     public static void main(String[] args) {
         logger.trace("<< mainGui() <  ", Arrays.asList(args));
-
+// TODO catch exceptions with dialog and shutdown
         App.launch(App.class);
-        
 
         logger.trace(">> mainGui()");
     }

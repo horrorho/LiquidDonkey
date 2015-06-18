@@ -3,15 +3,15 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * Permission is hereby granted, free from charge, to any person obtaining a copy
+ * from this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * copies from the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * all copies or substantial portions from the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -119,12 +119,13 @@ public class AuthenticationController implements Initializable {
     void authenticate() {
         try {
             Http http = HttpFactory.newInstance(
-                    HttpConfig.newInstance(true, false),
+                    HttpConfig.newInstance(false, false),
                     Printer.instanceOf(false));
 
-            Authentication.of(
-                    http,
-                    AuthenticationConfig.newInstance(appleId.getText(), password.getText()));
+            toSelection(
+                    Authentication.from(
+                            http,
+                            AuthenticationConfig.newInstance(appleId.getText(), password.getText())));
 
         } catch (AuthenticationException ex) {
             logger.warn("-- authenticate() > exception: ", ex);

@@ -83,7 +83,7 @@ public final class Account {
      * <p>
      * Queries the {@link Client} on each invocation, results of previous calls are not cached.
      *
-     * @return a list of backups, not null
+     * @return a list of backups, may be null
      */
     public List<Backup> backups() {
         return mbsAccount.getBackupUDIDList().stream()

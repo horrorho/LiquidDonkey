@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.image.*?>
 <?import javafx.geometry.*?>
 <?import javafx.scene.shape.*?>
 <?import javafx.scene.text.*?>
@@ -12,7 +13,7 @@
 <?import javafx.scene.layout.*?>
 <?import com.github.horrorho.liquiddonkey.gui.*?>
 
-<BorderPane prefHeight="320.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.github.horrorho.liquiddonkey.gui.controller.SelectionController">
+<BorderPane prefHeight="480.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.github.horrorho.liquiddonkey.gui.controller.SelectionController">
     <stylesheets>
         <URL value="@/styles/Styles.css" />
     </stylesheets>
@@ -47,18 +48,32 @@
                 </TableColumn>
             </columns>
             <BorderPane.margin>
-                <Insets left="8.0" right="8.0" />
+                <Insets />
             </BorderPane.margin>
         </TableView>
     </center>
     <top>
         <VBox BorderPane.alignment="CENTER">
             <children>
-                <Text fx:id="user" fontSmoothingType="LCD" strokeType="OUTSIDE" strokeWidth="0.0" text="Text" wrappingWidth="615.0">
+            <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
+               <children>
+                  <ImageView pickOnBounds="true" preserveRatio="true">
+                     <image>
+                        <Image url="@../images/lqea.png" />
+                     </image>
+                  </ImageView>
+               </children>
+            </HBox>
+                <Text fx:id="user" fontSmoothingType="LCD" strokeType="OUTSIDE" strokeWidth="0.0" text="Mr Donkey" wrappingWidth="615.0">
                     <font>
-                        <Font name="System Bold" size="16.0" />
+                        <Font name="System Bold" size="14.0" />
                     </font>
                 </Text>
+            <Text fx:id="appleId" fontSmoothingType="LCD" strokeType="OUTSIDE" strokeWidth="0.0" text="appleId@icloud.com" wrappingWidth="615.0">
+               <font>
+                  <Font name="System Bold" size="14.0" />
+               </font>
+            </Text>
             </children>
             <BorderPane.margin>
                 <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
@@ -67,31 +82,32 @@
     </top>
     <bottom>
         <BorderPane BorderPane.alignment="CENTER">
-            <right>
-                <Button fx:id="button" mnemonicParsing="false" text="Download" BorderPane.alignment="CENTER">
-                    <BorderPane.margin>
-                        <Insets bottom="8.0" right="8.0" />
-                    </BorderPane.margin>
-                </Button>
-            </right>
-            <left>
-                <HBox BorderPane.alignment="CENTER">
-                    <children>
-                        <Button mnemonicParsing="false" text="Filter" />
-                        <CheckBox mnemonicParsing="false">
-                     <HBox.margin>
-                        <Insets left="8.0" />
-                     </HBox.margin>
-                  </CheckBox>
-                    </children>
-                    <BorderPane.margin>
-                        <Insets bottom="8.0" left="8.0" />
-                    </BorderPane.margin>
-                </HBox>
-            </left>
             <BorderPane.margin>
                 <Insets top="32.0" />
             </BorderPane.margin>
+         <right>
+            <VBox alignment="BOTTOM_RIGHT" spacing="16.0" BorderPane.alignment="BOTTOM_RIGHT">
+               <children>
+                  <HBox alignment="TOP_RIGHT">
+                     <children>
+                        <CheckBox mnemonicParsing="false" />
+                        <Button fx:id="filterButton" mnemonicParsing="false" text="Filter" />
+                     </children>
+                  </HBox>
+                  <Button fx:id="downloadButton" mnemonicParsing="false" text="Download" />
+               </children>
+            </VBox>
+         </right>
+         <left>
+            <VBox alignment="BOTTOM_LEFT" BorderPane.alignment="CENTER">
+               <children>
+                  <Button mnemonicParsing="false" text="Back" />
+               </children>
+            </VBox>
+         </left>
         </BorderPane>
     </bottom>
+   <padding>
+      <Insets bottom="8.0" left="8.0" right="8.0" />
+   </padding>
 </BorderPane>
