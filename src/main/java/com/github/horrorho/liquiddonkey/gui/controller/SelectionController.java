@@ -110,17 +110,12 @@ public class SelectionController implements Initializable {
             }
         });
 
-        accordion.expandedPaneProperty().addListener(new ChangeListener<TitledPane>() {
-            @Override
-            public void changed(ObservableValue<? extends TitledPane> property, final TitledPane oldPane, final TitledPane newPane) {
-
-                if (newPane == null) {
-                    accordion.setExpandedPane(oldPane == main ? filters : main);
-
-                }
-
+        accordion.expandedPaneProperty().addListener((property, oldPane, newPane) -> {
+            if (newPane == null) {
+                accordion.setExpandedPane(oldPane == main ? filters : main);
             }
         });
+        accordion.setExpandedPane(main);
 
         tableView.setPlaceholder(new Text("No backups."));
         tableView.setItems(backups);
@@ -130,14 +125,9 @@ public class SelectionController implements Initializable {
     public void initData(Authentication authentication) {
         this.authentication = authentication;
 
-        //user.setText(authentication.fullName() + " (" + authentication.client().dsPrsID() + ") - " + authentication.appleId());
-//        Account account = Account.newInstance(authentication.client(), Printer.instanceOf(false));
-//        account.backups().stream().forEach(backup -> backups.add(BackupProperties.newInstance(backup)));
         downloadButtonEnabledHandler();
         checkAll.setSelected(false);
 
-        System.out.println("Expanded pain is: " + accordion.getExpandedPane());
-        accordion.setExpandedPane(main);
         main.setText(authentication.fullName() + " - " + authentication.appleId());
     }
 }

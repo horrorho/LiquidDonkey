@@ -9,35 +9,60 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane id="AnchorPane" prefHeight="320.0" prefWidth="400.0" styleClass="mainFxmlClass" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.github.horrorho.liquiddonkey.gui.controller.AuthenticationController">
+<BorderPane id="AnchorPane" prefHeight="480.0" prefWidth="640.0" styleClass="mainFxmlClass" xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.github.horrorho.liquiddonkey.gui.controller.AuthenticationController">
     <stylesheets>
         <URL value="@/styles/Styles.css" />
     </stylesheets>
-   <children>
-      <VBox alignment="CENTER" layoutX="57.0" layoutY="14.0" prefHeight="164.0" prefWidth="287.0">
-         <children>
-            <ImageView fitHeight="82.0" fitWidth="200.0" pickOnBounds="true" preserveRatio="true">
-               <image>
-                  <Image url="@../images/lqea.png" />
-               </image>
-            </ImageView>
-            <Label alignment="CENTER" prefHeight="45.0" prefWidth="322.0" text="LiquidDonkey">
-               <font>
-                  <Font size="26.0" />
-               </font>
-            </Label>
-         </children>
-      </VBox>
-      <VBox layoutX="61.0" layoutY="188.0" prefHeight="104.0" prefWidth="279.0" spacing="16.0">
-         <children>
-            <TextField fx:id="appleId" onAction="#handleAppleId" promptText="AppleId" />
-            <PasswordField fx:id="password" onAction="#handlePassword" promptText="Password" />
-            <HBox alignment="TOP_RIGHT" prefHeight="100.0" prefWidth="200.0">
-               <children>
-                  <Button fx:id="go" mnemonicParsing="false" onAction="#handleGoButton" onKeyPressed="#handleGoButton" text="Go" />
-               </children>
-            </HBox>
-         </children>
-      </VBox>
-   </children>
-</AnchorPane>
+   <center>
+      <Accordion fx:id="accordion" layoutX="14.0" layoutY="14.0" prefHeight="288.0" prefWidth="298.0">
+        <panes>
+          <TitledPane fx:id="authentication" text="Authentication">
+               <content>
+                  <BorderPane>
+                     <top>
+                        <VBox alignment="CENTER" BorderPane.alignment="CENTER">
+                           <children>
+                              <ImageView pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@../images/lqea.png" />
+                                 </image>
+                              </ImageView>
+                              <Label alignment="CENTER" prefHeight="45.0" prefWidth="322.0" text="LiquidDonkey">
+                                 <font>
+                                    <Font size="26.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </VBox>
+                     </top>
+                     <bottom>
+                        <HBox alignment="BOTTOM_RIGHT" prefHeight="100.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+                           <children>
+                              <Button fx:id="go" mnemonicParsing="false" onAction="#handleGoButton" onKeyPressed="#handleGoButton" text="Go" />
+                           </children>
+                        </HBox>
+                     </bottom>
+                     <center>
+                        <HBox alignment="CENTER" BorderPane.alignment="CENTER">
+                           <children>
+                              <VBox alignment="CENTER" prefWidth="240.0" spacing="16.0">
+                                 <children>
+                                    <TextField fx:id="appleId" onAction="#handleAppleId" promptText="AppleId" />
+                                    <PasswordField fx:id="password" onAction="#handlePassword" promptText="Password" />
+                                 </children>
+                              </VBox>
+                           </children>
+                        </HBox>
+                     </center>
+                  </BorderPane>
+               </content>
+          </TitledPane>
+          <TitledPane fx:id="advanced" text="Advanced">
+            <content>
+              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
+            </content>
+          </TitledPane>
+        </panes>
+      </Accordion>
+   </center>
+</BorderPane>

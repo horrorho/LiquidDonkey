@@ -43,10 +43,12 @@ import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Accordion;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TitledPane;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,12 +64,21 @@ public class AuthenticationController implements Initializable {
 
     private final static PseudoClass error = PseudoClass.getPseudoClass("error");
 
-    static void warnOnEmpty(TextField textField) {
+    void warnOnEmpty(TextField textField) {
 
         textField.textProperty().addListener((observable, oldValue, newValue)
                 -> textField.pseudoClassStateChanged(error, textField.getText().isEmpty())
         );
     }
+
+    @FXML
+    private Accordion accordion;
+
+    @FXML
+    private TitledPane authentication;
+
+    @FXML
+    private TitledPane advanced;
 
     @FXML
     private TextField appleId;
@@ -170,5 +181,13 @@ public class AuthenticationController implements Initializable {
     ) {
         warnOnEmpty(appleId);
         warnOnEmpty(password);
+
+        accordion.expandedPaneProperty().addListener((property, oldPane, newPane) -> {
+            if (newPane == null) {
+                accordion.setExpandedPane(oldPane == authentication ? advanced : authentication);
+            }
+        });
+        accordion.setExpandedPane(authentication);
+
     }
 }

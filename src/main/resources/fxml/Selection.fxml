@@ -22,7 +22,7 @@
         <panes>
           <TitledPane fx:id="main">
                <content>
-                  <BorderPane prefHeight="200.0" prefWidth="200.0">
+                  <BorderPane>
                      <center>
                           <TableView fx:id="tableView" editable="true" BorderPane.alignment="CENTER">
                               <columns>
@@ -61,7 +61,7 @@
                      <top>
                           <VBox BorderPane.alignment="CENTER">
                               <children>
-                              <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
+                              <HBox alignment="CENTER">
                                  <children>
                                     <ImageView pickOnBounds="true" preserveRatio="true">
                                        <image>
@@ -72,7 +72,7 @@
                               </HBox>
                               </children>
                               <BorderPane.margin>
-                                  <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                                  <Insets />
                               </BorderPane.margin>
                           </VBox>
                      </top>
@@ -105,6 +105,9 @@
               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
                         <DatePicker layoutX="14.0" layoutY="14.0" />
+                        <ChoiceBox layoutX="14.0" layoutY="72.0" prefWidth="150.0" />
+                        <RadioButton layoutX="14.0" layoutY="133.0" mnemonicParsing="false" text="RadioButton" />
+                        <CheckBox layoutX="14.0" layoutY="160.0" mnemonicParsing="false" text="CheckBox" />
                      </children>
                   </AnchorPane>
             </content>
