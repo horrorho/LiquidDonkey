@@ -23,24 +23,25 @@ package com.github.horrorho.liquiddonkey.gui.controller;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-import com.github.horrorho.liquiddonkey.cloud.Account;
 import com.github.horrorho.liquiddonkey.cloud.Authentication;
-import com.github.horrorho.liquiddonkey.cloud.Backup;
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.gui.controller.data.BackupProperties;
-import com.github.horrorho.liquiddonkey.printer.Printer;
 import java.net.URL;
 import java.util.ResourceBundle;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Accordion;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TitledPane;
 import javafx.scene.text.Text;
 
 /**
@@ -54,13 +55,13 @@ public class SelectionController implements Initializable {
     private Authentication authentication;
 
     @FXML
-    private Text user;
+    private Accordion accordion;
 
     @FXML
-    private Text appleId;
+    private TitledPane main;
 
     @FXML
-    private Button filterButton;
+    private TitledPane filters;
 
     @FXML
     private Button downloadButton;
@@ -109,21 +110,34 @@ public class SelectionController implements Initializable {
             }
         });
 
+        accordion.expandedPaneProperty().addListener(new ChangeListener<TitledPane>() {
+            @Override
+            public void changed(ObservableValue<? extends TitledPane> property, final TitledPane oldPane, final TitledPane newPane) {
+
+                if (newPane == null) {
+                    accordion.setExpandedPane(oldPane == main ? filters : main);
+
+                }
+
+            }
+        });
+
         tableView.setPlaceholder(new Text("No backups."));
-        tableView.setItems(backups); 
+        tableView.setItems(backups);
 
     }
 
     public void initData(Authentication authentication) {
         this.authentication = authentication;
-        user.setText(authentication.fullName());
-        appleId.setText(authentication.appleId());
-        
-        //user.setText(authentication.fullName() + " (" + authentication.client().dsPrsID() + ") - " + authentication.appleId());
 
+        //user.setText(authentication.fullName() + " (" + authentication.client().dsPrsID() + ") - " + authentication.appleId());
 //        Account account = Account.newInstance(authentication.client(), Printer.instanceOf(false));
 //        account.backups().stream().forEach(backup -> backups.add(BackupProperties.newInstance(backup)));
         downloadButtonEnabledHandler();
         checkAll.setSelected(false);
+
+        System.out.println("Expanded pain is: " + accordion.getExpandedPane());
+        accordion.setExpandedPane(main);
+        main.setText(authentication.fullName() + " - " + authentication.appleId());
     }
 }

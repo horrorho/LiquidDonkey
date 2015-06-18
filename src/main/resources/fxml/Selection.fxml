@@ -17,97 +17,99 @@
     <stylesheets>
         <URL value="@/styles/Styles.css" />
     </stylesheets>
-    <center>
-        <TableView fx:id="tableView" editable="true" BorderPane.alignment="CENTER">
-            <columns>
-                <TableColumn maxWidth="32.0" minWidth="32.0" prefWidth="32.0" sortable="false">
-                    <cellFactory>
-                        <CheckBoxCellFactory />
-                    </cellFactory>
-                    <cellValueFactory>
-                        <PropertyValueFactory property="checked" />
-                    </cellValueFactory>
-               <graphic>
-                  <CheckBox fx:id="checkAll" mnemonicParsing="false" onAction="#checkAllHandler" />
-               </graphic>
-                </TableColumn>
-                <TableColumn editable="false" minWidth="73.0" prefWidth="127.0" resizable="false" sortable="false" text="Device">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="device" />
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn editable="false" prefWidth="353.0" resizable="false" sortable="false" text="Info">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="info" />
-                    </cellValueFactory>
-                </TableColumn>
-                <TableColumn editable="false" prefWidth="96.0" resizable="false" sortable="false" text="Updated">
-                    <cellValueFactory>
-                        <PropertyValueFactory property="updated" />
-                    </cellValueFactory>
-                </TableColumn>
-            </columns>
-            <BorderPane.margin>
-                <Insets />
-            </BorderPane.margin>
-        </TableView>
-    </center>
-    <top>
-        <VBox BorderPane.alignment="CENTER">
-            <children>
-            <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
-               <children>
-                  <ImageView pickOnBounds="true" preserveRatio="true">
-                     <image>
-                        <Image url="@../images/lqea.png" />
-                     </image>
-                  </ImageView>
-               </children>
-            </HBox>
-                <Text fx:id="user" fontSmoothingType="LCD" strokeType="OUTSIDE" strokeWidth="0.0" text="Mr Donkey" wrappingWidth="615.0">
-                    <font>
-                        <Font name="System Bold" size="14.0" />
-                    </font>
-                </Text>
-            <Text fx:id="appleId" fontSmoothingType="LCD" strokeType="OUTSIDE" strokeWidth="0.0" text="appleId@icloud.com" wrappingWidth="615.0">
-               <font>
-                  <Font name="System Bold" size="14.0" />
-               </font>
-            </Text>
-            </children>
-            <BorderPane.margin>
-                <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
-            </BorderPane.margin>
-        </VBox>
-    </top>
-    <bottom>
-        <BorderPane BorderPane.alignment="CENTER">
-            <BorderPane.margin>
-                <Insets top="32.0" />
-            </BorderPane.margin>
-         <right>
-            <VBox alignment="BOTTOM_RIGHT" spacing="16.0" BorderPane.alignment="BOTTOM_RIGHT">
-               <children>
-                  <HBox alignment="TOP_RIGHT">
+   <center>
+      <Accordion fx:id="accordion" BorderPane.alignment="CENTER">
+        <panes>
+          <TitledPane fx:id="main">
+               <content>
+                  <BorderPane prefHeight="200.0" prefWidth="200.0">
+                     <center>
+                          <TableView fx:id="tableView" editable="true" BorderPane.alignment="CENTER">
+                              <columns>
+                                  <TableColumn maxWidth="32.0" minWidth="32.0" prefWidth="32.0" sortable="false">
+                                      <cellFactory>
+                                          <CheckBoxCellFactory />
+                                      </cellFactory>
+                                      <cellValueFactory>
+                                          <PropertyValueFactory property="checked" />
+                                      </cellValueFactory>
+                                 <graphic>
+                                    <CheckBox fx:id="checkAll" mnemonicParsing="false" onAction="#checkAllHandler" />
+                                 </graphic>
+                                  </TableColumn>
+                                  <TableColumn editable="false" minWidth="73.0" prefWidth="127.0" resizable="false" sortable="false" text="Device">
+                                      <cellValueFactory>
+                                          <PropertyValueFactory property="device" />
+                                      </cellValueFactory>
+                                  </TableColumn>
+                                  <TableColumn editable="false" prefWidth="353.0" resizable="false" sortable="false" text="Info">
+                                      <cellValueFactory>
+                                          <PropertyValueFactory property="info" />
+                                      </cellValueFactory>
+                                  </TableColumn>
+                                  <TableColumn editable="false" prefWidth="96.0" resizable="false" sortable="false" text="Updated">
+                                      <cellValueFactory>
+                                          <PropertyValueFactory property="updated" />
+                                      </cellValueFactory>
+                                  </TableColumn>
+                              </columns>
+                              <BorderPane.margin>
+                                  <Insets />
+                              </BorderPane.margin>
+                          </TableView>
+                     </center>
+                     <top>
+                          <VBox BorderPane.alignment="CENTER">
+                              <children>
+                              <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0">
+                                 <children>
+                                    <ImageView pickOnBounds="true" preserveRatio="true">
+                                       <image>
+                                          <Image url="@../images/lqea.png" />
+                                       </image>
+                                    </ImageView>
+                                 </children>
+                              </HBox>
+                              </children>
+                              <BorderPane.margin>
+                                  <Insets bottom="8.0" left="8.0" right="8.0" top="8.0" />
+                              </BorderPane.margin>
+                          </VBox>
+                     </top>
+                     <bottom>
+                          <BorderPane BorderPane.alignment="CENTER">
+                              <BorderPane.margin>
+                                  <Insets top="32.0" />
+                              </BorderPane.margin>
+                           <right>
+                              <VBox alignment="BOTTOM_RIGHT" spacing="16.0" BorderPane.alignment="BOTTOM_RIGHT">
+                                 <children>
+                                    <Button fx:id="downloadButton" mnemonicParsing="false" text="Download" />
+                                 </children>
+                              </VBox>
+                           </right>
+                           <left>
+                              <VBox alignment="BOTTOM_LEFT" BorderPane.alignment="CENTER">
+                                 <children>
+                                    <Button mnemonicParsing="false" text="Back" />
+                                 </children>
+                              </VBox>
+                           </left>
+                          </BorderPane>
+                     </bottom>
+                  </BorderPane>
+               </content>
+          </TitledPane>
+          <TitledPane fx:id="filters" text="Filters">
+            <content>
+              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0">
                      <children>
-                        <CheckBox mnemonicParsing="false" />
-                        <Button fx:id="filterButton" mnemonicParsing="false" text="Filter" />
+                        <DatePicker layoutX="14.0" layoutY="14.0" />
                      </children>
-                  </HBox>
-                  <Button fx:id="downloadButton" mnemonicParsing="false" text="Download" />
-               </children>
-            </VBox>
-         </right>
-         <left>
-            <VBox alignment="BOTTOM_LEFT" BorderPane.alignment="CENTER">
-               <children>
-                  <Button mnemonicParsing="false" text="Back" />
-               </children>
-            </VBox>
-         </left>
-        </BorderPane>
-    </bottom>
-   <padding>
-      <Insets bottom="8.0" left="8.0" right="8.0" />
-   </padding>
+                  </AnchorPane>
+            </content>
+          </TitledPane>
+        </panes>
+      </Accordion>
+   </center>
 </BorderPane>
