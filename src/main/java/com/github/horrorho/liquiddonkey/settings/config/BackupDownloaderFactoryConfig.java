@@ -23,8 +23,10 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.Property;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.commons.configuration.Configuration;
 
 /**
  * BackupDownloaderFactory configuration.
@@ -35,8 +37,8 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class BackupDownloaderFactoryConfig {
 
-    public static BackupDownloaderFactoryConfig newInstance(CommandLineHelper helper) {
-        return newInstance(helper.line().hasOption(Args.AGGRESSIVE));
+    public static BackupDownloaderFactoryConfig newInstance(Configuration config) {
+        return newInstance(config.getBoolean(Property.ENGINE_AGGRESSIVE.toString()));
     }
 
     public static BackupDownloaderFactoryConfig newInstance(boolean toHuntFirstSnapshot) {

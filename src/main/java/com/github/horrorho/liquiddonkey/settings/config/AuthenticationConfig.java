@@ -25,6 +25,7 @@ package com.github.horrorho.liquiddonkey.settings.config;
 
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.commons.cli.CommandLine;
 
 /**
  * Authentication configuration.
@@ -35,10 +36,10 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class AuthenticationConfig {
 
-    public static AuthenticationConfig newInstance(CommandLineHelper helper) {
+    public static AuthenticationConfig newInstance(CommandLine cmd) {
         return AuthenticationConfig.newInstance(
-                helper.line().getArgList().get(0),
-                helper.line().getArgList().get(1));
+                cmd.getArgList().get(0),
+                cmd.getArgList().get(1));
     }
 
     public static AuthenticationConfig newInstance(String id, String password) {

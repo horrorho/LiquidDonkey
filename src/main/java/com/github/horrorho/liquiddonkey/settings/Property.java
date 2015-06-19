@@ -23,152 +23,102 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
-import net.jcip.annotations.Immutable;
-import net.jcip.annotations.ThreadSafe;
-import org.slf4j.LoggerFactory;
 
 /**
- * Global constants.
  *
  * @author Ahseya
  */
-@Immutable
-@ThreadSafe
-public class Property {
+public enum Property {
 
-    @Immutable
-    @ThreadSafe
-    public enum Bool {
+    CONFIG_PREFIX_ITEM_TYPE("ITEM_TYPE"),
+    ENGINE_BATCH_SIZE_MINIMUM("4194304"),
+    ENGINE_CHUNK_LIST_DOWNLOADER_RETRY("1"),
+    ENGINE_CHUNK_LIST_DOWNLOADER_RETRY_AGGRESSIVE("2"),
+    DONKEY_RETRY_DELAY_MS("1000"),
+    ENGINE_THREAD_STAGGER_DELAY("1000"),
+    ENGINE_THREAD_COUNT("4"),
+    ENGINE_AGGRESSIVE("false"),
+    ENGINE_PERSISTENT("false"),
+    ENGINE_PRINT_STACK_TRACE("false"),
+    FILE_COMBINED("false"),
+    FILE_FORCE("false"), // TODO
+    FILE_FLAT("false"),
+    FILE_OUTPUT_DIRECTORY("ouput"),
+    FILE_SET_LAST_MODIFIED_TIMESTAMP("true"),
+    FILTER_DATE_MIN("0000-01-01"),
+    FILTER_DATE_MAX("3000-01-01"), // TODO figure out max date
+    FILTER_DOMAIN(""),
+    FILTER_EXTENSION(""),
+    FILTER_ITEM_TYPES(""),
+    FILTER_RELATIVE_PATH(""),
+    FILTER_SIZE_MIN("0"),
+    FILTER_SIZE_MAX(Long.toString(Long.MAX_VALUE / 1024)),
+    HTTP_DEFAULT_USER_AGENT("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0"),
+    HTTP_MAX_CONNECTIONS("32"),
+    HTTP_RETRY_COUNT("3"),
+    HTTP_RETRY_COUNT_PERSISTENT("60"),
+    HTTP_RETRY_DELAY_MS("100"),
+    HTTP_RETRY_DELAY_MS_PERSISTENT("1000"),
+    HTTP_RELAX_SSL("false"),
+    HTTP_SOCKET_TIMEOUT_RETRY_COUNT("1"),
+    HTTP_SOCKET_TIMEOUT_RETRY_COUNT_PERSISTENT("12"),
+    HTTP_TIMEOUT_MS("30000"),
+    HTTP_VALID_AFTER_INACTIVITY_MS("30000"),
+    ITEM_TYPE_ADDRESS_BOOK("addressbook.sqlitedb"),
+    ITEM_TYPE_CALENDAR("calendar.sqlitedb"),
+    ITEM_TYPE_CALL_HISTORY("call_history.db"),
+    ITEM_TYPE_PHOTOS(".jpg,.jpeg"),
+    ITEM_TYPE_MOVIES(".mov,.mp4,.avi"),
+    ITEM_TYPE_PNG(".png"),
+    ITEM_TYPE_SMS("sms.db"),
+    ITEM_TYPE_VOICEMAILS("voicemail"),
+    ITEM_TYPE_NOTES("notes"),
+    PROJECT_VERSION(""),
+    SELECTION_SNAPSHOT("1,-1,-2"),
+    SELECTION_UDID("");
 
-        SET_LAST_MODIFIED_TIMESTAMP(true);
+//    private static final Map<String, Property> optToSetting
+//            = Stream.of(Property.values())
+//            .map(setting
+//                    -> Arrays.asList(
+//                            new SimpleEntry<>(setting.option().getOpt(), setting),
+//                            new SimpleEntry<>(setting.option().getLongOpt(), setting)))
+//            .flatMap(List::stream)
+//            .filter(entry -> entry.getKey() != null)
+//            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+//
+//    private static final List<Setting> itemTypes
+//            = Stream.of(Property.values())
+//            .filter(setting -> setting.name().toLowerCase(Locale.US).startsWith("item_type"))
+//            .collect(Collectors.toList());
+//
+//    public static List<Setting> itemTypes() {
+//        return new ArrayList<>(itemTypes);
+//    }
+//
+//    public static Options options() {
+//        Options options = new Options();
+//        Stream.of(Property.values())
+//                .map(Property::option)
+//                .filter(Objects::nonNull)
+//                .forEach(options::addOption);
+//        return options;
+//    }
+//    public static Property setting(String opt) {
+//        return optToSetting.get(opt);
+//    }
+    private final String defaultValue;
 
-        private final boolean value;
-
-        private Bool(boolean defaultValue) {
-            value = parseBoolean(name(), defaultValue);
-        }
-
-        public boolean bool() {
-            return value;
-        }
+    private Property(String defaultValue) {
+        this.defaultValue = defaultValue;
     }
 
-    @Immutable
-    @ThreadSafe
-    public enum Int {
-
-        BATCH_SIZE_MINIMUM(4194304),
-        CHUNK_LIST_DOWNLOADER_AGGRESSIVE_RETRY(2),
-        DONKEY_EXECUTOR_AGGRESSIVE_RETRY(2),
-        DONKEY_RETRY_DELAY_MS(60000),
-        HTTP_MAX_CONNECTIONS(32),
-        HTTP_TIMEOUT_MS(60000),
-        HTTP_VALID_AFTER_INACTIVITY_MS(60000),
-        HTTP_RETRY_COUNT(3),
-        HTTP_RETRY_DELAY_MS(100),
-        HTTP_PERSISTENT_RETRY_COUNT(12),
-        HTTP_PERSISTENT_RETRY_DELAY_MS(5000),
-        HTTP_PERSISTENT_SOCKET_TIMEOUT_RETRY_COUNT(3),
-        HTTP_SOCKET_TIMEOUT_RETRY_COUNT(1),
-        THREAD_COUNT(4),
-        THREAD_STAGGER_DELAY(100),
-        LIST_FILES_LIMIT(4096);
-
-        private final int value;
-
-        private Int(int defaultValue) {
-            value = parseInteger(name(), defaultValue);
-        }
-
-        public int integer() {
-            return value;
-        }
+    public String getDefaultValue() {
+        return defaultValue;
     }
 
-    @Immutable
-    @ThreadSafe
-    public enum ItemType {
-
-        ADDRESS_BOOK("addressbook.sqlitedb"),
-        CALENDAR("calendar.sqlitedb"),
-        CALL_HISTORY("call_history.db"),
-        PHOTOS(".jpg", ".jpeg"),
-        MOVIES(".mov", ".mp4", ".avi"),
-        PNG(".png"),
-        SMS("sms.db"),
-        VOICEMAILS("voicemail"),
-        NOTES("notes");
-
-        private final List<String> relativePaths;
-
-        private ItemType(String... defaultValues) {
-            relativePaths = list("item_type", name(), defaultValues);
-        }
-
-        public List<String> relativePaths() {
-            return new ArrayList<>(relativePaths);
-        }
-    }
-
-    @Immutable
-    @ThreadSafe
-    public enum Str {
-
-        HTTP_DEFAULT_USER_AGENT("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0"),
-        PROJECT_VERSION("N/A"),
-        OUTPUT_DIRECTORY("");
-
-        private final String value;
-
-        private Str(String defaultValue) {
-            value = property(name(), defaultValue);
-        }
-
-        public String string() {
-            return value;
-        }
-    }
-
-    static boolean parseBoolean(String property, boolean defaultValue) {
-        String value = property(property, null);
-        return value == null
-                ? defaultValue
-                : Boolean.parseBoolean(value);
-    }
-
-    static int parseInteger(String property, int defaultValue) {
-        String value = property(property, null);
-        if (value == null) {
-            return defaultValue;
-        }
-        try {
-            return Integer.parseInt(value);
-        } catch (NumberFormatException ex) {
-            LoggerFactory.getLogger(Property.class).warn("-- parseInteger() > bad integer, property: {}", property);
-            return defaultValue;
-        }
-    }
-
-    static List<String> list(String prefix, String name, String... defaultValues) {
-        String values = property(prefix + "." + name, null);
-        return values == null
-                ? Arrays.asList(defaultValues)
-                : Arrays.asList(values.split("\\s")).stream().collect(Collectors.toList());
-    }
-
-    static String property(String name, String defaultValue) {
-        String value = SettingsProperties.INSTANCE.getProperty(name.toLowerCase(Locale.getDefault()));
-        if (value == null) {
-            LoggerFactory.getLogger(Property.class)
-                    .warn("-- property() > missing property: {}", name.toLowerCase(Locale.getDefault()));
-            return defaultValue;
-        } else {
-            return value;
-        }
+    public String key() {
+        return name();
     }
 }

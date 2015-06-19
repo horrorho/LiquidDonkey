@@ -26,6 +26,7 @@ package com.github.horrorho.liquiddonkey.settings.config;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.commons.configuration.Configuration;
 
 /**
  * DonkeyFactory configuration.
@@ -36,13 +37,12 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class DonkeyFactoryConfig {
 
-    public static DonkeyFactoryConfig newInstance(CommandLineHelper helper) {
+    public static DonkeyFactoryConfig newInstance(Configuration config) {
 
-        return DonkeyFactoryConfig.newInstance(
-                helper.line().hasOption(Args.AGGRESSIVE),
-                helper.line().hasOption(Args.FORCE),
-                Property.Bool.SET_LAST_MODIFIED_TIMESTAMP.bool(),
-                Property.Int.BATCH_SIZE_MINIMUM.integer());
+        return DonkeyFactoryConfig.newInstance(config.getBoolean(Property.ENGINE_AGGRESSIVE.toString()),
+                config.getBoolean(Property.FILE_FORCE.toString()),
+                config.getBoolean(Property.FILE_SET_LAST_MODIFIED_TIMESTAMP.toString()),
+                config.getInt(Property.ENGINE_BATCH_SIZE_MINIMUM.toString()));
     }
 
     public static DonkeyFactoryConfig newInstance(

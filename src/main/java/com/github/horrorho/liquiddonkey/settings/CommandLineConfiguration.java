@@ -23,12 +23,44 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
+import java.util.Iterator;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.commons.configuration.BaseConfiguration;
+
 /**
+ * CommandLineConfiguration.
  *
  * @author Ahseya
  */
-public class Prop {
-    public final Properties properties;
-    
-    
+public class CommandLineConfiguration extends BaseConfiguration {
+
+    public static CommandLineConfiguration newInstance(CommandLine cmd, CommandLineOptions options) {
+        CommandLineConfiguration instance = new CommandLineConfiguration();
+
+        Iterator<Option> it = cmd.iterator();
+
+        while (it.hasNext()) {
+            Option option = it.next();
+
+            String opt = option.hasLongOpt()
+                    ? option.getLongOpt()
+                    : option.getOpt();
+
+            String key = options.property(option).key();
+
+            if (option.hasArgs()) {
+                instance.addPropertyDirect(key, cmd.getOptionValues(opt));
+            } else if (option.hasArg()) {
+                instance.addPropertyDirect(key, cmd.getOptionValue(opt));
+            } else {
+                instance.addPropertyDirect(key, true);
+            }
+        }
+
+        return instance;
+    }
+
+    protected CommandLineConfiguration() {
+    }
 }

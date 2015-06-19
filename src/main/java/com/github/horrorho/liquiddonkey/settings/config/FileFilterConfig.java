@@ -23,12 +23,12 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import java.util.ArrayList;
+import com.github.horrorho.liquiddonkey.settings.Property;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
@@ -41,22 +41,28 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class FileFilterConfig {
 
-    public static FileFilterConfig newInstance(CommandLineHelper helper) {
+    public static FileFilterConfig newInstance(PropertyConfiguration config) {
+        ItemTypes itemTypes = ItemTypes.newInstance(config);
 
-        Set<String> relativePath = new HashSet<>(helper.getOptionList(Args.RELATIVE_PATH, Arrays.asList()));
+        Collection<String> relativePath
+                = Arrays.asList(config.getStringArray(Property.FILTER_RELATIVE_PATH.toString()));
 
-        helper.getOptionList(Args.ITEM_TYPES, new ArrayList<>(), helper.itemTypeRelativePaths())
-                .stream().flatMap(List::stream).forEach(relativePath::add);
+        relativePath.addAll(itemTypes.paths(config.getStringArray(Property.FILTER_ITEM_TYPES.key())));
+
+        Collection<String> extensions
+                = Arrays.asList(config.getStringArray(Property.FILTER_EXTENSION.toString())).stream()
+                .map(ext -> ext.startsWith(".") ? ext : "." + ext)
+                .collect(Collectors.toSet());
 
         return newInstance(
-                helper.getOptionList(Args.DOMAIN, Arrays.asList("")),
-                relativePath,
-                helper.getOptionList(Args.EXTENSION, Arrays.asList(""), helper.asExtension()),
-                helper.getOptionValue(Args.MAX_DATE, Long.MAX_VALUE, helper.asTimestamp()),
-                helper.getOptionValue(Args.MIN_DATE, Long.MIN_VALUE, helper.asTimestamp()),
+                Arrays.asList(config.getStringArray(Property.FILTER_DOMAIN.toString())),
+                Arrays.asList(config.getStringArray(Property.FILTER_RELATIVE_PATH.toString())),
+                extensions,
+                config.get(Property.FILTER_DATE_MAX, config.asTimestamp()),
+                config.get(Property.FILTER_DATE_MIN, config.asTimestamp()),
                 // * 1024 as kilobytes to bytes
-                helper.getOptionValue(Args.MAX_SIZE, Long.MAX_VALUE / 1024, helper.asLong()) * 1024,
-                helper.getOptionValue(Args.MIN_SIZE, 0L, helper.asLong()) * 1024);
+                config.getLong(Property.FILTER_SIZE_MAX.key()) * 1024,
+                config.getLong(Property.FILTER_SIZE_MIN.key()) * 1024);
     }
 
     public static FileFilterConfig newInstance(

@@ -51,7 +51,7 @@ public final class PropertiesConfigurationFactory {
 
     public synchronized PropertiesConfiguration settings() throws ConfigurationException {
         return settings == null
-                ? new PropertiesConfiguration(PropertiesConfiguration.class.getResource(SETTINGS))
+                ? new PropertiesConfiguration(PropertiesConfiguration.class.getResource(settingsUrl))
                 : settings;
     }
 

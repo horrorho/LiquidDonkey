@@ -24,11 +24,11 @@
 package com.github.horrorho.liquiddonkey.settings.config;
 
 import com.github.horrorho.liquiddonkey.settings.Property;
-import static com.github.horrorho.liquiddonkey.settings.config.Args.OUTPUT;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.commons.configuration.Configuration;
 
 /**
  * Directory configuration.
@@ -39,18 +39,14 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class DirectoryConfig {
 
-    public static DirectoryConfig newInstance(CommandLineHelper helper) {
-        return newInstance(Paths.get(helper.line().getOptionValue(OUTPUT, defaultOutput())),
-                helper.line().hasOption(Args.COMBINED),
-                helper.line().hasOption(Args.ITUNES_STYLE));
+    public static DirectoryConfig newInstance(Configuration config) {
+        return newInstance(Paths.get(config.getString(Property.FILE_OUTPUT_DIRECTORY.toString())),
+                config.getBoolean(Property.FILE_COMBINED.toString()),
+                config.getBoolean(Property.FILE_FLAT.toString()));
     }
 
     public static DirectoryConfig newInstance(Path base, boolean isCombined, boolean isFlat) {
-        return new DirectoryConfig(base, isCombined, isFlat);
-    }
-
-    static String defaultOutput() {
-        return Paths.get(Property.Str.OUTPUT_DIRECTORY.string()).toAbsolutePath().toString();
+        return new DirectoryConfig(base.toAbsolutePath(), isCombined, isFlat);
     }
 
     private final Path base;

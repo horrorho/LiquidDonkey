@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.settings;
+package com.github.horrorho.liquiddonkey.settings.old;
 
 import com.github.horrorho.liquiddonkey.settings.config.ConfigFactory;
 import java.io.IOException;

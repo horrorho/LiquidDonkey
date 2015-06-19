@@ -26,6 +26,7 @@ package com.github.horrorho.liquiddonkey.settings.config;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.commons.cli.CommandLine;
 
 /**
  * Configuration.
@@ -36,17 +37,17 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class Config {
 
-    public static Config newInstance(CommandLineHelper line) {
+    public static Config newInstance(CommandLine commandLine, PropertyConfiguration config) {
         return newInstance(
-                AuthenticationConfig.newInstance(line),
-                BackupDownloaderFactoryConfig.newInstance(line),
-                DirectoryConfig.newInstance(line),
-                DonkeyExecutorConfig.newInstance(line),
-                DonkeyFactoryConfig.newInstance(line),
-                FileFilterConfig.newInstance(line),
-                HttpConfig.newInstance(line),
-                PrintConfig.newInstance(line),
-                SelectionConfig.newInstance(line));
+                AuthenticationConfig.newInstance(commandLine),
+                BackupDownloaderFactoryConfig.newInstance(config),
+                DirectoryConfig.newInstance(config),
+                DonkeyExecutorConfig.newInstance(config),
+                DonkeyFactoryConfig.newInstance(config),
+                FileFilterConfig.newInstance(config),
+                HttpConfig.newInstance(config),
+                PrintConfig.newInstance(config),
+                SelectionConfig.newInstance(config));
     }
 
     public static Config newInstance(

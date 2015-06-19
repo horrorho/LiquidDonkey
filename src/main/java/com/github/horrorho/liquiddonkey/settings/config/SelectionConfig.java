@@ -23,9 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import static com.github.horrorho.liquiddonkey.settings.config.Args.UDID;
-import java.util.ArrayList;
-import java.util.Arrays;
+import com.github.horrorho.liquiddonkey.settings.Property;
 import java.util.List;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
@@ -40,14 +38,11 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class SelectionConfig {
 
-    public static SelectionConfig newInstance(CommandLineHelper line) {
+    public static SelectionConfig newInstance(PropertyConfiguration config) {
 
         return newInstance(
-                line.line().hasOption(UDID)
-                        ? line.getOptionList(UDID, Arrays.asList(""), line.asHex())
-                        : new ArrayList<>(),
-                line.getOptionList(Args.SNAPSHOT, Arrays.asList(1, -2, -1), line.asInteger())
-        );
+                config.getList(Property.SELECTION_UDID, config.asHex()),
+                config.getList(Property.SELECTION_SNAPSHOT, config.asInteger()));
     }
 
     public static SelectionConfig newInstance(List<String> backups, List<Integer> snapshots) {

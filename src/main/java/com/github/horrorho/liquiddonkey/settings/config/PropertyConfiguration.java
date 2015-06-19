@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -30,17 +31,13 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import net.jcip.annotations.NotThreadSafe;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
+import org.apache.commons.configuration.CompositeConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,59 +47,50 @@ import org.slf4j.LoggerFactory;
  * @author Ahseya
  */
 @NotThreadSafe
-public class CommandLineHelper {
+public final class PropertyConfiguration extends CompositeConfiguration {
 
-    private static final Logger logger = LoggerFactory.getLogger(CommandLineHelper.class);
-    private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ISO_DATE;
+    private static final Logger logger = LoggerFactory.getLogger(PropertyConfiguration.class);
 
-    public static <T extends Supplier<Options>>
-            CommandLineHelper getInstance(Options options, String[] args) throws ParseException {
-
-        return getInstance(new DefaultParser().parse(options, args));
+    public static PropertyConfiguration newInstance(CommandLineOptions commandLineOptions) {
+        return new PropertyConfiguration(DateTimeFormatter.ISO_DATE, commandLineOptions);
     }
 
-    public static <T extends Supplier<Options>> CommandLineHelper getInstance(CommandLine commandLine) {
+    public static PropertyConfiguration newInstance(
+            DateTimeFormatter dateTimeFormatter,
+            CommandLineOptions commandLineOptions) {
 
-        return new CommandLineHelper(commandLine);
+        return new PropertyConfiguration(dateTimeFormatter, commandLineOptions);
     }
 
-    private final CommandLine line;
+    private final DateTimeFormatter dateTimeFormatter;
+    private final CommandLineOptions commandLineOptions;
 
-    CommandLineHelper(CommandLine line) {
-        this.line = line;
+    private PropertyConfiguration(DateTimeFormatter dateTimeFormatter, CommandLineOptions commandLineOptions) {
+        this.dateTimeFormatter = Objects.requireNonNull(dateTimeFormatter);
+        this.commandLineOptions = Objects.requireNonNull(commandLineOptions);
     }
 
-    public CommandLine line() {
-        return line;
+    public <T> T get(Property property, BiFunction<String, String, T> function) {
+        String opt = commandLineOptions.opt(property); // TODO where was it specified command line or property list?
+
+        return function.apply(opt, get(property));
     }
 
-    public <T> List<T> getOptionList(String option, List<T> defaultList, BiFunction<String, String, T> function) {
-        String[] values = line.getOptionValues(option);
+    public String get(Property property) {
+        return getString(property.key());
+    }
 
-        if (values == null) {
-            return defaultList;
-        }
+    public <T> List<T> getList(Property property, BiFunction<String, String, T> function) {
+        String opt = commandLineOptions.opt(property);
+        Function<String, T> parse = value -> function.apply(opt, value);
 
-        return Stream.of(line.getOptionValues(option))
-                .map(val -> function.apply(option, val))
+        return getList(property).stream()
+                .map(parse::apply)
                 .collect(Collectors.toList());
     }
 
-    public List<String> getOptionList(String option, List<String> defaultList) {
-        String[] values = line.getOptionValues(option);
-        return values == null
-                ? defaultList
-                : Arrays.asList(line.getOptionValues(option));
-    }
-
-    public <T> T getOptionValue(String option, T defaultValue, BiFunction<String, String, T> function) {
-        return line.hasOption(option)
-                ? function.apply(option, line.getOptionValue(option))
-                : defaultValue;
-    }
-
-    public BiFunction<String, String, String> asExtension() {
-        return (opt, val) -> val.startsWith(".") ? val : "." + val;
+    public List<String> getList(Property property) {
+        return Arrays.asList(getStringArray(property.key()));
     }
 
     public BiFunction<String, String, String> asHex() {
@@ -139,15 +127,7 @@ public class CommandLineHelper {
                 () -> illegalArgumentException("Bad date for " + opt + ": " + val));
     }
 
-    public BiFunction<String, String, List<String>> itemTypeRelativePaths() {
-        return (opt, val) -> parse(
-                val,
-                itemType -> Property.ItemType.valueOf(itemType.toUpperCase(Locale.getDefault())).relativePaths(),
-                IllegalArgumentException.class,
-                () -> illegalArgumentException("Unrecognized item-type: " + val));
-    }
-
-    protected static <T, E extends Exception> T
+    protected <T, E extends Exception> T
             parse(String value, Function<String, T> parser, Class<E> exceptionType, Supplier<T> exception) {
 
         try {
@@ -161,7 +141,7 @@ public class CommandLineHelper {
         }
     }
 
-    protected static <T> T illegalArgumentException(String message) {
+    protected <T> T illegalArgumentException(String message) {
         throw new IllegalArgumentException(message);
     }
 }
