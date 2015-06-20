@@ -23,10 +23,10 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.Configuration;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.commons.cli.CommandLine;
 
 /**
  * Configuration.

@@ -21,50 +21,33 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.settings.config;
+package com.github.horrorho.liquiddonkey.settings;
 
-import com.github.horrorho.liquiddonkey.settings.Configuration;
-import com.github.horrorho.liquiddonkey.settings.Property;
+import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
 /**
- * Authentication configuration.
  *
  * @author Ahseya
  */
 @Immutable
 @ThreadSafe
-public final class AuthenticationConfig {
+public final class PropertyConfiguration {
 
-    public static AuthenticationConfig newInstance(Configuration config) {
-        return AuthenticationConfig.newInstance(
-                config.get(Property.AUTHENTICATION_APPLEID),
-                config.get(Property.AUTHENTICATION_PASSWORD));
+    private static final PropertyConfiguration instance = new PropertyConfiguration();
+
+    public static PropertyConfiguration getInstance() {
+        return instance;
     }
 
-    public static AuthenticationConfig newInstance(String id, String password) {
-        return new AuthenticationConfig(id, password);
+    PropertyConfiguration() {
     }
 
-    private final String id;
-    private final String password;
-
-    private AuthenticationConfig(String id, String password) {
-        this.id = id;
-        this.password = password;
-    }
-
-    public String id() {
-        return id;
-    }
-
-    public String password() {
-        return password;
-    }
-
-    @Override
-    public String toString() {
-        return "AuthenticationConfig{" + "id=" + id + ", password=" + password + '}';
+    public Configuration properties() {
+        Configuration configuration = Configuration.newInstance();
+        Stream.of(Property.values())
+                .forEach(property -> configuration.setProperty(property.key(), property.getDefaultValue()));
+        return configuration;
     }
 }

@@ -23,7 +23,9 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.Configuration;
 import com.github.horrorho.liquiddonkey.settings.Property;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -44,7 +46,7 @@ public final class FileFilterConfig {
         ItemTypes itemTypes = ItemTypes.newInstance(config);
 
         Collection<String> relativePath
-                = config.getList(Property.FILTER_RELATIVE_PATH);
+                = new ArrayList<>(config.getList(Property.FILTER_RELATIVE_PATH));
 
         relativePath.addAll(itemTypes.paths(config.getList(Property.FILTER_ITEM_TYPES)));
 

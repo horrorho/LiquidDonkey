@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.cli.Option;
@@ -44,8 +43,8 @@ import org.apache.commons.cli.Options;
 @ThreadSafe
 public final class CommandLineOptions {
 
-    private static String HELP = "help";
-    private static String VERSION = "version";
+    private static final String HELP = "help";
+    private static final String VERSION = "version";
 
     private static final CommandLineOptions instance = newInstance();
 
@@ -85,14 +84,6 @@ public final class CommandLineOptions {
 
         options.put(FILE_OUTPUT_DIRECTORY,
                 new Option("o", "output", true, "Output folder."));
-
-        options.put(FILTER_DATE_MIN,
-                new Option(null, "min-date", true,
-                        "Minimum last-modified timestamp, ISO format date. E.g. 2000-12-31."));
-
-        options.put(FILTER_DATE_MAX,
-                new Option(null, "max-date", true,
-                        "Maximum last-modified timestamp ISO format date. E.g. 2000-12-31."));
 
         options.put(FILTER_DOMAIN,
                 Option.builder("d").longOpt("domain")
@@ -153,12 +144,12 @@ public final class CommandLineOptions {
     }
 
     static Map<String, Property> optToProperty(Map<Property, Option> options) {
-        return Stream.of(Property.values())
-                .map(property -> Arrays.asList(
-                                new SimpleEntry<>(options.get(property).getOpt(), property),
-                                new SimpleEntry<>(options.get(property).getLongOpt(), property)))
+        return options.entrySet().stream()
+                .map(set -> Arrays.asList(
+                                new SimpleEntry<>(set.getValue().getOpt(), set.getKey()),
+                                new SimpleEntry<>(set.getValue().getLongOpt(), set.getKey())))
                 .flatMap(List::stream)
-                .filter(entry -> entry.getKey() != null)
+                .filter(set -> set.getKey() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 

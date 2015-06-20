@@ -23,8 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
-import java.util.Locale;
-
 /**
  *
  * @author Ahseya
@@ -33,7 +31,7 @@ public enum Property {
 
     AUTHENTICATION_APPLEID(""),
     AUTHENTICATION_PASSWORD(""),
-    CONFIG_PREFIX_ITEM_TYPE("ITEM_TYPE"),
+    CONFIG_PREFIX_ITEM_TYPE("ITEM_TYPE_"),
     ENGINE_BATCH_SIZE_MINIMUM("4194304"),
     ENGINE_CHUNK_LIST_DOWNLOADER_RETRY("1"),
     ENGINE_CHUNK_LIST_DOWNLOADER_RETRY_AGGRESSIVE("2"),
@@ -70,46 +68,16 @@ public enum Property {
     ITEM_TYPE_ADDRESS_BOOK("addressbook.sqlitedb"),
     ITEM_TYPE_CALENDAR("calendar.sqlitedb"),
     ITEM_TYPE_CALL_HISTORY("call_history.db"),
-    ITEM_TYPE_PHOTOS(".jpg,.jpeg"),
-    ITEM_TYPE_MOVIES(".mov,.mp4,.avi"),
+    ITEM_TYPE_PHOTOS(".jpg .jpeg"),
+    ITEM_TYPE_MOVIES(".mov .mp4 .avi"),
     ITEM_TYPE_PNG(".png"),
     ITEM_TYPE_SMS("sms.db"),
     ITEM_TYPE_VOICEMAILS("voicemail"),
     ITEM_TYPE_NOTES("notes"),
     PROJECT_VERSION(""),
-    SELECTION_SNAPSHOT("1,-1,-2"),
+    SELECTION_SNAPSHOT("1 -1 -2"),
     SELECTION_UDID("");
 
-//    private static final Map<String, Property> optToSetting
-//            = Stream.of(Property.values())
-//            .map(setting
-//                    -> Arrays.asList(
-//                            new SimpleEntry<>(setting.option().getOpt(), setting),
-//                            new SimpleEntry<>(setting.option().getLongOpt(), setting)))
-//            .flatMap(List::stream)
-//            .filter(entry -> entry.getKey() != null)
-//            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-//
-//    private static final List<Setting> itemTypes
-//            = Stream.of(Property.values())
-//            .filter(setting -> setting.name().toLowerCase(Locale.US).startsWith("item_type"))
-//            .collect(Collectors.toList());
-//
-//    public static List<Setting> itemTypes() {
-//        return new ArrayList<>(itemTypes);
-//    }
-//
-//    public static Options options() {
-//        Options options = new Options();
-//        Stream.of(Property.values())
-//                .map(Property::option)
-//                .filter(Objects::nonNull)
-//                .forEach(options::addOption);
-//        return options;
-//    }
-//    public static Property setting(String opt) {
-//        return optToSetting.get(opt);
-//    }
     private final String defaultValue;
 
     private Property(String defaultValue) {

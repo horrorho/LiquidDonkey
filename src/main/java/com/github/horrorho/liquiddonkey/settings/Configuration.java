@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.settings.config;
+package com.github.horrorho.liquiddonkey.settings;
 
 import com.github.horrorho.liquiddonkey.settings.Property;
 import java.time.LocalDate;
@@ -57,6 +57,11 @@ public class Configuration extends Properties {
 
     Configuration(DateTimeFormatter dateTimeFormatter) {
         this.dateTimeFormatter = Objects.requireNonNull(dateTimeFormatter);
+    }
+
+    public Configuration addAll(Properties properties) {
+        properties.forEach((key, value) -> setProperty(key.toString(), value.toString()));
+        return this;
     }
 
     public <T> T get(Property property, Function<String, T> function) {

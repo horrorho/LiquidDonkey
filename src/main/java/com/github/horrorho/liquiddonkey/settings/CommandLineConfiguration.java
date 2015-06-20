@@ -25,7 +25,6 @@ package com.github.horrorho.liquiddonkey.settings;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Properties;
 import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -55,7 +54,7 @@ public final class CommandLineConfiguration {
     CommandLineConfiguration() {
     }
 
-    public Properties properties(
+    public Configuration properties(
             CommandLineOptions commandLineOptions,
             String[] args,
             String version
@@ -88,10 +87,10 @@ public final class CommandLineConfiguration {
                 throw new ParseException("Too many non-optional arguments, expected appleid and password only.");
         }
 
-        Properties properties = new Properties();
+        Configuration configuration = Configuration.newInstance();
 
-        properties.setProperty(Property.AUTHENTICATION_APPLEID.key(), cmd.getArgList().get(0));
-        properties.setProperty(Property.AUTHENTICATION_PASSWORD.key(), cmd.getArgList().get(1));
+        configuration.setProperty(Property.AUTHENTICATION_APPLEID.key(), cmd.getArgList().get(0));
+        configuration.setProperty(Property.AUTHENTICATION_PASSWORD.key(), cmd.getArgList().get(1));
 
         Iterator<Option> it = cmd.iterator();
 
@@ -101,20 +100,20 @@ public final class CommandLineConfiguration {
             String key = commandLineOptions.property(option).key();
 
             if (option.hasArgs()) {
-                properties.setProperty(
+                configuration.setProperty(
                         key,
                         Arrays.asList(cmd.getOptionValues(opt)).stream().collect(Collectors.joining(" ")));
             } else if (option.hasArg()) {
-                properties.setProperty(
+                configuration.setProperty(
                         key,
                         cmd.getOptionValue(opt));
             } else {
-                properties.setProperty(
+                configuration.setProperty(
                         key,
                         Boolean.toString(cmd.hasOption(opt)));
             }
         }
 
-        return properties;
+        return configuration;
     }
 }

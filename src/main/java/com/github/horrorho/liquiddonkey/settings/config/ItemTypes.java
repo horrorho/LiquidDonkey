@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.Configuration;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -48,18 +49,14 @@ public final class ItemTypes {
 
     static Map<String, Set<String>> itemTypeToPaths(Configuration config) {
         String itemTypePrefix = config.get(Property.CONFIG_PREFIX_ITEM_TYPE);
-        int subString = itemTypePrefix.length();
+        int prefixLength = itemTypePrefix.length();
 
-        return Arrays.asList(Property.values()).stream()
-                .filter(property -> property.name().startsWith(itemTypePrefix))
+        return config.entrySet().stream()
+                .filter(property -> property.getKey().toString().startsWith(itemTypePrefix))
                 .collect(
                         Collectors.toMap(
-                                property -> property.name().substring(subString).toLowerCase(Locale.US),
-                                property -> paths(property, config)));
-    }
-
-    static Set<String> paths(Property property, Configuration config) {
-        return new HashSet<>(config.getList(property));
+                                property -> property.getKey().toString().substring(prefixLength).toLowerCase(Locale.US),
+                                property -> new HashSet<>(Arrays.asList(property.getValue().toString().split("\\s")))));
     }
 
     private final Map<String, Set<String>> itemTypeToPaths;
@@ -69,7 +66,11 @@ public final class ItemTypes {
     }
 
     public Set<String> paths(String itemType) {
-        return itemTypeToPaths.get(itemType.toLowerCase(Locale.US));
+        Set<String> paths = itemTypeToPaths.get(itemType.toLowerCase(Locale.US));
+        if (paths == null) {
+            throw new IllegalArgumentException("unknown item type: " + itemType);
+        }
+        return paths;
     }
 
     public Set<String> paths(List<String> itemTypes) {

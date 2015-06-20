@@ -33,19 +33,19 @@ import net.jcip.annotations.ThreadSafe;
  * @author Ahseya
  */
 @ThreadSafe
-public final class PropertiesConfiguration {
+public final class FileConfiguration {
 
     private static final String URL = "/settings.properties";
 
-    private static final PropertiesConfiguration instance = new PropertiesConfiguration(URL);
+    private static final FileConfiguration instance = new FileConfiguration(URL);
 
-    public static PropertiesConfiguration getInstance() {
+    public static FileConfiguration getInstance() {
         return instance;
     }
 
     private final String url;
 
-    PropertiesConfiguration(String url) {
+    FileConfiguration(String url) {
         this.url = url;
     }
 

@@ -23,9 +23,11 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.Configuration;
 import com.github.horrorho.liquiddonkey.settings.CommandLineConfiguration;
 import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
-import com.github.horrorho.liquiddonkey.settings.PropertiesConfiguration;
+import com.github.horrorho.liquiddonkey.settings.FileConfiguration;
+import com.github.horrorho.liquiddonkey.settings.PropertyConfiguration;
 import java.io.IOException;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -55,27 +57,31 @@ public final class ConfigFactory {
     }
 
     public Config from(String[] args) {
-        logger.trace("<< parse() < {}", (Object) args);
+        logger.trace("<< from() < {}", (Object) args);
         try {
 
-            Configuration configuration = Configuration.newInstance();
-
             try {
-                Properties file = PropertiesConfiguration.getInstance().properties();
+                Properties file = FileConfiguration.getInstance().properties();
             } catch (IOException ex) {
                 java.util.logging.Logger.getLogger(ConfigFactory.class.getName()).log(Level.SEVERE, null, ex);
             }
 
-            Properties properties = CommandLineConfiguration.newInstance().properties(CommandLineOptions.getInstance(), args, "1");
+            Configuration configuration = PropertyConfiguration.getInstance().properties();
+//configuration.forEach((k, v) -> System.out.println(k + "=" + v));
+            configuration.addAll(
+                    CommandLineConfiguration.newInstance().properties(CommandLineOptions.getInstance(), args, "1"));
 
-            properties.forEach((k, v) -> System.out.println(k + "=" + v));
+            configuration.forEach((k, v) -> System.out.println(k + "=" + v));
+            System.out.println("config>>>");
 
             Config config = Config.newInstance(configuration);
-
-            logger.trace(">> parse() > {}", config);
+            System.out.println("config<<<");
+            System.exit(0);
+            logger.trace(">> from() > {}", config);
             return config;
 
         } catch (ParseException | IllegalArgumentException ex) {
+            logger.trace("-- from() > exception: ", ex);
             System.out.println(ex.getLocalizedMessage());
             System.out.println("Try '--help' for more information.");
             return null;
