@@ -25,15 +25,14 @@ package com.github.horrorho.liquiddonkey.settings;
 
 import java.util.Iterator;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option;
-import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.cli.Option; 
 
 /**
  * CommandLineConfiguration.
  *
  * @author Ahseya
  */
-public class CommandLineConfiguration extends BaseConfiguration {
+public class CommandLineConfiguration {
 
     public static CommandLineConfiguration newInstance(CommandLine cmd, CommandLineOptions options) {
         CommandLineConfiguration instance = new CommandLineConfiguration();

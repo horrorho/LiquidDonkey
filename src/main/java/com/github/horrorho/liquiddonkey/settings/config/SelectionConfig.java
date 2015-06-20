@@ -38,7 +38,7 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class SelectionConfig {
 
-    public static SelectionConfig newInstance(PropertyConfiguration config) {
+    public static SelectionConfig newInstance(Configuration config) {
 
         return newInstance(
                 config.getList(Property.SELECTION_UDID, config.asHex()),

@@ -41,7 +41,7 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class FileFilterConfig {
 
-    public static FileFilterConfig newInstance(PropertyConfiguration config) {
+    public static FileFilterConfig newInstance(Configuration config) {
         ItemTypes itemTypes = ItemTypes.newInstance(config);
 
         Collection<String> relativePath

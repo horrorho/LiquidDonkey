@@ -37,7 +37,7 @@ import org.apache.commons.cli.CommandLine;
 @ThreadSafe
 public final class Config {
 
-    public static Config newInstance(CommandLine commandLine, PropertyConfiguration config) {
+    public static Config newInstance(CommandLine commandLine, Configuration config) {
         return newInstance(
                 AuthenticationConfig.newInstance(commandLine),
                 BackupDownloaderFactoryConfig.newInstance(config),

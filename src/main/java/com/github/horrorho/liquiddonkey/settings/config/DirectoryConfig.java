@@ -28,7 +28,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.commons.configuration.Configuration;
 
 /**
  * Directory configuration.
@@ -40,9 +39,9 @@ import org.apache.commons.configuration.Configuration;
 public final class DirectoryConfig {
 
     public static DirectoryConfig newInstance(Configuration config) {
-        return newInstance(Paths.get(config.getString(Property.FILE_OUTPUT_DIRECTORY.toString())),
-                config.getBoolean(Property.FILE_COMBINED.toString()),
-                config.getBoolean(Property.FILE_FLAT.toString()));
+        return newInstance(Paths.get(config.get(Property.FILE_OUTPUT_DIRECTORY)),
+                config.get(Property.FILE_COMBINED, config.asBoolean()),
+                config.get(Property.FILE_FLAT, config.asBoolean()));
     }
 
     public static DirectoryConfig newInstance(Path base, boolean isCombined, boolean isFlat) {

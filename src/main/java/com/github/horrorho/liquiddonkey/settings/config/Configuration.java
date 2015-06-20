@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -32,12 +31,11 @@ import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.BiFunction;
+import java.util.Properties;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.jcip.annotations.NotThreadSafe;
-import org.apache.commons.configuration.CompositeConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,84 +45,78 @@ import org.slf4j.LoggerFactory;
  * @author Ahseya
  */
 @NotThreadSafe
-public final class PropertyConfiguration extends CompositeConfiguration {
+public class Configuration extends Properties {
 
-    private static final Logger logger = LoggerFactory.getLogger(PropertyConfiguration.class);
+    private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
 
-    public static PropertyConfiguration newInstance(CommandLineOptions commandLineOptions) {
-        return new PropertyConfiguration(DateTimeFormatter.ISO_DATE, commandLineOptions);
-    }
-
-    public static PropertyConfiguration newInstance(
-            DateTimeFormatter dateTimeFormatter,
-            CommandLineOptions commandLineOptions) {
-
-        return new PropertyConfiguration(dateTimeFormatter, commandLineOptions);
+    public static Configuration newInstance() {
+        return new Configuration(DateTimeFormatter.ISO_DATE);
     }
 
     private final DateTimeFormatter dateTimeFormatter;
-    private final CommandLineOptions commandLineOptions;
 
-    private PropertyConfiguration(DateTimeFormatter dateTimeFormatter, CommandLineOptions commandLineOptions) {
+    Configuration(DateTimeFormatter dateTimeFormatter) {
         this.dateTimeFormatter = Objects.requireNonNull(dateTimeFormatter);
-        this.commandLineOptions = Objects.requireNonNull(commandLineOptions);
     }
 
-    public <T> T get(Property property, BiFunction<String, String, T> function) {
-        String opt = commandLineOptions.opt(property); // TODO where was it specified command line or property list?
-
-        return function.apply(opt, get(property));
+    public <T> T get(Property property, Function<String, T> function) {
+        return function.apply(get(property));
     }
 
     public String get(Property property) {
-        return getString(property.key());
+        String value = getProperty(property.key());
+        if (value == null) {
+            illegalArgumentException("missing property: " + property);
+        }
+        return value;
     }
 
-    public <T> List<T> getList(Property property, BiFunction<String, String, T> function) {
-        String opt = commandLineOptions.opt(property);
-        Function<String, T> parse = value -> function.apply(opt, value);
-
+    public <T> List<T> getList(Property property, Function<String, T> function) {
         return getList(property).stream()
-                .map(parse::apply)
+                .map(function::apply)
                 .collect(Collectors.toList());
     }
 
     public List<String> getList(Property property) {
-        return Arrays.asList(getStringArray(property.key()));
+        return Arrays.asList(get(property).split("\\s"));
     }
 
-    public BiFunction<String, String, String> asHex() {
-        return (opt, val) -> val.matches("^[0-9a-fA-F]+$")
+    public Function<String, Boolean> asBoolean() {
+        return Boolean::parseBoolean;
+    }
+
+    public Function<String, String> asHex() {
+        return val -> val.matches("^[0-9a-fA-F]+$")
                 ? val
-                : illegalArgumentException("Bad hex value for " + opt + ": " + val);
+                : illegalArgumentException("bad hex: " + val);
     }
 
-    public BiFunction<String, String, Double> asDouble() {
+    public Function<String, Double> asDouble() {
         return asNumber(Double::parseDouble);
     }
 
-    public BiFunction<String, String, Integer> asInteger() {
+    public Function<String, Integer> asInteger() {
         return asNumber(Integer::parseInt);
     }
 
-    public BiFunction<String, String, Long> asLong() {
+    public Function<String, Long> asLong() {
         return asNumber(Long::parseLong);
     }
 
-    public <T extends Number> BiFunction<String, String, T> asNumber(Function<String, T> parser) {
-        return (opt, val) -> parse(
+    public <T extends Number> Function<String, T> asNumber(Function<String, T> parser) {
+        return val -> parse(
                 val,
                 parser,
                 NumberFormatException.class,
-                () -> illegalArgumentException("Bad number for " + opt + ": " + val));
+                () -> illegalArgumentException("bad number: " + val));
     }
 
-    public BiFunction<String, String, Long> asTimestamp() {
-        return (opt, val) -> parse(
+    public Function<String, Long> asTimestamp() {
+        return val -> parse(
                 val,
                 date -> LocalDate.parse(date, dateTimeFormatter).atStartOfDay(ZoneId.systemDefault()).toEpochSecond(),
                 DateTimeParseException.class,
-                () -> illegalArgumentException("Bad date for " + opt + ": " + val));
+                () -> illegalArgumentException("bad date: " + val));
     }
 
     protected <T, E extends Exception> T

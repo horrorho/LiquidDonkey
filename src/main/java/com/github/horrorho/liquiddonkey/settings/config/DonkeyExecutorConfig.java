@@ -26,7 +26,6 @@ package com.github.horrorho.liquiddonkey.settings.config;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.commons.configuration.Configuration;
 
 /**
  * DonkeyExecutor configuration.
@@ -38,7 +37,8 @@ import org.apache.commons.configuration.Configuration;
 public final class DonkeyExecutorConfig {
 
     public static DonkeyExecutorConfig newInstance(Configuration config) {
-        return newInstance(config.getInt(Property.ENGINE_THREAD_COUNT.toString()),
+        return newInstance(
+                config.get(Property.ENGINE_THREAD_COUNT, config.asInteger()),
                 config.getInt(Property.ENGINE_THREAD_STAGGER_DELAY.toString()),
                 config.getBoolean(Property.ENGINE_AGGRESSIVE.toString())
                         ? 2 // TODO
