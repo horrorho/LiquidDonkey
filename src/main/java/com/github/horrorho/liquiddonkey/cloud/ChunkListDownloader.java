@@ -27,7 +27,6 @@ import com.github.horrorho.liquiddonkey.cloud.store.MemoryStore;
 import com.github.horrorho.liquiddonkey.cloud.store.ChunkListStore;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import com.github.horrorho.liquiddonkey.settings.old.Property;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,7 +55,7 @@ public class ChunkListDownloader {
                 client,
                 ChunkDecrypter.newInstance(),
                 isAggressive
-                        ? Property.Int.CHUNK_LIST_DOWNLOADER_AGGRESSIVE_RETRY.integer()
+                        ? 2 //TODO Property.Int.CHUNK_LIST_DOWNLOADER_AGGRESSIVE_RETRY.integer()
                         : 1);
     }
 

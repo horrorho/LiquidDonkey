@@ -26,13 +26,13 @@ package com.github.horrorho.liquiddonkey.settings.config;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.commons.configuration.Configuration;
 
 /**
  *
@@ -47,7 +47,7 @@ public final class ItemTypes {
     }
 
     static Map<String, Set<String>> itemTypeToPaths(Configuration config) {
-        String itemTypePrefix = config.getString(Property.CONFIG_PREFIX_ITEM_TYPE.key());
+        String itemTypePrefix = config.get(Property.CONFIG_PREFIX_ITEM_TYPE);
         int subString = itemTypePrefix.length();
 
         return Arrays.asList(Property.values()).stream()
@@ -59,7 +59,7 @@ public final class ItemTypes {
     }
 
     static Set<String> paths(Property property, Configuration config) {
-        return new HashSet<>(Arrays.asList(config.getStringArray(property.key())));
+        return new HashSet<>(config.getList(property));
     }
 
     private final Map<String, Set<String>> itemTypeToPaths;
@@ -72,7 +72,7 @@ public final class ItemTypes {
         return itemTypeToPaths.get(itemType.toLowerCase(Locale.US));
     }
 
-    public Set<String> paths(String... itemTypes) {
-        return Arrays.asList(itemTypes).stream().map(this::paths).flatMap(Set::stream).collect(Collectors.toSet());
+    public Set<String> paths(List<String> itemTypes) {
+        return itemTypes.stream().map(this::paths).flatMap(Set::stream).collect(Collectors.toSet());
     }
 }

@@ -23,36 +23,37 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.PropertiesConfiguration;
 
 /**
  *
  * @author Ahseya
  */
 @ThreadSafe
-public final class PropertiesConfigurationFactory {
+public final class PropertiesConfiguration {
 
-    private static final String SETTINGS = "/settings.properties";
+    private static final String URL = "/settings.properties";
 
-    private static final PropertiesConfigurationFactory instance = new PropertiesConfigurationFactory(SETTINGS);
+    private static final PropertiesConfiguration instance = new PropertiesConfiguration(URL);
 
-    public static PropertiesConfigurationFactory getInstance() {
+    public static PropertiesConfiguration getInstance() {
         return instance;
     }
 
-    private final String settingsUrl;
-    private final PropertiesConfiguration settings = null;
+    private final String url;
 
-    PropertiesConfigurationFactory(String settingsUrl) {
-        this.settingsUrl = settingsUrl;
+    PropertiesConfiguration(String url) {
+        this.url = url;
     }
 
-    public synchronized PropertiesConfiguration settings() throws ConfigurationException {
-        return settings == null
-                ? new PropertiesConfiguration(PropertiesConfiguration.class.getResource(settingsUrl))
-                : settings;
+    public Properties properties() throws IOException {
+        try (InputStream inputStream = this.getClass().getResourceAsStream(url)) {
+            Properties properties = new Properties();
+            properties.load(inputStream);
+            return properties;
+        }
     }
-
 }

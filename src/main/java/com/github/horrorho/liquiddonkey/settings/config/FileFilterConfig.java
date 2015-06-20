@@ -24,7 +24,6 @@
 package com.github.horrorho.liquiddonkey.settings.config;
 
 import com.github.horrorho.liquiddonkey.settings.Property;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -45,24 +44,24 @@ public final class FileFilterConfig {
         ItemTypes itemTypes = ItemTypes.newInstance(config);
 
         Collection<String> relativePath
-                = Arrays.asList(config.getStringArray(Property.FILTER_RELATIVE_PATH.toString()));
+                = config.getList(Property.FILTER_RELATIVE_PATH);
 
-        relativePath.addAll(itemTypes.paths(config.getStringArray(Property.FILTER_ITEM_TYPES.key())));
+        relativePath.addAll(itemTypes.paths(config.getList(Property.FILTER_ITEM_TYPES)));
 
         Collection<String> extensions
-                = Arrays.asList(config.getStringArray(Property.FILTER_EXTENSION.toString())).stream()
+                = config.getList(Property.FILTER_EXTENSION).stream()
                 .map(ext -> ext.startsWith(".") ? ext : "." + ext)
                 .collect(Collectors.toSet());
 
         return newInstance(
-                Arrays.asList(config.getStringArray(Property.FILTER_DOMAIN.toString())),
-                Arrays.asList(config.getStringArray(Property.FILTER_RELATIVE_PATH.toString())),
+                config.getList(Property.FILTER_DOMAIN),
+                config.getList(Property.FILTER_RELATIVE_PATH),
                 extensions,
-                config.get(Property.FILTER_DATE_MAX, config.asTimestamp()),
-                config.get(Property.FILTER_DATE_MIN, config.asTimestamp()),
+                config.get(Property.FILTER_DATE_MAX, config::asTimestamp),
+                config.get(Property.FILTER_DATE_MIN, config::asTimestamp),
                 // * 1024 as kilobytes to bytes
-                config.getLong(Property.FILTER_SIZE_MAX.key()) * 1024,
-                config.getLong(Property.FILTER_SIZE_MIN.key()) * 1024);
+                config.get(Property.FILTER_SIZE_MAX, config::asLong) * 1024,
+                config.get(Property.FILTER_SIZE_MIN, config::asLong) * 1024);
     }
 
     public static FileFilterConfig newInstance(

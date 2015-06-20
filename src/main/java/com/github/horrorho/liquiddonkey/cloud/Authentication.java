@@ -26,8 +26,7 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
-import com.github.horrorho.liquiddonkey.settings.old.Property;
+import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory; 
 import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import com.github.horrorho.liquiddonkey.util.PropertyLists;
 import com.dd.plist.NSDictionary;
@@ -104,7 +103,7 @@ public final class Authentication {
             String fullName = PropertyLists.stringValue("Unknown", settings, "appleAccountInfo", "fullName");
             String appleId = PropertyLists.stringValue("Unknown", settings, "appleAccountInfo", "appleId");
 
-            Client client = new Client(http, settings, dsPrsID, authMme, Property.Int.LIST_FILES_LIMIT.integer());
+            Client client = new Client(http, settings, dsPrsID, authMme, 4096); //TODO
 
             return newInstance(client, appleId, fullName);
 

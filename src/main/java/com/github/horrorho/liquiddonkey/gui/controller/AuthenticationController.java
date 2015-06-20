@@ -130,7 +130,7 @@ public class AuthenticationController implements Initializable {
     void authenticate() {
         try {
             Http http = HttpFactory.newInstance(
-                    HttpConfig.newInstance(false, false),
+                    HttpConfig.newInstance(null), // TODO
                     Printer.instanceOf(false));
 
             toSelection(

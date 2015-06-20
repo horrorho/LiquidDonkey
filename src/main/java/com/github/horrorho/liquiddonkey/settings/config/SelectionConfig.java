@@ -41,8 +41,8 @@ public final class SelectionConfig {
     public static SelectionConfig newInstance(Configuration config) {
 
         return newInstance(
-                config.getList(Property.SELECTION_UDID, config.asHex()),
-                config.getList(Property.SELECTION_SNAPSHOT, config.asInteger()));
+                config.getList(Property.SELECTION_UDID, config::asHex),
+                config.getList(Property.SELECTION_SNAPSHOT, config::asInteger));
     }
 
     public static SelectionConfig newInstance(List<String> backups, List<Integer> snapshots) {

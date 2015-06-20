@@ -23,9 +23,14 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.CommandLineConfiguration;
+import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
+import com.github.horrorho.liquiddonkey.settings.PropertiesConfiguration;
+import java.io.IOException;
+import java.util.Properties;
+import java.util.logging.Level;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,33 +57,21 @@ public final class ConfigFactory {
     public Config from(String[] args) {
         logger.trace("<< parse() < {}", (Object) args);
         try {
-            Args arguments = Args.newStandardInstance();
-            CommandLineHelper helper = CommandLineHelper.getInstance(arguments.options(), args);
 
-            if (helper.line().hasOption(HELP)) {
-                HelpFormatter helpFormatter = new HelpFormatter();
-                helpFormatter.setOptionComparator(null);
-                helpFormatter.printHelp("DonkeyLooter appleid password [OPTION]...", arguments.options());
-                return null;
+            Configuration configuration = Configuration.newInstance();
+
+            try {
+                Properties file = PropertiesConfiguration.getInstance().properties();
+            } catch (IOException ex) {
+                java.util.logging.Logger.getLogger(ConfigFactory.class.getName()).log(Level.SEVERE, null, ex);
             }
 
-            if (helper.line().hasOption(VERSION)) {
-                System.out.println(Property.Str.PROJECT_VERSION.string());
-                return null;
-            }
+            Properties properties = CommandLineConfiguration.newInstance().properties(CommandLineOptions.getInstance(), args, "1");
 
-            switch (helper.line().getArgList().size()) {
-                case 0:
-                    throw new ParseException("Missing appleid and password.");
-                case 1:
-                    throw new ParseException("Missing password.");
-                case 2:
-                    break;
-                default:
-                    throw new ParseException("Too many non-optional arguments, expected appleid and password only.");
-            }
+            properties.forEach((k, v) -> System.out.println(k + "=" + v));
 
-            Config config = Config.newInstance(helper);
+            Config config = Config.newInstance(configuration);
+
             logger.trace(">> parse() > {}", config);
             return config;
 

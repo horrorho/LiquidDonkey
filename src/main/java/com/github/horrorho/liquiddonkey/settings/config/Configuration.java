@@ -81,38 +81,38 @@ public class Configuration extends Properties {
         return Arrays.asList(get(property).split("\\s"));
     }
 
-    public Function<String, Boolean> asBoolean() {
-        return Boolean::parseBoolean;
+    public Boolean asBoolean(String val) {
+        return Boolean.parseBoolean(val);
     }
 
-    public Function<String, String> asHex() {
-        return val -> val.matches("^[0-9a-fA-F]+$")
+    public String asHex(String val) {
+        return val.matches("^[0-9a-fA-F]+$")
                 ? val
                 : illegalArgumentException("bad hex: " + val);
     }
 
-    public Function<String, Double> asDouble() {
-        return asNumber(Double::parseDouble);
+    public Double asDouble(String val) {
+        return asNumber(val, Double::parseDouble);
     }
 
-    public Function<String, Integer> asInteger() {
-        return asNumber(Integer::parseInt);
+    public Integer asInteger(String val) {
+        return asNumber(val, Integer::parseInt);
     }
 
-    public Function<String, Long> asLong() {
-        return asNumber(Long::parseLong);
+    public Long asLong(String val) {
+        return asNumber(val, Long::parseLong);
     }
 
-    public <T extends Number> Function<String, T> asNumber(Function<String, T> parser) {
-        return val -> parse(
+    public <T extends Number> T asNumber(String val, Function<String, T> parser) {
+        return parse(
                 val,
                 parser,
                 NumberFormatException.class,
                 () -> illegalArgumentException("bad number: " + val));
     }
 
-    public Function<String, Long> asTimestamp() {
-        return val -> parse(
+    public Long asTimestamp(String val) {
+        return parse(
                 val,
                 date -> LocalDate.parse(date, dateTimeFormatter).atStartOfDay(ZoneId.systemDefault()).toEpochSecond(),
                 DateTimeParseException.class,

@@ -37,9 +37,9 @@ import org.apache.commons.cli.CommandLine;
 @ThreadSafe
 public final class Config {
 
-    public static Config newInstance(CommandLine commandLine, Configuration config) {
+    public static Config newInstance(Configuration config) {
         return newInstance(
-                AuthenticationConfig.newInstance(commandLine),
+                AuthenticationConfig.newInstance(config),
                 BackupDownloaderFactoryConfig.newInstance(config),
                 DirectoryConfig.newInstance(config),
                 DonkeyExecutorConfig.newInstance(config),

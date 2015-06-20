@@ -28,13 +28,13 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 
 /**
  *
@@ -44,18 +44,21 @@ import org.apache.commons.cli.Option;
 @ThreadSafe
 public final class CommandLineOptions {
 
-    public static final CommandLineOptions instance = newInstance();
+    private static String HELP = "help";
+    private static String VERSION = "version";
 
-    public CommandLineOptions getInstance() {
+    private static final CommandLineOptions instance = newInstance();
+
+    public static CommandLineOptions getInstance() {
         return instance;
     }
 
     static CommandLineOptions newInstance() {
-        Map<Property, Option> options = options();
-        return new CommandLineOptions(options(), optToProperty(options));
+        Map<Property, Option> propertyToOption = propertyToOption();
+        return new CommandLineOptions(propertyToOption(), optToProperty(propertyToOption), HELP, VERSION);
     }
 
-    static Map<Property, Option> options() {
+    static Map<Property, Option> propertyToOption() {
         Map<Property, Option> options = new HashMap<>();
 
         options.put(ENGINE_AGGRESSIVE,
@@ -159,23 +162,44 @@ public final class CommandLineOptions {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private final Map<Property, Option> options;
+    private final Map<Property, Option> propertyToOption;
     private final Map<String, Property> optToProperty;
+    private final String help;
+    private final String version;
 
-    public CommandLineOptions(Map<Property, Option> options, Map<String, Property> optToProperty) {
+    public CommandLineOptions(
+            Map<Property, Option> propertyToOption,
+            Map<String, Property> optToProperty,
+            String help,
+            String version) {
         // Defensive deep copy
-        this.options
-                = options.entrySet().stream()
+        this.propertyToOption
+                = propertyToOption.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> (Option) entry.getValue().clone()));
         this.optToProperty = new HashMap<>(optToProperty);
+        this.help = help;
+        this.version = version;
+    }
+
+    public Options options() {
+        Options options = new Options();
+
+        propertyToOption.values().stream()
+                .map(option -> (Option) option.clone())
+                .forEach(options::addOption);
+
+        options.addOption(null, HELP, false, "Display this help and exit.");
+        options.addOption(null, VERSION, false, "Output version information and exit.");
+
+        return options;
     }
 
     public Option option(Property property) {
-        return (Option) options.get(property);
+        return (Option) propertyToOption.get(property);
     }
 
     public String opt(Property property) {
-        return opt(options.get(property));
+        return opt(propertyToOption.get(property));
     }
 
     public String opt(Option option) {
@@ -186,6 +210,14 @@ public final class CommandLineOptions {
 
     public Property property(Option option) {
         return optToProperty.get(opt(option));
+    }
+
+    public String help() {
+        return help;
+    }
+
+    public String version() {
+        return version;
     }
 
 }

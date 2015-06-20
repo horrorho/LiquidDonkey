@@ -37,7 +37,7 @@ import net.jcip.annotations.ThreadSafe;
 public final class BackupDownloaderFactoryConfig {
 
     public static BackupDownloaderFactoryConfig newInstance(Configuration config) {
-        return newInstance(config.get(Property.ENGINE_AGGRESSIVE, config.asBoolean()));
+        return newInstance(config.get(Property.ENGINE_AGGRESSIVE, config::asBoolean));
     }
 
     public static BackupDownloaderFactoryConfig newInstance(boolean toHuntFirstSnapshot) {

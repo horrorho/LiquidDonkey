@@ -38,9 +38,9 @@ public final class DonkeyExecutorConfig {
 
     public static DonkeyExecutorConfig newInstance(Configuration config) {
         return newInstance(
-                config.get(Property.ENGINE_THREAD_COUNT, config.asInteger()),
-                config.getInt(Property.ENGINE_THREAD_STAGGER_DELAY.toString()),
-                config.getBoolean(Property.ENGINE_AGGRESSIVE.toString())
+                config.get(Property.ENGINE_THREAD_COUNT, config::asInteger),
+                config.get(Property.ENGINE_THREAD_STAGGER_DELAY, config::asInteger),
+                config.get(Property.ENGINE_AGGRESSIVE, config::asBoolean)
                         ? 2 // TODO
                         : 1);
     }

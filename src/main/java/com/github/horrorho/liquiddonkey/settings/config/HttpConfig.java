@@ -26,7 +26,6 @@ package com.github.horrorho.liquiddonkey.settings.config;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.commons.configuration.Configuration;
 
 /**
  * Http configuration.
@@ -37,26 +36,27 @@ import org.apache.commons.configuration.Configuration;
 @ThreadSafe
 public final class HttpConfig {
 
+ 
     public static HttpConfig newInstance(Configuration config) {
-        boolean isPersistent = config.getBoolean(Property.ENGINE_PERSISTENT.key());
-        boolean isRelaxedSSL = config.getBoolean(Property.HTTP_RELAX_SSL.key());
+        boolean isPersistent = config.get(Property.ENGINE_PERSISTENT, config::asBoolean);
+        boolean isRelaxedSSL = config.get(Property.HTTP_RELAX_SSL, config::asBoolean);
 
         return newInstance(
                 isPersistent,
                 isRelaxedSSL,
-                config.getInt(Property.HTTP_MAX_CONNECTIONS.key()),
+                config.get(Property.HTTP_MAX_CONNECTIONS, config::asInteger),
                 isPersistent
-                        ? config.getInt(Property.HTTP_RETRY_COUNT_PERSISTENT.key())
-                        : config.getInt(Property.HTTP_RETRY_COUNT.key()),
+                        ? config.get(Property.HTTP_RETRY_COUNT_PERSISTENT, config::asInteger)
+                        : config.get(Property.HTTP_RETRY_COUNT, config::asInteger),
                 isPersistent
-                        ? config.getInt(Property.HTTP_RETRY_DELAY_MS_PERSISTENT.key())
-                        : config.getInt(Property.HTTP_RETRY_DELAY_MS.key()),
+                        ? config.get(Property.HTTP_RETRY_DELAY_MS_PERSISTENT, config::asInteger)
+                        : config.get(Property.HTTP_RETRY_DELAY_MS, config::asInteger),
                 isPersistent
-                        ? config.getInt(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT_PERSISTENT.key())
-                        : config.getInt(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT.key()),
-                config.getInt(Property.HTTP_TIMEOUT_MS.key()),
-                config.getInt(Property.HTTP_VALID_AFTER_INACTIVITY_MS.key()),
-                config.getString(Property.HTTP_DEFAULT_USER_AGENT.key()));
+                        ? config.get(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT_PERSISTENT, config::asInteger)
+                        : config.get(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT, config::asInteger),
+                config.get(Property.HTTP_TIMEOUT_MS, config::asInteger),
+                config.get(Property.HTTP_VALID_AFTER_INACTIVITY_MS, config::asInteger),
+                config.get(Property.HTTP_DEFAULT_USER_AGENT));
     }
 
     public static HttpConfig newInstance(

@@ -26,7 +26,6 @@ package com.github.horrorho.liquiddonkey.settings.config;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.commons.configuration.Configuration;
 
 /**
  * Printer configuration.
@@ -36,25 +35,25 @@ import org.apache.commons.configuration.Configuration;
 @Immutable
 @ThreadSafe
 public class PrintConfig {
-    
+
     public static PrintConfig newInstance(Configuration config) {
-        return newInstance(config.getBoolean(Property.ENGINE_PRINT_STACK_TRACE.key()));
+        return newInstance(config.get(Property.ENGINE_PRINT_STACK_TRACE, config::asBoolean));
     }
-    
+
     public static PrintConfig newInstance(boolean toPrintStackTrace) {
         return new PrintConfig(toPrintStackTrace);
     }
-    
+
     private final boolean toPrintStackTrace;
-    
+
     PrintConfig(boolean toPrintStackTrace) {
         this.toPrintStackTrace = toPrintStackTrace;
     }
-    
+
     public boolean toPrintStackTrace() {
         return toPrintStackTrace;
     }
-    
+
     @Override
     public String toString() {
         return "PrintConfig{" + "toPrintStackTrace=" + toPrintStackTrace + '}';

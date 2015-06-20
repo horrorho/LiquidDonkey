@@ -23,43 +23,98 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Properties;
+import java.util.stream.Collectors;
+import net.jcip.annotations.Immutable;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.Option; 
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 /**
  * CommandLineConfiguration.
  *
  * @author Ahseya
  */
-public class CommandLineConfiguration {
+@Immutable
+@ThreadSafe
+public final class CommandLineConfiguration {
 
-    public static CommandLineConfiguration newInstance(CommandLine cmd, CommandLineOptions options) {
-        CommandLineConfiguration instance = new CommandLineConfiguration();
+    private static final CommandLineConfiguration instance = new CommandLineConfiguration();
+
+    public static CommandLineConfiguration newInstance() {
+        return instance;
+    }
+
+    CommandLineConfiguration() {
+    }
+
+    public Properties properties(
+            CommandLineOptions commandLineOptions,
+            String[] args,
+            String version
+    ) throws ParseException {
+
+        CommandLineParser parser = new DefaultParser();
+        Options options = commandLineOptions.options();
+        CommandLine cmd = parser.parse(options, args);
+
+        if (cmd.hasOption(commandLineOptions.help())) {
+            HelpFormatter helpFormatter = new HelpFormatter();
+            helpFormatter.setOptionComparator(null);
+            helpFormatter.printHelp("DonkeyLooter appleid password [OPTION]...", options);
+            return null;
+        }
+
+        if (cmd.hasOption(commandLineOptions.version())) {
+            System.out.println(version);
+            return null;
+        }
+
+        switch (cmd.getArgList().size()) {
+            case 0:
+                throw new ParseException("Missing appleid and password.");
+            case 1:
+                throw new ParseException("Missing password.");
+            case 2:
+                break;
+            default:
+                throw new ParseException("Too many non-optional arguments, expected appleid and password only.");
+        }
+
+        Properties properties = new Properties();
+
+        properties.setProperty(Property.AUTHENTICATION_APPLEID.key(), cmd.getArgList().get(0));
+        properties.setProperty(Property.AUTHENTICATION_PASSWORD.key(), cmd.getArgList().get(1));
 
         Iterator<Option> it = cmd.iterator();
 
         while (it.hasNext()) {
             Option option = it.next();
-
-            String opt = option.hasLongOpt()
-                    ? option.getLongOpt()
-                    : option.getOpt();
-
-            String key = options.property(option).key();
+            String opt = commandLineOptions.opt(option);
+            String key = commandLineOptions.property(option).key();
 
             if (option.hasArgs()) {
-                instance.addPropertyDirect(key, cmd.getOptionValues(opt));
+                properties.setProperty(
+                        key,
+                        Arrays.asList(cmd.getOptionValues(opt)).stream().collect(Collectors.joining(" ")));
             } else if (option.hasArg()) {
-                instance.addPropertyDirect(key, cmd.getOptionValue(opt));
+                properties.setProperty(
+                        key,
+                        cmd.getOptionValue(opt));
             } else {
-                instance.addPropertyDirect(key, true);
+                properties.setProperty(
+                        key,
+                        Boolean.toString(cmd.hasOption(opt)));
             }
         }
 
-        return instance;
-    }
-
-    protected CommandLineConfiguration() {
+        return properties;
     }
 }
