@@ -47,7 +47,7 @@ public enum Property {
     FILE_OUTPUT_DIRECTORY("ouput"),
     FILE_SET_LAST_MODIFIED_TIMESTAMP("true"),
     FILTER_DATE_MIN("0000-01-01"),
-    FILTER_DATE_MAX("3000-01-01"), // TODO figure out max date
+    FILTER_DATE_MAX("9999-01-01"),
     FILTER_DOMAIN(""),
     FILTER_EXTENSION(""),
     FILTER_ITEM_TYPES(""),
@@ -76,7 +76,7 @@ public enum Property {
     ITEM_TYPE_NOTES("notes"),
     PROJECT_VERSION(""),
     SELECTION_SNAPSHOT("1 -1 -2"),
-    SELECTION_UDID("");
+    SELECTION_UDID(null);
 
     private final String defaultValue;
 

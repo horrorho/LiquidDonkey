@@ -102,7 +102,7 @@ public final class CommandLineConfiguration {
             if (option.hasArgs()) {
                 configuration.setProperty(
                         key,
-                        Arrays.asList(cmd.getOptionValues(opt)).stream().collect(Collectors.joining(" ")));
+                        joined(cmd.getOptionValues(opt)));
             } else if (option.hasArg()) {
                 configuration.setProperty(
                         key,
@@ -112,8 +112,13 @@ public final class CommandLineConfiguration {
                         key,
                         Boolean.toString(cmd.hasOption(opt)));
             }
-        }
-
+        }        
         return configuration;
+    }
+
+    String joined(String... list) {
+        return list == null
+                ? ""
+                : Arrays.asList(list).stream().collect(Collectors.joining(" "));
     }
 }

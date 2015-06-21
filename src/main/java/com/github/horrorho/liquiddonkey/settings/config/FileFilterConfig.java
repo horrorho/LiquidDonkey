@@ -45,6 +45,7 @@ public final class FileFilterConfig {
     public static FileFilterConfig newInstance(Configuration config) {
         ItemTypes itemTypes = ItemTypes.newInstance(config);
 
+        //TODO check empty null etc
         Collection<String> relativePath
                 = new ArrayList<>(config.getList(Property.FILTER_RELATIVE_PATH));
 

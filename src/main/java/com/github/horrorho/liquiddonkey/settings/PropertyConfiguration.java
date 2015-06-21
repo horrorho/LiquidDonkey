@@ -47,6 +47,7 @@ public final class PropertyConfiguration {
     public Configuration properties() {
         Configuration configuration = Configuration.newInstance();
         Stream.of(Property.values())
+                .filter(property -> property.getDefaultValue() != null)
                 .forEach(property -> configuration.setProperty(property.key(), property.getDefaultValue()));
         return configuration;
     }

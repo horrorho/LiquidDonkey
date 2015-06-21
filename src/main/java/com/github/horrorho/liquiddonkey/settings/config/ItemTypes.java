@@ -25,6 +25,7 @@ package com.github.horrorho.liquiddonkey.settings.config;
 
 import com.github.horrorho.liquiddonkey.settings.Configuration;
 import com.github.horrorho.liquiddonkey.settings.Property;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -66,6 +67,10 @@ public final class ItemTypes {
     }
 
     public Set<String> paths(String itemType) {
+        if (itemType == null || itemType.isEmpty()) {
+            return new HashSet<>();
+        }
+
         Set<String> paths = itemTypeToPaths.get(itemType.toLowerCase(Locale.US));
         if (paths == null) {
             throw new IllegalArgumentException("unknown item type: " + itemType);

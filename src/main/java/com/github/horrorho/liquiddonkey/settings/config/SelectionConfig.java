@@ -25,6 +25,8 @@ package com.github.horrorho.liquiddonkey.settings.config;
 
 import com.github.horrorho.liquiddonkey.settings.Configuration;
 import com.github.horrorho.liquiddonkey.settings.Property;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
@@ -41,8 +43,16 @@ public final class SelectionConfig {
 
     public static SelectionConfig newInstance(Configuration config) {
 
+        List<String> udid = config.contains(Property.SELECTION_UDID)
+                ? config.getList(Property.SELECTION_UDID).isEmpty()
+                        ? Arrays.asList("")
+                        : config.getList(Property.SELECTION_UDID)
+                : new ArrayList<>();
+
+        System.out.println("<<<<< " + udid);
+
         return newInstance(
-                config.getList(Property.SELECTION_UDID, config::asHex),
+                udid,
                 config.getList(Property.SELECTION_SNAPSHOT, config::asInteger));
     }
 

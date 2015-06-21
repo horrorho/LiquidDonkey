@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
-import com.github.horrorho.liquiddonkey.settings.Property;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -62,6 +61,10 @@ public class Configuration extends Properties {
     public Configuration addAll(Properties properties) {
         properties.forEach((key, value) -> setProperty(key.toString(), value.toString()));
         return this;
+    }
+
+    public boolean contains(Property property) {
+        return containsKey(property.key());
     }
 
     public <T> T get(Property property, Function<String, T> function) {
