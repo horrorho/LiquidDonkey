@@ -44,9 +44,9 @@ public final class SelectionConfig {
     public static SelectionConfig newInstance(Configuration config) {
 
         List<String> udid = config.contains(Property.SELECTION_UDID)
-                ? config.getList(Property.SELECTION_UDID).isEmpty()
+                ? config.getList(Property.SELECTION_UDID, config::asHex).isEmpty()
                         ? Arrays.asList("")
-                        : config.getList(Property.SELECTION_UDID)
+                        : config.getList(Property.SELECTION_UDID, config::asHex)
                 : new ArrayList<>();
 
         System.out.println("<<<<< " + udid);

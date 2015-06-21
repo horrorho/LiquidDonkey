@@ -76,6 +76,10 @@ public final class ConfigFactory {
 
             Config config = Config.newInstance(configuration);
             System.out.println("config<<<");
+
+            System.out.println(config.selection().backups());
+            System.out.println(config.selection().backups().size());
+
             System.exit(0);
             logger.trace(">> from() > {}", config);
             return config;
