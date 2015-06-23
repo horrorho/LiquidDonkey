@@ -23,6 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
+import com.github.horrorho.liquiddonkey.settings.Property;
+import com.github.horrorho.liquiddonkey.settings.Configuration;
 import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;

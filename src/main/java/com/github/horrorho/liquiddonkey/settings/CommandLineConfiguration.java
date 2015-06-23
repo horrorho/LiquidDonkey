@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
+import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.stream.Collectors;
