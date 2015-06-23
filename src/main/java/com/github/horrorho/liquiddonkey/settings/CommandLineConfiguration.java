@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
-import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.stream.Collectors;
@@ -55,7 +54,7 @@ public final class CommandLineConfiguration {
     CommandLineConfiguration() {
     }
 
-    public Configuration properties(
+    public Configuration configuration(
             CommandLineOptions commandLineOptions,
             String[] args,
             String version
@@ -113,7 +112,7 @@ public final class CommandLineConfiguration {
                         key,
                         Boolean.toString(cmd.hasOption(opt)));
             }
-        }        
+        }
         return configuration;
     }
 

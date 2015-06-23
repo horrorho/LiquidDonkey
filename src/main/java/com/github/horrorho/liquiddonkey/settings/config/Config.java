@@ -42,7 +42,7 @@ public final class Config {
                 AuthenticationConfig.newInstance(config),
                 SnapshotFactoryConfig.newInstance(config),
                 DirectoryConfig.newInstance(config),
-                DonkeyExecutorConfig.newInstance(config),
+                SnapshotDownloaderConfig.newInstance(config),
                 DonkeyFactoryConfig.newInstance(config),
                 FileFilterConfig.newInstance(config),
                 HttpConfig.newInstance(config),
@@ -54,7 +54,7 @@ public final class Config {
             AuthenticationConfig authentication,
             SnapshotFactoryConfig backupDownloaderFactory,
             DirectoryConfig directory,
-            DonkeyExecutorConfig donkeyExecutor,
+            SnapshotDownloaderConfig donkeyExecutor,
             DonkeyFactoryConfig donkeyFactory,
             FileFilterConfig filterFilter,
             HttpConfig http,
@@ -75,7 +75,7 @@ public final class Config {
     private final AuthenticationConfig authentication;
     private final SnapshotFactoryConfig backupDownloaderFactory;
     private final DirectoryConfig directory;
-    private final DonkeyExecutorConfig donkeyExecutor;
+    private final SnapshotDownloaderConfig donkeyExecutor;
     private final DonkeyFactoryConfig donkeyFactory;
     private final FileFilterConfig fileFilter;
     private final HttpConfig http;
@@ -86,7 +86,7 @@ public final class Config {
             AuthenticationConfig authentication,
             SnapshotFactoryConfig backupDownloaderFactory,
             DirectoryConfig directory,
-            DonkeyExecutorConfig donkeyExecutor,
+            SnapshotDownloaderConfig donkeyExecutor,
             DonkeyFactoryConfig donkeyFactory,
             FileFilterConfig filterFilter,
             HttpConfig http,
@@ -116,7 +116,7 @@ public final class Config {
         return directory;
     }
 
-    public DonkeyExecutorConfig donkeyExecutor() {
+    public SnapshotDownloaderConfig donkeyExecutor() {
         return donkeyExecutor;
     }
 

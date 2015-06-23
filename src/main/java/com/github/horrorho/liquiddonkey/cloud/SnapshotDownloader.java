@@ -29,7 +29,7 @@ import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.pipe.ArgumentExceptionPair;
-import com.github.horrorho.liquiddonkey.settings.config.DonkeyExecutorConfig;
+import com.github.horrorho.liquiddonkey.settings.config.SnapshotDownloaderConfig;
 import com.github.horrorho.liquiddonkey.util.CallableFunction;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -75,7 +75,7 @@ public final class SnapshotDownloader {
      * @param config not null
      * @return a new instance, not null
      */
-    public static SnapshotDownloader newInstance(DonkeyFactory factory, DonkeyExecutorConfig config) {
+    public static SnapshotDownloader newInstance(DonkeyFactory factory, SnapshotDownloaderConfig config) {
 
         return new SnapshotDownloader(
                 factory,

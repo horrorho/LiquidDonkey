@@ -35,9 +35,9 @@ import net.jcip.annotations.ThreadSafe;
  */
 @Immutable
 @ThreadSafe
-public final class DonkeyExecutorConfig {
+public final class SnapshotDownloaderConfig {
 
-    public static DonkeyExecutorConfig newInstance(Configuration config) {
+    public static SnapshotDownloaderConfig newInstance(Configuration config) {
         return newInstance(
                 config.get(Property.ENGINE_THREAD_COUNT, config::asInteger),
                 config.get(Property.ENGINE_THREAD_STAGGER_DELAY, config::asInteger),
@@ -46,15 +46,15 @@ public final class DonkeyExecutorConfig {
                         : 1);
     }
 
-    public static DonkeyExecutorConfig newInstance(int threads, int staggerDelayMs, int retryCount) {
-        return new DonkeyExecutorConfig(threads, staggerDelayMs, retryCount);
+    public static SnapshotDownloaderConfig newInstance(int threads, int staggerDelayMs, int retryCount) {
+        return new SnapshotDownloaderConfig(threads, staggerDelayMs, retryCount);
     }
 
     private final int threads;
     private final int staggerDelayMs;
     private final int retryCount;
 
-    DonkeyExecutorConfig(int threads, int staggerDelayMs, int retryCount) {
+    SnapshotDownloaderConfig(int threads, int staggerDelayMs, int retryCount) {
         this.threads = threads;
         this.staggerDelayMs = staggerDelayMs;
         this.retryCount = retryCount;

@@ -60,34 +60,43 @@ public final class CommandLineOptions {
     static Map<Property, Option> propertyToOption() {
         Map<Property, Option> options = new HashMap<>();
 
-        options.put(ENGINE_AGGRESSIVE,
-                new Option("a", "aggressive", false, "Aggressive retrieval tactics."));
-
-        options.put(ENGINE_THREAD_COUNT,
-                new Option("t", "threads", true, "The maximum number of concurrent threads."));
-
-        options.put(ENGINE_PERSISTENT,
-                new Option("p", "persistent", false,
-                        "More persistent in the handling of network errors, for unstable connections."));
-
-        options.put(ENGINE_PRINT_STACK_TRACE,
-                new Option("x", "stack-trace", false, "Prints stack trace on errors, useful for debugging."));
+        options.put(FILE_OUTPUT_DIRECTORY,
+                new Option("o", "output", true, "Output folder."));
 
         options.put(FILE_COMBINED,
                 new Option("c", "combined", false, "Do not separate each snapshot into its own folder."));
 
-        options.put(FILE_FORCE,
-                new Option("f", "force", false, "Download files regardless of whether a local version exists."));
+        options.put(SELECTION_UDID,
+                Option.builder("u").longOpt("udid")
+                .desc("Download the backup/s with the specified UDID/s. "
+                        + "Will match partial UDIDs. Leave empty to download all.")
+                .hasArgs().optionalArg(true).build());
 
-        options.put(FILE_FLAT,
-                new Option("i", "--itunes-style", false, "Download files to iTunes style format."));
+        options.put(SELECTION_SNAPSHOT,
+                Option.builder("s").longOpt("snapshot")
+                .desc("Only download data in the snapshot/s specified.\n"
+                        + "Negative numbers indicate relative positions from newest backup "
+                        + "with -1 being the newest, -2 second newest, etc.")
+                .hasArgs().build());
 
-        options.put(FILE_OUTPUT_DIRECTORY,
-                new Option("o", "output", true, "Output folder."));
+        options.put(FILTER_ITEM_TYPES,
+                Option.builder(null).longOpt("item-types")
+                .desc("Only download the specified item type/s:\n")
+                .hasArgs().build());
 
         options.put(FILTER_DOMAIN,
                 Option.builder("d").longOpt("domain")
                 .desc("Limit files to those within the specified application domain/s.")
+                .hasArgs().build());
+
+        options.put(FILTER_RELATIVE_PATH,
+                Option.builder("r").longOpt("relative-path")
+                .desc("Limit files to those with the specified relative path/s")
+                .hasArgs().build());
+
+        options.put(FILTER_EXTENSION,
+                Option.builder("e").longOpt("extension")
+                .desc("Limit files to those with the specified extension/s.")
                 .hasArgs().build());
 
         options.put(FILTER_DATE_MIN,
@@ -98,48 +107,33 @@ public final class CommandLineOptions {
                 new Option(null, "max-date", true,
                         "Maximum last-modified timestamp ISO format date. E.g. 2000-12-31."));
 
-        options.put(FILTER_DOMAIN,
-                Option.builder("d").longOpt("domain")
-                .desc("Limit files to those within the specified application domain/s.")
-                .hasArgs().build());
-
-        options.put(FILTER_EXTENSION,
-                Option.builder("e").longOpt("extension")
-                .desc("Limit files to those with the specified extension/s.")
-                .hasArgs().build());
-
-        options.put(FILTER_ITEM_TYPES,
-                Option.builder(null).longOpt("item-types")
-                .desc("Only download the specified item type/s:\n")
-                .hasArgs().build());
-
-        options.put(FILTER_RELATIVE_PATH,
-                Option.builder("r").longOpt("relative-path")
-                .desc("Limit files to those with the specified relative path/s")
-                .hasArgs().build());
-
         options.put(FILTER_SIZE_MIN,
                 new Option(null, "min-size", true, "Minimum size in kilobytes."));
 
         options.put(FILTER_SIZE_MAX,
                 new Option(null, "max-size", true, "Maximum size in kilobytes."));
 
+        options.put(FILE_FORCE,
+                new Option("f", "force", false, "Download files regardless of whether a local version exists."));
+
+        options.put(ENGINE_PERSISTENT,
+                new Option("p", "persistent", false,
+                        "More persistent in the handling of network errors, for unstable connections."));
+
+        options.put(ENGINE_AGGRESSIVE,
+                new Option("a", "aggressive", false, "Aggressive retrieval tactics."));
+
+        options.put(ENGINE_THREAD_COUNT,
+                new Option("t", "threads", true, "The maximum number of concurrent threads."));
+
         options.put(HTTP_RELAX_SSL,
                 new Option(null, "relax-ssl", false, "Relaxed SSL verification, for SSL validation errors."));
 
-        options.put(SELECTION_SNAPSHOT,
-                Option.builder("s").longOpt("snapshot")
-                .desc("Only download data in the snapshot/s specified.\n"
-                        + "Negative numbers indicate relative positions from newest backup "
-                        + "with -1 being the newest, -2 second newest, etc.")
-                .hasArgs().build());
+        options.put(ENGINE_PRINT_STACK_TRACE,
+                new Option("x", "stack-trace", false, "Prints stack trace on errors, useful for debugging."));
 
-        options.put(SELECTION_UDID,
-                Option.builder("u").longOpt("udid")
-                .desc("Download the backup/s with the specified UDID/s. "
-                        + "Will match partial UDIDs. Leave empty to download all.")
-                .hasArgs().optionalArg(true).build());
-
+//        options.put(FILE_FLAT,
+//                new Option("i", "--itunes-style", false, "Download files to iTunes style format."));
         return options;
     }
 

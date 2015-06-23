@@ -69,7 +69,7 @@ public final class ConfigFactory {
             Configuration configuration = PropertyConfiguration.getInstance().properties();
 //configuration.forEach((k, v) -> System.out.println(k + "=" + v));
             configuration.addAll(
-                    CommandLineConfiguration.newInstance().properties(CommandLineOptions.getInstance(), args, "1"));
+                    CommandLineConfiguration.newInstance().configuration(CommandLineOptions.getInstance(), args, "1"));
 
             configuration.forEach((k, v) -> System.out.println(k + "=" + v));
             System.out.println("config>>>");
