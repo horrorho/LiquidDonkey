@@ -29,8 +29,6 @@ import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
 import com.github.horrorho.liquiddonkey.settings.FileConfigurationFactory;
 import com.github.horrorho.liquiddonkey.settings.PropertyConfigurationFactory;
 import java.io.IOException;
-import java.util.Properties;
-import java.util.logging.Level;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.cli.ParseException;
@@ -67,7 +65,7 @@ public final class ConfigFactory {
             try {
                 configuration.addAll(FileConfigurationFactory.getInstance().properties(URL));
             } catch (IOException ex) {
-                logger.warn("-- from() > failed to load properties file: {}", ex);
+                logger.warn("-- from() > properties file error: {}", ex);
             }
 
             String version = "N/A";

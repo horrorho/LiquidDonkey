@@ -47,7 +47,9 @@ public final class FileConfigurationFactory {
     public Properties properties(String url) throws IOException {
         try (InputStream inputStream = this.getClass().getResourceAsStream(url)) {
             Properties properties = new Properties();
-            properties.load(inputStream);
+            if (inputStream != null) {
+                properties.load(inputStream);
+            }
             return properties;
         }
     }
