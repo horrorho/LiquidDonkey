@@ -69,6 +69,8 @@ public final class BackupDownloader {
      * @param printer not null
      * @param snapshots the required snapshots, not null
      * @param toHuntFirstSnapshot true to enable first snapshot hunting
+     * @param snapshotTally not null
+     * @param signatureTally not null
      * @return a new instance, not null
      * @throws IOException
      * @throws BadDataException
@@ -81,7 +83,9 @@ public final class BackupDownloader {
             KeyBag keyBag,
             Printer printer,
             List<Integer> snapshots,
-            boolean toHuntFirstSnapshot
+            boolean toHuntFirstSnapshot,
+            Tally snapshotTally,
+            Tally signatureTally
     ) throws IOException, BadDataException {
 
         return new BackupDownloader(
@@ -92,7 +96,9 @@ public final class BackupDownloader {
                 keyBag,
                 printer,
                 snapshots,
-                toHuntFirstSnapshot);
+                toHuntFirstSnapshot,
+                snapshotTally,
+                signatureTally);
     }
 
     private final Client client;
@@ -103,6 +109,8 @@ public final class BackupDownloader {
     private final Printer printer;
     private final List<Integer> snapshots;
     private final boolean toHuntFirstSnapshot;
+    private final Tally snapshotTally;
+    private final Tally signatureTally;
 
     BackupDownloader(
             Client client,
@@ -112,7 +120,9 @@ public final class BackupDownloader {
             KeyBag keyBag,
             Printer printer,
             List<Integer> snapshots,
-            boolean toHuntFirstSnapshot) {
+            boolean toHuntFirstSnapshot,
+            Tally snapshotTally,
+            Tally signatureTally) {
 
         this.client = Objects.requireNonNull(client);
         this.backup = Objects.requireNonNull(backup);
@@ -122,6 +132,8 @@ public final class BackupDownloader {
         this.printer = Objects.requireNonNull(printer);
         this.snapshots = Objects.requireNonNull(snapshots);
         this.toHuntFirstSnapshot = toHuntFirstSnapshot;
+        this.snapshotTally = Objects.requireNonNull(snapshotTally);
+        this.signatureTally = Objects.requireNonNull(signatureTally);
     }
 
     /**
@@ -129,8 +141,15 @@ public final class BackupDownloader {
      */
     public void backup() {
         logger.trace("<< backup() < snaphots: {}", snapshots);
-        printer.println(Level.VV, "Downloading backup: " + backup.udidString());
-        snapshots.stream().forEach(this::download);
+        printer.println(Level.VV, "Downloading backup: " + backup.udidString()); 
+        
+        snapshotTally.reset(snapshots.size());
+        
+        snapshots.stream().forEach(snapshot -> {
+            snapshotTally.setProgress(snapshot);
+            download(snapshot);
+        });
+        
         logger.trace(">> backup()");
     }
 
@@ -146,7 +165,7 @@ public final class BackupDownloader {
                 printer.println(Level.WARN, "Snapshot not found: " + snapshot);
             } else {
                 printer.println(Level.V, "Retrieving snapshot: " + snapshot);
-                download(snapshot, files);
+                download(snapshot, files, signatureTally);
             }
         } catch (IOException ex) {
             logger.warn("-- download() > snapshot: {} exception: {}", snapshot, ex);
@@ -180,7 +199,7 @@ public final class BackupDownloader {
         return snapshots.stream().mapToInt(Integer::intValue).filter(i -> i != 1).min().orElse(2);
     }
 
-    Tally download(int snapshot, List<ICloud.MBSFile> files, Tally tally) {
+    Tally download(int snapshot, List<ICloud.MBSFile> files, Tally signatureTally) {
 
         Map<Mode, List<MBSFile>> modeToFiles = groupingBy(files, Mode::mode);
         logger.info("-- download() > modes: {}", summary(modeToFiles));
@@ -204,14 +223,14 @@ public final class BackupDownloader {
         printer.println(Level.V, "Fetching " + filtered + "/" + totalFiles + ".");
         if (!signatureToFileMap.isEmpty()) {
             Map<ByteString, Set<ICloud.MBSFile>> failures
-                    = executor.execute(client, backup, keyBag, snapshot, signatureToFileMap, tally);
+                    = executor.execute(client, backup, keyBag, snapshot, signatureToFileMap, signatureTally);
 
             if (!failures.isEmpty()) {
                 printer.println(Level.WARN, "Failed signatures: " + failures.size());
             }
         }
-        
-        return tally;
+
+        return signatureTally;
     }
 
     <T, K> Map<K, List<T>> groupingBy(List<T> t, Function<T, K> classifier) {

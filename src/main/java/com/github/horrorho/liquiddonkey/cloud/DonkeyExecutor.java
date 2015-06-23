@@ -117,7 +117,7 @@ public final class DonkeyExecutor {
 
         logger.trace("<< execute()");
 
-        tally.setTotal(Tally.size(signatures));
+        tally.reset(Tally.size(signatures));
         List<Map<ByteString, Set<ICloud.MBSFile>>> failed = new ArrayList<>();
 
         int count = 0;
@@ -154,9 +154,9 @@ public final class DonkeyExecutor {
 
         // Await completion/ update progress.
         while (!executor.isTerminated()) {
-            tally.setProgress(tally.progress() - Tally.size(signatures));
+            tally.setProgress(Tally.size(signatures) - tally.progress());
             try {
-                TimeUnit.MILLISECONDS.sleep(100);
+                TimeUnit.MILLISECONDS.sleep(1000);
             } catch (InterruptedException ex) {
                 logger.warn("-- doExecute() > interrupted");
             }

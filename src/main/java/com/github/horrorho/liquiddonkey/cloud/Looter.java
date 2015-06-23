@@ -73,7 +73,14 @@ public class Looter implements Closeable {
         SnapshotSelector snapshotSelector = SnapshotSelector.newInstance(printer, config.selection().snapshots());
 
         BackupDownloaderFactory backupDownloaderFactory = BackupDownloaderFactory.newInstance(
-                authentication.client(), config.backupDownloaderFactory(), donkeyExecutor, fileFilter, printer, snapshotSelector);
+                authentication.client(),
+                config.backupDownloaderFactory(),
+                donkeyExecutor,
+                fileFilter,
+                printer,
+                snapshotSelector,
+                Tally.newInstance(),
+                Tally.newInstance());
 
         Account account = Account.newInstance(authentication.client(), printer);
 

@@ -64,8 +64,9 @@ public class Tally {
         return total;
     }
 
-    public Tally setTotal(long total) {
+    public Tally reset(long total) {
         this.total = total;
+        this.progress = 0;
         return this;
     }
 

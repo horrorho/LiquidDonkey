@@ -56,6 +56,8 @@ public final class BackupDownloaderFactory {
      * @param fileFilter not null
      * @param printer not null
      * @param snapshotSelector not null
+     * @param snapshotTally not null
+     * @param signatureTally not null
      * @return a new instance, not null
      */
     public static BackupDownloaderFactory newInstance(
@@ -64,7 +66,9 @@ public final class BackupDownloaderFactory {
             DonkeyExecutor donkeyExecutor,
             FileFilter fileFilter,
             Printer printer,
-            SnapshotSelector snapshotSelector) {
+            SnapshotSelector snapshotSelector,
+            Tally snapshotTally,
+            Tally signatureTally) {
 
         return new BackupDownloaderFactory(
                 client,
@@ -72,7 +76,9 @@ public final class BackupDownloaderFactory {
                 donkeyExecutor,
                 fileFilter,
                 printer,
-                snapshotSelector);
+                snapshotSelector,
+                snapshotTally,
+                signatureTally);
     }
 
     private final Client client;
@@ -81,6 +87,8 @@ public final class BackupDownloaderFactory {
     private final FileFilter fileFilter;
     private final Printer printer;
     private final SnapshotSelector snapshotSelector;
+    private final Tally snapshotTally;
+    private final Tally signatureTally;
 
     BackupDownloaderFactory(
             Client client,
@@ -88,7 +96,9 @@ public final class BackupDownloaderFactory {
             DonkeyExecutor donkeyExecutor,
             FileFilter fileFilter,
             Printer printer,
-            SnapshotSelector snapshotSelector) {
+            SnapshotSelector snapshotSelector,
+            Tally snapshotTally,
+            Tally signatureTally) {
 
         this.client = Objects.requireNonNull(client);
         this.config = Objects.requireNonNull(config);
@@ -96,6 +106,8 @@ public final class BackupDownloaderFactory {
         this.fileFilter = Objects.requireNonNull(fileFilter);
         this.printer = Objects.requireNonNull(printer);
         this.snapshotSelector = Objects.requireNonNull(snapshotSelector);
+        this.snapshotTally = Objects.requireNonNull(snapshotTally);
+        this.signatureTally = Objects.requireNonNull(signatureTally);
     }
 
     /**
@@ -124,7 +136,9 @@ public final class BackupDownloaderFactory {
                                     backup.udid())),
                     printer,
                     snapshots,
-                    config.toHuntFirstSnapshot());
+                    config.toHuntFirstSnapshot(),
+                    snapshotTally,
+                    signatureTally);
 
         } catch (IOException ex) {
             logger.warn("-- newInstance() > unable to create instance, backup: {} exception: {}", backupUdid, ex);
