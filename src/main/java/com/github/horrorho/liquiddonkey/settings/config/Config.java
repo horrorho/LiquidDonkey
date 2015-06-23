@@ -40,7 +40,7 @@ public final class Config {
     public static Config newInstance(Configuration config) {
         return newInstance(
                 AuthenticationConfig.newInstance(config),
-                BackupDownloaderFactoryConfig.newInstance(config),
+                SnapshotFactoryConfig.newInstance(config),
                 DirectoryConfig.newInstance(config),
                 DonkeyExecutorConfig.newInstance(config),
                 DonkeyFactoryConfig.newInstance(config),
@@ -52,7 +52,7 @@ public final class Config {
 
     public static Config newInstance(
             AuthenticationConfig authentication,
-            BackupDownloaderFactoryConfig backupDownloaderFactory,
+            SnapshotFactoryConfig backupDownloaderFactory,
             DirectoryConfig directory,
             DonkeyExecutorConfig donkeyExecutor,
             DonkeyFactoryConfig donkeyFactory,
@@ -73,7 +73,7 @@ public final class Config {
     }
 
     private final AuthenticationConfig authentication;
-    private final BackupDownloaderFactoryConfig backupDownloaderFactory;
+    private final SnapshotFactoryConfig backupDownloaderFactory;
     private final DirectoryConfig directory;
     private final DonkeyExecutorConfig donkeyExecutor;
     private final DonkeyFactoryConfig donkeyFactory;
@@ -84,7 +84,7 @@ public final class Config {
 
     private Config(
             AuthenticationConfig authentication,
-            BackupDownloaderFactoryConfig backupDownloaderFactory,
+            SnapshotFactoryConfig backupDownloaderFactory,
             DirectoryConfig directory,
             DonkeyExecutorConfig donkeyExecutor,
             DonkeyFactoryConfig donkeyFactory,
@@ -108,7 +108,7 @@ public final class Config {
         return authentication;
     }
 
-    public BackupDownloaderFactoryConfig backupDownloaderFactory() {
+    public SnapshotFactoryConfig snapshotFactory() {
         return backupDownloaderFactory;
     }
 

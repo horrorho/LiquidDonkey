@@ -35,19 +35,19 @@ import net.jcip.annotations.ThreadSafe;
  */
 @Immutable
 @ThreadSafe
-public final class BackupDownloaderFactoryConfig {
+public final class SnapshotFactoryConfig {
 
-    public static BackupDownloaderFactoryConfig newInstance(Configuration config) {
+    public static SnapshotFactoryConfig newInstance(Configuration config) {
         return newInstance(config.get(Property.ENGINE_AGGRESSIVE, config::asBoolean));
     }
 
-    public static BackupDownloaderFactoryConfig newInstance(boolean toHuntFirstSnapshot) {
-        return new BackupDownloaderFactoryConfig(toHuntFirstSnapshot);
+    public static SnapshotFactoryConfig newInstance(boolean toHuntFirstSnapshot) {
+        return new SnapshotFactoryConfig(toHuntFirstSnapshot);
     }
 
     private final boolean toHuntFirstSnapshot;
 
-    BackupDownloaderFactoryConfig(boolean toHuntFirstSnapshot) {
+    SnapshotFactoryConfig(boolean toHuntFirstSnapshot) {
         this.toHuntFirstSnapshot = toHuntFirstSnapshot;
     }
 

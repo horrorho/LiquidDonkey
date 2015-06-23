@@ -23,9 +23,12 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.aold.SnapshotDownloader;
-import com.github.horrorho.liquiddonkey.cloud.aold.SnapshotSelector;
+import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
+import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
+import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagFactory;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.HttpFactory;
 import com.github.horrorho.liquiddonkey.printer.Level;
@@ -37,6 +40,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import net.jcip.annotations.ThreadSafe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Looter.
@@ -45,6 +50,8 @@ import net.jcip.annotations.ThreadSafe;
  */
 @ThreadSafe
 public class Looter implements Closeable {
+
+    private static final Logger logger = LoggerFactory.getLogger(Looter.class);
 
     private final Config config;
     private final Http http;
@@ -67,29 +74,36 @@ public class Looter implements Closeable {
     public void loot() {
         printer.println(Level.VV, "Authenticating: " + config.authentication().id());
         Authentication authentication = Authentication.from(http, config.authentication());
-
         UnaryOperator<List<Backup>> backupSelector = BackupSelector.newInstance(config.selection().backups(), printer);
-        DonkeyFactory donkeyFactory = DonkeyFactory.newInstance(config.donkeyFactory(), config.directory(), printer);
-        DonkeyExecutor donkeyExecutor = DonkeyExecutor.newInstance(donkeyFactory, config.donkeyExecutor());
-        FileFilter fileFilter = FileFilter.getInstance(config.fileFilter());
-        SnapshotSelector snapshotSelector = SnapshotSelector.newInstance(printer, config.selection().snapshots());
-
-        BackupDownloaderFactory backupDownloaderFactory = BackupDownloaderFactory.newInstance(
-                authentication.client(),
-                config.backupDownloaderFactory(),
-                donkeyExecutor,
-                fileFilter,
-                printer,
-                snapshotSelector,
-                Tally.newInstance(),
-                Tally.newInstance());
-
         Account account = Account.newInstance(authentication.client(), printer);
 
         backupSelector.apply(account.backups()).stream()
-                .map(backupDownloaderFactory::of)
+                .forEach(backup -> backup(authentication.client(), backup));
+    }
+
+    void backup(Client client, Backup backup) {
+
+        FileFilter fileFilter = FileFilter.getInstance(config.fileFilter());
+        SnapshotFactory factory = SnapshotFactory.newInstance(client, backup, config.selection().snapshots(), fileFilter, config.snapshotFactory());
+        DonkeyFactory donkeyFactory = DonkeyFactory.newInstance(config.donkeyFactory(), config.directory(), printer);
+        SnapshotDownloader downloader = SnapshotDownloader.newInstance(donkeyFactory, config.donkeyExecutor());
+
+        KeyBag keybag;
+        try {
+            keybag = KeyBagFactory.from(client.getKeys(backup.udid()));
+        } catch (IOException ex) {
+            throw new FatalException(ex);
+        } catch (BadDataException ex) {
+            logger.warn("-- backup() > keybag failure for {}: {}", backup.udidString(), ex);
+            return;
+        }
+
+        Tally tally = Tally.newInstance();
+        backup.snapshots().stream()
+                .map(factory::of)
                 .filter(Objects::nonNull)
-                .forEach(SnapshotDownloader::backup);
+                .forEach(snapshot -> downloader.execute(client, backup, keybag, snapshot, tally));
+
     }
 
     @Override

@@ -39,23 +39,26 @@ import net.jcip.annotations.ThreadSafe;
 @Immutable
 @ThreadSafe
 public final class SnapshotFilter implements Predicate<Integer> {
-    
-    public static SnapshotFilter newInstance(Collection<Integer> requested, Collection<Integer> available) {
-        
+
+    public static SnapshotFilter newInstance(Backup backup, Collection<Integer> requested) {
+        return newInstance(backup.snapshots(), requested);
+    }
+
+    public static SnapshotFilter newInstance(Collection<Integer> available, Collection<Integer> requested) {
         int latest = available.stream().mapToInt(Integer::intValue).max().orElse(0);
-        
+
         return new SnapshotFilter(
                 requested.stream().map(request -> request < 0 ? latest + request + 1 : request)
                 .filter(id -> id > 1)
                 .collect(Collectors.toSet()));
     }
-    
+
     private final Set<Integer> ids;
-    
+
     SnapshotFilter(Set<Integer> ids) {
         this.ids = Objects.requireNonNull(ids);
     }
-    
+
     @Override
     public boolean test(Integer id) {
         return ids.contains(id);

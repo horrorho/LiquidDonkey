@@ -64,9 +64,9 @@ import org.slf4j.LoggerFactory;
  */
 @Immutable
 @ThreadSafe
-public final class DonkeyExecutor {
+public final class SnapshotDownloader {
 
-    private static final Logger logger = LoggerFactory.getLogger(DonkeyExecutor.class);
+    private static final Logger logger = LoggerFactory.getLogger(SnapshotDownloader.class);
 
     /**
      * Returns a new instance.
@@ -75,9 +75,9 @@ public final class DonkeyExecutor {
      * @param config not null
      * @return a new instance, not null
      */
-    public static DonkeyExecutor newInstance(DonkeyFactory factory, DonkeyExecutorConfig config) {
+    public static SnapshotDownloader newInstance(DonkeyFactory factory, DonkeyExecutorConfig config) {
 
-        return new DonkeyExecutor(
+        return new SnapshotDownloader(
                 factory,
                 config.threads(),
                 config.staggerDelayMs(),
@@ -89,7 +89,7 @@ public final class DonkeyExecutor {
     private final int staggerDelayMs;
     private final int retryCount;
 
-    DonkeyExecutor(DonkeyFactory factory, int threads, int staggerDelayMs, int retryCount) {
+    SnapshotDownloader(DonkeyFactory factory, int threads, int staggerDelayMs, int retryCount) {
         this.factory = Objects.requireNonNull(factory);
         this.threads = threads;
         this.staggerDelayMs = staggerDelayMs;

@@ -25,6 +25,8 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.exception.FatalException;
+import com.github.horrorho.liquiddonkey.settings.config.SnapshotFactoryConfig;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -52,34 +54,34 @@ public final class SnapshotFactory {
     public static SnapshotFactory newInstance(
             Client client,
             Backup backup,
-            Predicate<Integer> idFilter,
+            List<Integer> snapshots,
             Predicate<ICloud.MBSFile> fileFilter,
-            boolean hunt) {
+            SnapshotFactoryConfig config) {
 
         return new SnapshotFactory(
                 client,
                 backup.udid(),
                 backup.snapshots(),
-                idFilter,
+                SnapshotFilter.newInstance(backup, snapshots),
                 fileFilter,
-                hunt);
+                config.toHuntFirstSnapshot());
     }
 
     static SnapshotFactory newInstance(
             Client client,
             ByteString udid,
             Collection<Integer> snapshots,
-            Predicate<Integer> idFilter,
+            Predicate<Integer> snapshotFilter,
             Predicate<ICloud.MBSFile> fileFilter,
             boolean hunt) {
 
-        return new SnapshotFactory(client, udid, snapshots, idFilter, fileFilter, hunt);
+        return new SnapshotFactory(client, udid, snapshots, snapshotFilter, fileFilter, hunt);
     }
 
     private final Client client;
     private final ByteString udid;
     private final List<Integer> snapshots;
-    private final Predicate<Integer> idFilter;
+    private final Predicate<Integer> snapshotFilter;
     private final Predicate<ICloud.MBSFile> fileFilter;
     private final boolean hunt;
 
@@ -87,25 +89,29 @@ public final class SnapshotFactory {
             Client client,
             ByteString udid,
             Collection<Integer> snapshots,
-            Predicate<Integer> filter,
+            Predicate<Integer> snapshotFilter,
             Predicate<ICloud.MBSFile> fileFilter,
             boolean hunt) {
 
         this.client = Objects.requireNonNull(client);
         this.udid = Objects.requireNonNull(udid);
         this.snapshots = new ArrayList<>(new HashSet<>(snapshots));
-        this.idFilter = Objects.requireNonNull(filter);
+        this.snapshotFilter = Objects.requireNonNull(snapshotFilter);
         this.fileFilter = Objects.requireNonNull(fileFilter);
         this.hunt = hunt;
 
         Collections.sort(this.snapshots);
     }
 
-    public Snapshot of(int id) throws IOException {
-        logger.trace("<< id() < id: {}", id);
-        Snapshot snapshot = snapshot(id);
-        logger.trace(">> id() > snapshot: {}", snapshot);
-        return snapshot;
+    public Snapshot of(int id) {
+        try {
+            logger.trace("<< id() < id: {}", id);
+            Snapshot snapshot = snapshot(id);
+            logger.trace(">> id() > snapshot: {}", snapshot);
+            return snapshot;
+        } catch (IOException ex) {
+            throw new FatalException(ex);
+        }
     }
 
     Snapshot snapshot(int id) throws IOException {
@@ -113,7 +119,7 @@ public final class SnapshotFactory {
             logger.warn("-- of() > bad id: {}", id);
         }
 
-        if (!idFilter.test(id)) {
+        if (!snapshotFilter.test(id)) {
             logger.debug("-- of() > filtered: {}", id);
             return null;
         }
