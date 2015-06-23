@@ -21,8 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.cloud;
+package com.github.horrorho.liquiddonkey.cloud.aold;
 
+import com.github.horrorho.liquiddonkey.cloud.*;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
@@ -102,20 +103,20 @@ public final class DonkeyExecutor {
      * @param client not null
      * @param backup not null
      * @param keyBag not null
-     * @param snapshot not null
-     * @param tally not null
-     * @return the list of any failed signatures, not null
+     * @param snapshot the required snapshot
+     * @param signatures the required signatures, not null
+     * @param tally the Tally, not null
+     * @return the list of failed signatures, not null
      */
     public Map<ByteString, Set<ICloud.MBSFile>> execute(
             Client client,
             Backup backup,
             KeyBag keyBag,
-            Snapshot snapshot,
+            int snapshot,
+            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures,
             Tally tally) {
 
         logger.trace("<< execute()");
-
-        ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures = snapshot.signatures();
 
         tally.reset(Tally.size(signatures));
         List<Map<ByteString, Set<ICloud.MBSFile>>> failed = new ArrayList<>();
@@ -124,7 +125,7 @@ public final class DonkeyExecutor {
         while (count++ < retryCount) {
             logger.debug("-- execute() : count: {}/{} signatures: {}", count, retryCount, signatures.size());
             failed.stream().forEach(signatures::putAll);
-            failed = doExecute(client, backup, keyBag, snapshot.id(), signatures, tally);
+            failed = doExecute(client, backup, keyBag, snapshot, signatures, tally);
         }
 
         logger.trace(">> execute()");

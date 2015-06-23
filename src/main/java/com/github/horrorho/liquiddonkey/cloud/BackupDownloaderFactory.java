@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.aold.SnapshotDownloader;
 import com.github.horrorho.liquiddonkey.cloud.aold.SnapshotSelector;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
@@ -39,7 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * BackupDownloader factory.
+ * SnapshotDownloader factory.
  *
  * @author ahseya
  */
@@ -117,7 +118,7 @@ public final class BackupDownloaderFactory {
      * @param backup not null
      * @return a new instance, or null if it could not be created
      */
-    public BackupDownloader of(Backup backup) {
+    public SnapshotDownloader of(Backup backup) {
         List<Integer> snapshots = snapshotSelector.apply(backup);
         String backupUdid = backup.udidString();
 
@@ -127,7 +128,7 @@ public final class BackupDownloaderFactory {
         }
 
         try {
-            return BackupDownloader.newInstance(
+            return SnapshotDownloader.newInstance(
                     client,
                     backup,
                     donkeyExecutor,

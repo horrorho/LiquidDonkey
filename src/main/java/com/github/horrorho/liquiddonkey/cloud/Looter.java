@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.aold.SnapshotDownloader;
 import com.github.horrorho.liquiddonkey.cloud.aold.SnapshotSelector;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.http.Http;
@@ -88,7 +89,7 @@ public class Looter implements Closeable {
         backupSelector.apply(account.backups()).stream()
                 .map(backupDownloaderFactory::of)
                 .filter(Objects::nonNull)
-                .forEach(BackupDownloader::backup);
+                .forEach(SnapshotDownloader::backup);
     }
 
     @Override

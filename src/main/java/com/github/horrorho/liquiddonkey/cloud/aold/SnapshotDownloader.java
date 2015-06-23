@@ -21,8 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.cloud;
+package com.github.horrorho.liquiddonkey.cloud.aold;
 
+import com.github.horrorho.liquiddonkey.cloud.Backup;
+import com.github.horrorho.liquiddonkey.cloud.DonkeyExecutor;
+import com.github.horrorho.liquiddonkey.cloud.Tally;
 import com.github.horrorho.liquiddonkey.cloud.file.Mode;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
@@ -49,14 +52,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * BackupDownloader.
+ * SnapshotDownloader.
  *
  * @author Ahseya
  */
 @NotThreadSafe
-public final class BackupDownloader {
+public final class SnapshotDownloader {
 
-    private static final Logger logger = LoggerFactory.getLogger(BackupDownloader.class);
+    private static final Logger logger = LoggerFactory.getLogger(SnapshotDownloader.class);
 
     /**
      * Returns a new instance.
@@ -75,7 +78,7 @@ public final class BackupDownloader {
      * @throws IOException
      * @throws BadDataException
      */
-    public static BackupDownloader newInstance(
+    public static SnapshotDownloader newInstance(
             Client client,
             Backup backup,
             DonkeyExecutor executor,
@@ -88,7 +91,7 @@ public final class BackupDownloader {
             Tally signatureTally
     ) throws IOException, BadDataException {
 
-        return new BackupDownloader(
+        return new SnapshotDownloader(
                 client,
                 backup,
                 executor,
@@ -113,7 +116,7 @@ public final class BackupDownloader {
     private final Tally signatureTally;
     private final Map<Integer, List<MBSFile>> filtered = new HashMap<>();
 
-    BackupDownloader(
+    SnapshotDownloader(
             Client client,
             Backup backup,
             DonkeyExecutor executor,
@@ -154,37 +157,7 @@ public final class BackupDownloader {
         logger.trace(">> backup()");
     }
 
-    void download(int snapshot) {
-        try {
-            List<ICloud.MBSFile> files = toHuntFirstSnapshot && snapshot == 1
-                    // The initial snapshots don't always reside at snapshot 1.
-                    ? files(snapshot, secondMinimum(snapshots))
-                    : files(snapshot);
 
-            if (files == null) {
-                logger.warn("-- download() > snapshot not found: {}", snapshot);
-                printer.println(Level.WARN, "Snapshot not found: " + snapshot);
-            } else {
-                printer.println(Level.V, "Retrieving snapshot: " + snapshot);
-                download(snapshot, files, signatureTally);
-            }
-        } catch (IOException ex) {
-            logger.warn("-- download() > snapshot: {} exception: {}", snapshot, ex);
-            printer.println(Level.WARN, "Snapshot: " + snapshot, ex);
-        }
-    }
-
-    List<ICloud.MBSFile> files(int snapshot) throws IOException {
-        try {
-            return client.listFiles(backup.udid(), snapshot);
-        } catch (HttpResponseException ex) {
-            if (ex.getStatusCode() == 404) {
-                logger.trace("-- files() > snapshot not found: {}", snapshot);
-                return null;
-            }
-            throw ex;
-        }
-    }
 
     List<ICloud.MBSFile> files(int from, int to) throws IOException {
         // Hunt for the base snapshot if it's not present as snapshot 1.
@@ -194,10 +167,6 @@ public final class BackupDownloader {
             files = files(snapshot);
         } while (++snapshot < to && files == null);
         return files;
-    }
-
-    int secondMinimum(List<Integer> snapshots) {
-        return snapshots.stream().mapToInt(Integer::intValue).filter(i -> i != 1).min().orElse(2);
     }
 
     Tally download(int snapshot, List<ICloud.MBSFile> files, Tally signatureTally) {
