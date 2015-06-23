@@ -139,8 +139,8 @@ public final class SnapshotFactory {
         int snapshot = from;
         List<ICloud.MBSFile> files = null;
 
-        while (snapshot++ < to && files == null) {
-            files = files(snapshot);
+        while (snapshot < to && files == null) {
+            files = files(snapshot++);
         }
         return files;
     }

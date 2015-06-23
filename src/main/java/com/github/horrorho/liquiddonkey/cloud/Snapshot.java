@@ -25,7 +25,6 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.file.Mode;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.printer.Level;
 import com.google.protobuf.ByteString;
 import java.util.ArrayList;
 import java.util.HashMap;

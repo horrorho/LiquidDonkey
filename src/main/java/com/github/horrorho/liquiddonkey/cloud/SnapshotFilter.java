@@ -30,6 +30,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * SnapshotSelector.
@@ -40,6 +42,8 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class SnapshotFilter implements Predicate<Integer> {
 
+    private static final Logger logger = LoggerFactory.getLogger(SnapshotFilter.class);
+
     public static SnapshotFilter newInstance(Backup backup, Collection<Integer> requested) {
         return newInstance(backup.snapshots(), requested);
     }
@@ -49,14 +53,16 @@ public final class SnapshotFilter implements Predicate<Integer> {
 
         return new SnapshotFilter(
                 requested.stream().map(request -> request < 0 ? latest + request + 1 : request)
-                .filter(id -> id > 1)
+                .filter(id -> id > 0)
                 .collect(Collectors.toSet()));
     }
 
     private final Set<Integer> ids;
 
     SnapshotFilter(Set<Integer> ids) {
+        logger.trace("** SnapshotFilter() < {}", ids);
         this.ids = Objects.requireNonNull(ids);
+        logger.trace("** SnapshotFilter()");
     }
 
     @Override

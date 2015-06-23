@@ -96,7 +96,7 @@ public final class BatchDownloader implements Consumer<Map<ByteString, Set<MBSFi
 
     @Override
     public void accept(Map<ByteString, Set<ICloud.MBSFile>> signatures) {
-        logger.trace("<< accept() < requested: {}", signatures.size());
+        logger.trace("<< accept() < {}", signatures.size());
 
         if (signatures.isEmpty()) {
             logger.trace("<< accept() > empty list");

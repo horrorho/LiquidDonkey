@@ -90,7 +90,7 @@ public final class Batcher<K, V> implements Iterator<Map<K, V>> {
 
     @Override
     public Map<K, V> next() {
-        logger.trace("<< next() <");
+        logger.trace("<< next()");
         Map<K, V> files = new HashMap<>();
         long total = 0;
 
