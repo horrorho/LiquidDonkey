@@ -37,8 +37,8 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public class PrintConfig {
 
-    public static PrintConfig newInstance(Configuration config) {
-        return newInstance(config.get(Property.ENGINE_PRINT_STACK_TRACE, config::asBoolean));
+    public static PrintConfig newInstance(Configuration configuration) {
+        return newInstance(configuration.get(Property.ENGINE_PRINT_STACK_TRACE, configuration::asBoolean));
     }
 
     public static PrintConfig newInstance(boolean toPrintStackTrace) {

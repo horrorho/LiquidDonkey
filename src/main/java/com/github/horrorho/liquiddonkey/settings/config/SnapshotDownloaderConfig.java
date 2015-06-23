@@ -37,11 +37,11 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class SnapshotDownloaderConfig {
 
-    public static SnapshotDownloaderConfig newInstance(Configuration config) {
+    public static SnapshotDownloaderConfig newInstance(Configuration configuration) {
         return newInstance(
-                config.get(Property.ENGINE_THREAD_COUNT, config::asInteger),
-                config.get(Property.ENGINE_THREAD_STAGGER_DELAY, config::asInteger),
-                config.get(Property.ENGINE_AGGRESSIVE, config::asBoolean)
+                configuration.get(Property.ENGINE_THREAD_COUNT, configuration::asInteger),
+                configuration.get(Property.ENGINE_THREAD_STAGGER_DELAY, configuration::asInteger),
+                configuration.get(Property.ENGINE_AGGRESSIVE, configuration::asBoolean)
                         ? 2 // TODO
                         : 1);
     }

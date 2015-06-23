@@ -27,8 +27,10 @@ import com.github.horrorho.liquiddonkey.settings.Configuration;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
@@ -41,38 +43,39 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class SelectionConfig {
 
-    public static SelectionConfig newInstance(Configuration config) {
+    public static SelectionConfig newInstance(Configuration configuration) {
 
-        List<String> udid = config.contains(Property.SELECTION_UDID)
-                ? config.getList(Property.SELECTION_UDID, config::asHex).isEmpty()
+        if (configuration.contains(Property.SELECTION_UDID)) {
+            System.out.println(">>> " + configuration.getList(Property.SELECTION_UDID));
+        }
+        List<String> udid = configuration.contains(Property.SELECTION_UDID)
+                ? configuration.get(Property.SELECTION_UDID).isEmpty()
                         ? Arrays.asList("")
-                        : config.getList(Property.SELECTION_UDID, config::asHex)
+                        : configuration.getList(Property.SELECTION_UDID, configuration::asHex)
                 : new ArrayList<>();
 
-        System.out.println("<<<<< " + udid);
-
         return newInstance(
-                udid,
-                config.getList(Property.SELECTION_SNAPSHOT, config::asInteger));
+                new HashSet<>(udid),
+                new HashSet<>(configuration.getList(Property.SELECTION_SNAPSHOT, configuration::asInteger)));
     }
 
-    public static SelectionConfig newInstance(List<String> backups, List<Integer> snapshots) {
+    public static SelectionConfig newInstance(Set<String> backups, Set<Integer> snapshots) {
         return new SelectionConfig(backups, snapshots);
     }
 
-    private final List<String> backups;
-    private final List<Integer> snapshots;
+    private final Set<String> backups;
+    private final Set<Integer> snapshots;
 
-    SelectionConfig(List<String> backups, List<Integer> snapshots) {
+    SelectionConfig(Set<String> backups, Set<Integer> snapshots) {
         this.backups = Objects.requireNonNull(backups);
         this.snapshots = Objects.requireNonNull(snapshots);
     }
 
-    public List<String> backups() {
+    public Set<String> udids() {
         return backups;
     }
 
-    public List<Integer> snapshots() {
+    public Set<Integer> snapshots() {
         return snapshots;
     }
 

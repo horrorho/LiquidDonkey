@@ -37,13 +37,13 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class DonkeyFactoryConfig {
 
-    public static DonkeyFactoryConfig newInstance(Configuration config) {
+    public static DonkeyFactoryConfig newInstance(Configuration configuration) {
 
         return DonkeyFactoryConfig.newInstance(
-                config.get(Property.ENGINE_AGGRESSIVE, config::asBoolean),
-                config.get(Property.FILE_FORCE, config::asBoolean),
-                config.get(Property.FILE_SET_LAST_MODIFIED_TIMESTAMP, config::asBoolean),
-                config.get(Property.ENGINE_BATCH_SIZE_MINIMUM, config::asInteger));
+                configuration.get(Property.ENGINE_AGGRESSIVE, configuration::asBoolean),
+                configuration.get(Property.FILE_FORCE, configuration::asBoolean),
+                configuration.get(Property.FILE_SET_LAST_MODIFIED_TIMESTAMP, configuration::asBoolean),
+                configuration.get(Property.ENGINE_BATCH_SIZE_MINIMUM, configuration::asInteger));
     }
 
     public static DonkeyFactoryConfig newInstance(

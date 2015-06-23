@@ -42,29 +42,54 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class FileFilterConfig {
 
-    public static FileFilterConfig newInstance(Configuration config) {
-        ItemTypes itemTypes = ItemTypes.newInstance(config);
+    public static FileFilterConfig newInstance(Configuration configuration) {
+        ItemTypes itemTypes = ItemTypes.newInstance(configuration);
 
-        //TODO check empty null etc
-        Collection<String> relativePath
-                = new ArrayList<>(config.getList(Property.FILTER_RELATIVE_PATH));
+        Collection<String> domains = new HashSet<>();
 
-        relativePath.addAll(itemTypes.paths(config.getList(Property.FILTER_ITEM_TYPES)));
+        if (configuration.contains((Property.FILTER_DOMAIN))) {
+            domains.addAll(configuration.getList(Property.FILTER_DOMAIN));
+        }
 
-        Collection<String> extensions
-                = config.getList(Property.FILTER_EXTENSION).stream()
-                .map(ext -> ext.startsWith(".") ? ext : "." + ext)
-                .collect(Collectors.toSet());
+        if (domains.isEmpty()) {
+            domains.add("");
+        }
+
+        Collection<String> relativePath = new HashSet<>();
+
+        if (configuration.contains(Property.FILTER_RELATIVE_PATH)) {
+            relativePath.addAll(configuration.getList(Property.FILTER_RELATIVE_PATH));
+        }
+
+        if (configuration.contains(Property.FILTER_ITEM_TYPES)) {
+            relativePath.addAll(itemTypes.paths(configuration.getList(Property.FILTER_ITEM_TYPES)));
+        }
+
+        if (relativePath.isEmpty()) {
+            relativePath.add("");
+        }
+
+        Collection<String> extensions = new HashSet<>();
+
+        if (configuration.contains(Property.FILTER_EXTENSION)) {
+            extensions.addAll(configuration.getList(Property.FILTER_EXTENSION).stream()
+                    .map(ext -> ext.startsWith(".") || ext.isEmpty() ? ext : "." + ext)
+                    .collect(Collectors.toSet()));
+        }
+
+        if (extensions.isEmpty()) {
+            extensions.add("");
+        }
 
         return newInstance(
-                config.getList(Property.FILTER_DOMAIN),
-                config.getList(Property.FILTER_RELATIVE_PATH),
+                domains,
+                relativePath,
                 extensions,
-                config.get(Property.FILTER_DATE_MAX, config::asTimestamp),
-                config.get(Property.FILTER_DATE_MIN, config::asTimestamp),
+                configuration.get(Property.FILTER_DATE_MAX, configuration::asTimestamp),
+                configuration.get(Property.FILTER_DATE_MIN, configuration::asTimestamp),
                 // * 1024 as kilobytes to bytes
-                config.get(Property.FILTER_SIZE_MAX, config::asLong) * 1024,
-                config.get(Property.FILTER_SIZE_MIN, config::asLong) * 1024);
+                configuration.get(Property.FILTER_SIZE_MAX, configuration::asLong) * 1024,
+                configuration.get(Property.FILTER_SIZE_MIN, configuration::asLong) * 1024);
     }
 
     public static FileFilterConfig newInstance(

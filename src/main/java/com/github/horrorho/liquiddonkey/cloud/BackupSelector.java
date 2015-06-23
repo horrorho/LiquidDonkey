@@ -28,7 +28,9 @@ import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.util.Selector;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -56,10 +58,10 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
      * @param printer the Printer, not null
      * @return a new instance, not null
      */
-    public static UnaryOperator<List<Backup>> newInstance(List<String> commandLineUdids, Printer printer) {
+    public static UnaryOperator<List<Backup>> newInstance(Collection<String> commandLineUdids, Printer printer) {
         return commandLineUdids.isEmpty()
                 ? new User(printer)
-                : new Udid(printer, commandLineUdids);
+                : new Udid(printer, new ArrayList<>(commandLineUdids));
     }
 
     protected final Printer printer;
@@ -106,7 +108,8 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
         }
 
         private boolean matches(Backup backup) {
-            return commandLineUdids.stream().anyMatch(udid -> backup.udidString().contains(udid));
+            return commandLineUdids.stream()
+                    .anyMatch(udid -> backup.udidString().toLowerCase(Locale.US).contains(udid));
         }
     }
 

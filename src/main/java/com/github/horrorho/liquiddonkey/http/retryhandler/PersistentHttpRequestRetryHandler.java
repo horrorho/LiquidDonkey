@@ -109,46 +109,46 @@ public final class PersistentHttpRequestRetryHandler implements HttpRequestRetry
         HttpRequest request = clientContext.getRequest();
 
         if (request instanceof HttpExecutionAware && (((HttpExecutionAware) request).isAborted())) {
-            logger.debug("-- retryRequest() > {} {} > false (aborted)", request.getRequestLine(), exception.toString());
+            logger.debug("-- doRetryRequest() > {} {} > false (aborted)", request.getRequestLine(), exception.toString());
             return false;
         }
 
         if (executionCount > retryCount) {
-            logger.debug("-- retryRequest() > {} {} > false (limit)", request.getRequestLine(), exception.toString());
+            logger.debug("-- doRetryRequest() > {} {} > false (limit)", request.getRequestLine(), exception.toString());
             return false;
         }
 
         if (exception instanceof SSLException) {
-            logger.debug("-- retryRequest() > {} {} > false (SSLException)",
+            logger.debug("-- doRetryRequest() > {} {} > false (SSLException)",
                     request.getRequestLine(), exception.toString());
             return false;
         }
 
         if (exception instanceof UnknownHostException && retryCount > 3) {
-            logger.trace("-- retryRequest() > {} {} > UnknownHostException sleep({})",
+            logger.trace("-- doRetryRequest() > {} {} > UnknownHostException sleep({})",
                     request.getRequestLine(), exception.toString(), retryDelayMs);
             sleep(timeOutMs);
         }
 
         if (retryCount > 3) {
-            logger.trace("-- retryRequest() > {} {} > sleep({})",
+            logger.trace("-- doRetryRequest() > {} {} > sleep({})",
                     request.getRequestLine(), exception.toString(), retryDelayMs);
             sleep(timeOutMs);
         }
 
         if (!(request instanceof HttpEntityEnclosingRequest)) {
-            logger.debug("-- retryRequest() > {} {} > true (idempotent)",
+            logger.debug("-- doRetryRequest() > {} {} > true (idempotent)",
                     request.getRequestLine(), exception.toString());
             return true;
         }
 
         if (!clientContext.isRequestSent() || requestSentRetryEnabled) {
-            logger.debug("-- retryRequest() > {} {} > true (non-idempotent)",
+            logger.debug("-- doRetryRequest() > {} {} > true (non-idempotent)",
                     request.getRequestLine(), exception.toString());
             return true;
         }
 
-        logger.debug("-- retryRequest() : {} >> {} > false (non-idempotent)",
+        logger.debug("-- doRetryRequest() : {} >> {} > false (non-idempotent)",
                 request.getRequestLine(), exception.toString());
         return false;
     }

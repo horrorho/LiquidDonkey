@@ -74,7 +74,7 @@ public class Looter implements Closeable {
     public void loot() {
         printer.println(Level.VV, "Authenticating: " + config.authentication().id());
         Authentication authentication = Authentication.from(http, config.authentication());
-        UnaryOperator<List<Backup>> backupSelector = BackupSelector.newInstance(config.selection().backups(), printer);
+        UnaryOperator<List<Backup>> backupSelector = BackupSelector.newInstance(config.selection().udids(), printer);
         Account account = Account.newInstance(authentication.client(), printer);
 
         backupSelector.apply(account.backups()).stream()

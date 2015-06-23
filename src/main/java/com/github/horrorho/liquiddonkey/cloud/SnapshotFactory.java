@@ -54,7 +54,7 @@ public final class SnapshotFactory {
     public static SnapshotFactory newInstance(
             Client client,
             Backup backup,
-            List<Integer> snapshots,
+            Collection<Integer> snapshots,
             Predicate<ICloud.MBSFile> fileFilter,
             SnapshotFactoryConfig config) {
 

@@ -38,7 +38,7 @@ import org.junit.runner.RunWith;
 @RunWith(JUnitParamsRunner.class)
 public class CommandLineConfigurationTest {
 
-    private final CommandLineConfiguration commandLineConfiguration = CommandLineConfiguration.newInstance();
+    private final CommandLineConfigurationFactory commandLineConfiguration = CommandLineConfigurationFactory.getInstance();
     private final CommandLineOptions options = CommandLineOptions.getInstance();
     private final String version = "version test";
 

@@ -37,10 +37,10 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class AuthenticationConfig {
 
-    public static AuthenticationConfig newInstance(Configuration config) {
+    public static AuthenticationConfig newInstance(Configuration configuration) {
         return AuthenticationConfig.newInstance(
-                config.get(Property.AUTHENTICATION_APPLEID),
-                config.get(Property.AUTHENTICATION_PASSWORD));
+                configuration.get(Property.AUTHENTICATION_APPLEID),
+                configuration.get(Property.AUTHENTICATION_PASSWORD));
     }
 
     public static AuthenticationConfig newInstance(String id, String password) {

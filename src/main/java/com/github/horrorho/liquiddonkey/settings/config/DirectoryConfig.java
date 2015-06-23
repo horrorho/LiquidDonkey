@@ -39,10 +39,10 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class DirectoryConfig {
 
-    public static DirectoryConfig newInstance(Configuration config) {
-        return newInstance(Paths.get(config.get(Property.FILE_OUTPUT_DIRECTORY)),
-                config.get(Property.FILE_COMBINED, config::asBoolean),
-                config.get(Property.FILE_FLAT, config::asBoolean));
+    public static DirectoryConfig newInstance(Configuration configuration) {
+        return newInstance(Paths.get(configuration.get(Property.FILE_OUTPUT_DIRECTORY)),
+                configuration.get(Property.FILE_COMBINED, configuration::asBoolean),
+                configuration.get(Property.FILE_FLAT, configuration::asBoolean));
     }
 
     public static DirectoryConfig newInstance(Path base, boolean isCombined, boolean isFlat) {

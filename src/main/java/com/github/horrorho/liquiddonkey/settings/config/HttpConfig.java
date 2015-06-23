@@ -38,26 +38,26 @@ import net.jcip.annotations.ThreadSafe;
 public final class HttpConfig {
 
  
-    public static HttpConfig newInstance(Configuration config) {
-        boolean isPersistent = config.get(Property.ENGINE_PERSISTENT, config::asBoolean);
-        boolean isRelaxedSSL = config.get(Property.HTTP_RELAX_SSL, config::asBoolean);
+    public static HttpConfig newInstance(Configuration configuration) {
+        boolean isPersistent = configuration.get(Property.ENGINE_PERSISTENT, configuration::asBoolean);
+        boolean isRelaxedSSL = configuration.get(Property.HTTP_RELAX_SSL, configuration::asBoolean);
 
         return newInstance(
                 isPersistent,
                 isRelaxedSSL,
-                config.get(Property.HTTP_MAX_CONNECTIONS, config::asInteger),
+                configuration.get(Property.HTTP_MAX_CONNECTIONS, configuration::asInteger),
                 isPersistent
-                        ? config.get(Property.HTTP_RETRY_COUNT_PERSISTENT, config::asInteger)
-                        : config.get(Property.HTTP_RETRY_COUNT, config::asInteger),
+                        ? configuration.get(Property.HTTP_RETRY_COUNT_PERSISTENT, configuration::asInteger)
+                        : configuration.get(Property.HTTP_RETRY_COUNT, configuration::asInteger),
                 isPersistent
-                        ? config.get(Property.HTTP_RETRY_DELAY_MS_PERSISTENT, config::asInteger)
-                        : config.get(Property.HTTP_RETRY_DELAY_MS, config::asInteger),
+                        ? configuration.get(Property.HTTP_RETRY_DELAY_MS_PERSISTENT, configuration::asInteger)
+                        : configuration.get(Property.HTTP_RETRY_DELAY_MS, configuration::asInteger),
                 isPersistent
-                        ? config.get(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT_PERSISTENT, config::asInteger)
-                        : config.get(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT, config::asInteger),
-                config.get(Property.HTTP_TIMEOUT_MS, config::asInteger),
-                config.get(Property.HTTP_VALID_AFTER_INACTIVITY_MS, config::asInteger),
-                config.get(Property.HTTP_DEFAULT_USER_AGENT));
+                        ? configuration.get(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT_PERSISTENT, configuration::asInteger)
+                        : configuration.get(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT, configuration::asInteger),
+                configuration.get(Property.HTTP_TIMEOUT_MS, configuration::asInteger),
+                configuration.get(Property.HTTP_VALID_AFTER_INACTIVITY_MS, configuration::asInteger),
+                configuration.get(Property.HTTP_DEFAULT_USER_AGENT));
     }
 
     public static HttpConfig newInstance(

@@ -37,21 +37,21 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 /**
- * CommandLineConfiguration.
+ * CommandLineConfigurationFactory.
  *
  * @author Ahseya
  */
 @Immutable
 @ThreadSafe
-public final class CommandLineConfiguration {
+public final class CommandLineConfigurationFactory {
 
-    private static final CommandLineConfiguration instance = new CommandLineConfiguration();
+    private static final CommandLineConfigurationFactory instance = new CommandLineConfigurationFactory();
 
-    public static CommandLineConfiguration newInstance() {
+    public static CommandLineConfigurationFactory getInstance() {
         return instance;
     }
 
-    CommandLineConfiguration() {
+    CommandLineConfigurationFactory() {
     }
 
     public Configuration configuration(
@@ -67,7 +67,7 @@ public final class CommandLineConfiguration {
         if (cmd.hasOption(commandLineOptions.help())) {
             HelpFormatter helpFormatter = new HelpFormatter();
             helpFormatter.setOptionComparator(null);
-            helpFormatter.printHelp("DonkeyLooter appleid password [OPTION]...", options);
+            helpFormatter.printHelp("LiquidDonkey appleid password [OPTION]...", options);
             return null;
         }
 

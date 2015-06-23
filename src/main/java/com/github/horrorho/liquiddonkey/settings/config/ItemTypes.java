@@ -44,8 +44,8 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class ItemTypes {
 
-    public static ItemTypes newInstance(Configuration config) {
-        return new ItemTypes(itemTypeToPaths(config));
+    public static ItemTypes newInstance(Configuration configuration) {
+        return new ItemTypes(itemTypeToPaths(configuration));
     }
 
     static Map<String, Set<String>> itemTypeToPaths(Configuration config) {

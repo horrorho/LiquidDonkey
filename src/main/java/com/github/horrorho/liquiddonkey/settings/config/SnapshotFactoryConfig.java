@@ -37,8 +37,8 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class SnapshotFactoryConfig {
 
-    public static SnapshotFactoryConfig newInstance(Configuration config) {
-        return newInstance(config.get(Property.ENGINE_AGGRESSIVE, config::asBoolean));
+    public static SnapshotFactoryConfig newInstance(Configuration configuration) {
+        return newInstance(configuration.get(Property.ENGINE_AGGRESSIVE, configuration::asBoolean));
     }
 
     public static SnapshotFactoryConfig newInstance(boolean toHuntFirstSnapshot) {

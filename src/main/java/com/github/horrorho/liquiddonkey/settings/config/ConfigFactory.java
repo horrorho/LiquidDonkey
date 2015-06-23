@@ -24,10 +24,10 @@
 package com.github.horrorho.liquiddonkey.settings.config;
 
 import com.github.horrorho.liquiddonkey.settings.Configuration;
-import com.github.horrorho.liquiddonkey.settings.CommandLineConfiguration;
+import com.github.horrorho.liquiddonkey.settings.CommandLineConfigurationFactory;
 import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
-import com.github.horrorho.liquiddonkey.settings.FileConfiguration;
-import com.github.horrorho.liquiddonkey.settings.PropertyConfiguration;
+import com.github.horrorho.liquiddonkey.settings.FileConfigurationFactory;
+import com.github.horrorho.liquiddonkey.settings.PropertyConfigurationFactory;
 import java.io.IOException;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -50,6 +50,7 @@ public final class ConfigFactory {
         return instance;
     }
 
+    private static final String URL = "/settings.properties";
     private static final ConfigFactory instance = new ConfigFactory();
     private static final Logger logger = LoggerFactory.getLogger(ConfigFactory.class);
 
@@ -59,28 +60,25 @@ public final class ConfigFactory {
     public Config from(String[] args) {
         logger.trace("<< from() < {}", (Object) args);
         try {
+            // Hard wired properties
+            Configuration configuration = PropertyConfigurationFactory.getInstance().configuration();
 
+            // Properties file
             try {
-                Properties file = FileConfiguration.getInstance().properties();
+                configuration.addAll(FileConfigurationFactory.getInstance().properties(URL));
             } catch (IOException ex) {
-                java.util.logging.Logger.getLogger(ConfigFactory.class.getName()).log(Level.SEVERE, null, ex);
+                logger.warn("-- from() > failed to load properties file: {}", ex);
             }
 
-            Configuration configuration = PropertyConfiguration.getInstance().properties();
-//configuration.forEach((k, v) -> System.out.println(k + "=" + v));
-            configuration.addAll(
-                    CommandLineConfiguration.newInstance().configuration(CommandLineOptions.getInstance(), args, "1"));
+            String version = "N/A";
 
-            configuration.forEach((k, v) -> System.out.println(k + "=" + v));
-            System.out.println("config>>>");
+            // Command line
+            configuration.addAll(CommandLineConfigurationFactory.getInstance()
+                    .configuration(CommandLineOptions.getInstance(), args, version));
 
+            // Build config
             Config config = Config.newInstance(configuration);
-            System.out.println("config<<<");
 
-            System.out.println(config.selection().backups());
-            System.out.println(config.selection().backups().size());
-
-            System.exit(0);
             logger.trace(">> from() > {}", config);
             return config;
 

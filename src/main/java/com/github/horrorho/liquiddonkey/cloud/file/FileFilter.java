@@ -83,7 +83,7 @@ public final class FileFilter implements Predicate<MBSFile> {
     }
 
     Set<String> toLowerCase(Collection<String> collection) {
-        return collection.stream().map(s -> s.toLowerCase(Locale.getDefault())).collect(Collectors.toSet());
+        return collection.stream().map(s -> s.toLowerCase(Locale.US)).collect(Collectors.toSet());
     }
 
     @Override

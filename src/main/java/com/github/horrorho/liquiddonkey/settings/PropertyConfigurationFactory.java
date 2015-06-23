@@ -23,37 +23,34 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Properties;
+import com.github.horrorho.liquiddonkey.settings.Property;
+import com.github.horrorho.liquiddonkey.settings.Configuration;
+import java.util.stream.Stream;
+import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
 /**
  *
  * @author Ahseya
  */
+@Immutable
 @ThreadSafe
-public final class FileConfiguration {
+public final class PropertyConfigurationFactory {
 
-    private static final String URL = "/settings.properties";
+    private static final PropertyConfigurationFactory instance = new PropertyConfigurationFactory();
 
-    private static final FileConfiguration instance = new FileConfiguration(URL);
-
-    public static FileConfiguration getInstance() {
+    public static PropertyConfigurationFactory getInstance() {
         return instance;
     }
 
-    private final String url;
-
-    FileConfiguration(String url) {
-        this.url = url;
+    PropertyConfigurationFactory() {
     }
 
-    public Properties properties() throws IOException {
-        try (InputStream inputStream = this.getClass().getResourceAsStream(url)) {
-            Properties properties = new Properties();
-            properties.load(inputStream);
-            return properties;
-        }
+    public Configuration configuration() {
+        Configuration configuration = Configuration.newInstance();
+        Stream.of(Property.values())
+                .filter(property -> property.getDefaultValue() != null)
+                .forEach(property -> configuration.setProperty(property.key(), property.getDefaultValue()));
+        return configuration;
     }
 }
