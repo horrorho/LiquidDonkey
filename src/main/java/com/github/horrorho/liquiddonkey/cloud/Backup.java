@@ -203,47 +203,22 @@ public final class Backup {
         this.udid = udid;
     }
 
-    /**
-     * Returns the available snapshots.
-     *
-     * @return the available snapshots, not null
-     */
     public List<Integer> snapshots() {
         return new ArrayList<>(snapshots);
     }
 
-    /**
-     * Returns the MBSBackup's core.
-     *
-     * @return the MBSBackup's core, not null
-     */
     public ICloud.MBSBackup backup() {
         return backup;
     }
 
-    /**
-     * Returns the MBSBackup's core UDID,
-     *
-     * @return the MBSBackup's core UDID, not null
-     */
     public ByteString udid() {
         return backup.getBackupUDID();
     }
 
-    /**
-     * Returns the MBSBackup's core UDID as a lower-case hex-encoded String.
-     *
-     * @return the MBSBackup's core UDID as a lower-case hex-encoded String, not null
-     */
     public String udidString() {
         return udid;
     }
 
-    /**
-     * Returns the MBSBackup's core formatted String summary.
-     *
-     * @return the MBSBackup's core formatted String summary, not null
-     */
     public String format() {
         StringWriter stringWriter = new StringWriter();
         PrintWriter print = new PrintWriter(stringWriter);

@@ -111,6 +111,7 @@ public final class BackupDownloader {
     private final boolean toHuntFirstSnapshot;
     private final Tally snapshotTally;
     private final Tally signatureTally;
+    private final Map<Integer, List<MBSFile>> filtered = new HashMap<>();
 
     BackupDownloader(
             Client client,
@@ -131,9 +132,9 @@ public final class BackupDownloader {
         this.keyBag = Objects.requireNonNull(keyBag);
         this.printer = Objects.requireNonNull(printer);
         this.snapshots = Objects.requireNonNull(snapshots);
-        this.toHuntFirstSnapshot = toHuntFirstSnapshot;
         this.snapshotTally = Objects.requireNonNull(snapshotTally);
         this.signatureTally = Objects.requireNonNull(signatureTally);
+        this.toHuntFirstSnapshot = toHuntFirstSnapshot;
     }
 
     /**
@@ -141,15 +142,15 @@ public final class BackupDownloader {
      */
     public void backup() {
         logger.trace("<< backup() < snaphots: {}", snapshots);
-        printer.println(Level.VV, "Downloading backup: " + backup.udidString()); 
-        
+        printer.println(Level.VV, "Downloading backup: " + backup.udidString());
+
         snapshotTally.reset(snapshots.size());
-        
+
         snapshots.stream().forEach(snapshot -> {
             snapshotTally.setProgress(snapshot);
             download(snapshot);
         });
-        
+
         logger.trace(">> backup()");
     }
 
