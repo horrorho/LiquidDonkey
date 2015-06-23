@@ -130,7 +130,6 @@ public final class BackupDownloader {
     public void backup() {
         logger.trace("<< backup() < snaphots: {}", snapshots);
         printer.println(Level.VV, "Downloading backup: " + backup.udidString());
-
         snapshots.stream().forEach(this::download);
         logger.trace(">> backup()");
     }
@@ -181,17 +180,18 @@ public final class BackupDownloader {
         return snapshots.stream().mapToInt(Integer::intValue).filter(i -> i != 1).min().orElse(2);
     }
 
-    void download(int snapshot, List<ICloud.MBSFile> files) {
+    Tally download(int snapshot, List<ICloud.MBSFile> files, Tally tally) {
+
         Map<Mode, List<MBSFile>> modeToFiles = groupingBy(files, Mode::mode);
         logger.info("-- download() > modes: {}", summary(modeToFiles));
 
         Map<Boolean, List<MBSFile>> isFilteredToFiles = groupingBy(files, filter::test);
         logger.info("-- download() > filtered: {}", summary(isFilteredToFiles));
 
-        ConcurrentMap<ByteString, Set<MBSFile>> signatureToFileList
+        ConcurrentMap<ByteString, Set<MBSFile>> signatureToFileMap
                 = isFilteredToFiles.getOrDefault(Boolean.TRUE, new ArrayList<>()).stream()
                 .collect(Collectors.groupingByConcurrent(MBSFile::getSignature, Collectors.toSet()));
-        logger.info("-- download() > downloading: {}", signatureToFileList.size());
+        logger.info("-- download() > downloading: {}", signatureToFileMap.size());
 
         int totalFiles = modeToFiles.containsKey(Mode.FILE)
                 ? modeToFiles.get(Mode.FILE).size()
@@ -202,14 +202,16 @@ public final class BackupDownloader {
                 : 0;
 
         printer.println(Level.V, "Fetching " + filtered + "/" + totalFiles + ".");
-        if (!signatureToFileList.isEmpty()) {
-            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> failures
-                    = executor.execute(client, backup, keyBag, snapshot, signatureToFileList);
+        if (!signatureToFileMap.isEmpty()) {
+            Map<ByteString, Set<ICloud.MBSFile>> failures
+                    = executor.execute(client, backup, keyBag, snapshot, signatureToFileMap, tally);
 
             if (!failures.isEmpty()) {
                 printer.println(Level.WARN, "Failed signatures: " + failures.size());
             }
         }
+        
+        return tally;
     }
 
     <T, K> Map<K, List<T>> groupingBy(List<T> t, Function<T, K> classifier) {

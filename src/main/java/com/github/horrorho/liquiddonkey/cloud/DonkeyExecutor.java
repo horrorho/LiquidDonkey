@@ -34,7 +34,8 @@ import com.github.horrorho.liquiddonkey.util.CallableFunction;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -102,32 +103,32 @@ public final class DonkeyExecutor {
      * @param backup not null
      * @param keyBag not null
      * @param snapshot the required snapshot
-     * @param signatureToFileList the required files, not null
-     * @return failures, not null
+     * @param signatures the required signatures, not null
+     * @param tally the Tally, not null
+     * @return the list of failed signatures, not null
      */
-    public ConcurrentMap<ByteString, Set<ICloud.MBSFile>> execute(
+    public Map<ByteString, Set<ICloud.MBSFile>> execute(
             Client client,
             Backup backup,
             KeyBag keyBag,
             int snapshot,
-            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileList) {
+            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures,
+            Tally tally) {
 
         logger.trace("<< execute()");
 
-        // Defensive deep copy
-        ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures
-                = signatureToFileList.entrySet().stream()
-                .collect(Collectors.toConcurrentMap(Map.Entry::getKey, entry -> new HashSet<>(entry.getValue())));
+        tally.setTotal(Tally.size(signatures));
+        List<Map<ByteString, Set<ICloud.MBSFile>>> failed = new ArrayList<>();
 
         int count = 0;
-        do {
+        while (count++ < retryCount) {
             logger.debug("-- execute() : count: {}/{} signatures: {}", count, retryCount, signatures.size());
-            doExecute(client, backup, keyBag, snapshot, signatures)
-                    .stream().forEach(signatures::putAll);
-        } while (count++ < retryCount);
+            failed.stream().forEach(signatures::putAll);
+            failed = doExecute(client, backup, keyBag, snapshot, signatures, tally);
+        }
 
-        logger.trace(">> execute() : failures: {}", signatures.size());
-        return signatures;
+        logger.trace(">> execute()");
+        return failed.stream().collect(HashMap::new, Map::putAll, Map::putAll);
     }
 
     List<Map<ByteString, Set<ICloud.MBSFile>>> doExecute(
@@ -135,27 +136,40 @@ public final class DonkeyExecutor {
             Backup backup,
             KeyBag keyBag,
             int snapshot,
-            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileList) {
+            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures,
+            Tally tally) {
 
-        logger.trace("<< doExecute() < signatureToFileList: {}", signatureToFileList.size());
+        logger.trace("<< doExecute() < signatureToFileList: {}", signatures.size());
 
         ExecutorService executor = Executors.newFixedThreadPool(threads);
 
-        List<Map<ByteString, Set<ICloud.MBSFile>>> failed
-                = Stream.generate(() -> factory.from(client, backup, keyBag, snapshot, signatureToFileList))
+        List<Future<List<ArgumentExceptionPair<Map<ByteString, Set<ICloud.MBSFile>>>>>> futures
+                = Stream.generate(() -> factory.from(client, backup, keyBag, snapshot, signatures))
                 .limit(threads)
                 .map(executor::submit)
                 .peek(x -> stagger())
-                .collect(Collectors.toList()).stream()
-                // All threads fired up. 
-                .map(this::results)
+                .collect(Collectors.toList());
+        // Threads all fired up.
+        executor.shutdown();
+
+        // Await completion/ update progress.
+        while (!executor.isTerminated()) {
+            tally.setProgress(tally.progress() - Tally.size(signatures));
+            try {
+                TimeUnit.MILLISECONDS.sleep(100);
+            } catch (InterruptedException ex) {
+                logger.warn("-- doExecute() > interrupted");
+            }
+        }
+
+        // All done.
+        List<Map<ByteString, Set<ICloud.MBSFile>>> failed = futures.stream()
+                .map(this::failed)
                 .flatMap(List::stream)
                 .collect(Collectors.toList());
 
-        executor.shutdown();
-
-        if (!signatureToFileList.isEmpty()) {
-            logger.warn("-- doExecute() > signatureToFileList not empty: {}", signatureToFileList.size());
+        if (!signatures.isEmpty()) {
+            logger.warn("-- doExecute() > signatureToFileList not empty: {}", signatures.size());
         }
         if (!failed.isEmpty()) {
             logger.warn("-- doExecute() > failures: {}", failed.size());
@@ -165,12 +179,12 @@ public final class DonkeyExecutor {
         return failed;
     }
 
-    List<Map<ByteString, Set<ICloud.MBSFile>>> results(
+    List<Map<ByteString, Set<ICloud.MBSFile>>> failed(
             Future<List<ArgumentExceptionPair<Map<ByteString, Set<ICloud.MBSFile>>>>> future) {
 
         try {
             List<Map<ByteString, Set<ICloud.MBSFile>>> failed = future.get().stream()
-                    .filter(this::fatal)
+                    .filter(this::notFatalIO)
                     .map(ArgumentExceptionPair::argument)
                     .collect(Collectors.toList());
 
@@ -182,7 +196,7 @@ public final class DonkeyExecutor {
         }
     }
 
-    boolean fatal(ArgumentExceptionPair<Map<ByteString, Set<ICloud.MBSFile>>> argumentExceptionPair) {
+    boolean notFatalIO(ArgumentExceptionPair<Map<ByteString, Set<ICloud.MBSFile>>> argumentExceptionPair) {
         Exception ex = argumentExceptionPair.exception();
 
         if (!(ex instanceof UncheckedIOException)) {

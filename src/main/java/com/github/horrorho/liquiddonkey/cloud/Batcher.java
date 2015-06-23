@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.util;
+package com.github.horrorho.liquiddonkey.cloud;
 
 import java.util.HashMap;
 import java.util.Iterator;

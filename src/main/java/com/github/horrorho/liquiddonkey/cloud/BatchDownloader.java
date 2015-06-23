@@ -45,12 +45,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * SnapshotDownloader.
+ * BatchDownloader.
  *
  * @author ahseya
  */
 @NotThreadSafe
-public final class SnapshotDownloader implements Consumer<Map<ByteString, Set<MBSFile>>> {
+public final class BatchDownloader implements Consumer<Map<ByteString, Set<MBSFile>>> {
 
     /**
      * Returns a new instance.
@@ -62,17 +62,17 @@ public final class SnapshotDownloader implements Consumer<Map<ByteString, Set<MB
      * @param chunkListDownloader not null
      * @return a new instance, not null
      */
-    public static SnapshotDownloader newInstance(
+    public static BatchDownloader newInstance(
             Client client,
             ByteString backupUdid,
             int snapshot,
             LocalFileWriter writer,
             ChunkListDownloader chunkListDownloader) {
 
-        return new SnapshotDownloader(client, backupUdid, snapshot, writer, chunkListDownloader);
+        return new BatchDownloader(client, backupUdid, snapshot, writer, chunkListDownloader);
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(SnapshotDownloader.class);
+    private static final Logger logger = LoggerFactory.getLogger(BatchDownloader.class);
 
     private final Client client;
     private final ByteString backupUdid;
@@ -80,7 +80,7 @@ public final class SnapshotDownloader implements Consumer<Map<ByteString, Set<MB
     private final ChunkListDownloader chunkListDownloader;
     private final int snapshot;
 
-    SnapshotDownloader(
+    BatchDownloader(
             Client client,
             ByteString backupUdid,
             int snapshot,
@@ -95,23 +95,23 @@ public final class SnapshotDownloader implements Consumer<Map<ByteString, Set<MB
     }
 
     @Override
-    public void accept(Map<ByteString, Set<ICloud.MBSFile>> signatureToFileSet) {
-        logger.trace("<< accept() < requested: {}", signatureToFileSet.size());
+    public void accept(Map<ByteString, Set<ICloud.MBSFile>> signatures) {
+        logger.trace("<< accept() < requested: {}", signatures.size());
 
-        if (signatureToFileSet.isEmpty()) {
+        if (signatures.isEmpty()) {
             logger.trace("<< accept() > empty list");
             return;
         }
 
         try {
-            List<ICloud.MBSFile> download = signatureToFileSet.entrySet().stream()
+            List<ICloud.MBSFile> download = signatures.entrySet().stream()
                     .map(Map.Entry::getValue)
                     .flatMap(Set::stream)
                     .collect(Collectors.toList());
 
             FileGroups fileGroups = client.getFileGroups(backupUdid, snapshot, download);
 
-            downloadFileGroups(fileGroups, signatureToFileSet);
+            downloadFileGroups(fileGroups, signatures);
 
         } catch (IOException ex) {
             logger.trace(">> accept() > exception: ", ex);

@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.util.Batcher;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.Directory;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileWriter;
@@ -121,7 +120,7 @@ public final class DonkeyFactory {
      * @param backup not null
      * @param keyBag not null
      * @param snapshot the required snapshot
-     * @param signatureToFileList the required files, not null
+     * @param signatureToFileMap the required files, not null
      * @return a new instance, not null
      */
     public
@@ -131,7 +130,7 @@ public final class DonkeyFactory {
                     Backup backup,
                     KeyBag keyBag,
                     int snapshot,
-                    ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileList) {
+                    ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileMap) {
 
                 logger.trace("<< newInstance()");
 
@@ -149,7 +148,7 @@ public final class DonkeyFactory {
 
                 Batcher<ByteString, Set<ICloud.MBSFile>> batcher
                         = Batcher.<ByteString, Set<ICloud.MBSFile>>newInstance(
-                                signatureToFileList,
+                                signatureToFileMap,
                                 files -> files.stream().mapToLong(ICloud.MBSFile::getSize).findAny().orElse(0),
                                 files -> !files.stream().allMatch(localFileFilter),
                                 batchSizeBytes);
@@ -161,7 +160,7 @@ public final class DonkeyFactory {
                         printer,
                         toSetLastModifiedTime);
 
-                SnapshotDownloader downloader = SnapshotDownloader.newInstance(client,
+                BatchDownloader downloader = BatchDownloader.newInstance(client,
                         backup.udid(),
                         snapshot,
                         writer,

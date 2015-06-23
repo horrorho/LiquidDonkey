@@ -23,67 +23,58 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import java.util.concurrent.atomic.AtomicLong;
-import net.jcip.annotations.ThreadSafe;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
+import com.google.protobuf.ByteString;
+import java.util.Map;
+import java.util.Set;
+import net.jcip.annotations.NotThreadSafe;
 
 /**
  *
  * @author Ahseya
  */
-@ThreadSafe
+@NotThreadSafe
 public class Tally {
 
-    public static Tally newInstance(long total) {
-        return new Tally(total);
+    public static Tally newInstance() {
+        return new Tally();
     }
 
-    private final long total;
-    private final AtomicLong cancelled = new AtomicLong();
-    private final AtomicLong filtered = new AtomicLong();
-    private final AtomicLong failed = new AtomicLong();
-    private final AtomicLong local = new AtomicLong();
-
-    Tally(long total) {
-        this.total = total;
+    public static long size(Map<ByteString, Set<ICloud.MBSFile>> signatures) {
+        return signatures.values().stream()
+                .flatMap(Set::stream)
+                .mapToLong(MBSFile::getSize)
+                .sum();
     }
 
-    public Tally addCancelled(long delta) {
-        cancelled.addAndGet(delta);
-        return this;
+    public static long count(Map<ByteString, Set<ICloud.MBSFile>> signatures) {
+        return signatures.values().stream()
+                .mapToLong(Set::size)
+                .sum();
     }
 
-    public long cancelled() {
-        return cancelled.get();
-    }
+    private long total = 0;
+    private long progress = 0;
 
-    public Tally addFiltered(long delta) {
-        filtered.addAndGet(delta);
-        return this;
-    }
-
-    public long filtered() {
-        return filtered.get();
-    }
-
-    public Tally addFailed(long delta) {
-        failed.addAndGet(delta);
-        return this;
-    }
-
-    public long failed() {
-        return failed.get();
-    }
-
-    public Tally addLocal(long delta) {
-        local.addAndGet(delta);
-        return this;
-    }
-
-    public long local() {
-        return local.get();
+    Tally() {
     }
 
     public long total() {
         return total;
+    }
+
+    public Tally setTotal(long total) {
+        this.total = total;
+        return this;
+    }
+
+    public long progress() {
+        return progress;
+    }
+
+    public Tally setProgress(long progress) {
+        this.progress = progress;
+        return this;
     }
 }
