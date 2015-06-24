@@ -53,7 +53,7 @@ public final class Backup {
 
     private static final String NA = "N/A";
     private static final String INDENT = "\t";
-    private static final DateTimeFormatter dateTimeFormatter
+    private static final DateTimeFormatter defaultDateTimeFormatter
             = DateTimeFormatter.RFC_1123_DATE_TIME.withLocale(Locale.getDefault()).withZone(ZoneId.systemDefault());
 
     /**
@@ -61,9 +61,19 @@ public final class Backup {
      *
      * @param backup the underlying backup, not null
      * @return a new instance, not null
-     * @throws NullPointerException if the backup argument is null
      */
     public static Backup newInstance(ICloud.MBSBackup backup) {
+        return newInstance(backup, defaultDateTimeFormatter);
+    }
+
+    /**
+     * Returns a new instance.
+     *
+     * @param backup the underlying backup, not null
+     * @param dateTimeFormatter not null
+     * @return a new instance, not null
+     */
+    public static Backup newInstance(ICloud.MBSBackup backup, DateTimeFormatter dateTimeFormatter) {
 
         String size = Bytes.humanize(backup.getQuotaUsed());
 
