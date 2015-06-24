@@ -52,7 +52,7 @@ public class ConfigFactoryTest {
     @Parameters
     public <T> void testFrom(String in, Function<Config, T> function, T expected) {
         String[] args = in.split("\\s");
-        Config config = factory.from(args);
+        Config config = factory.from(args, true);
         T value = function.apply(config);
         assertThat(value, is(expected));
     }

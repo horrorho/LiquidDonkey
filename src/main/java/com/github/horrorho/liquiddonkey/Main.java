@@ -64,7 +64,7 @@ public class Main {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        Config config = ConfigFactory.getInstance().from(args);
+        Config config = ConfigFactory.getInstance().from(args, true);
 
         logger.debug("-- main() > options: {}", config);
 

@@ -57,7 +57,8 @@ public final class CommandLineConfigurationFactory {
     public Configuration configuration(
             CommandLineOptions commandLineOptions,
             String[] args,
-            String version
+            String version,
+            boolean requiresAuthenticationProperties
     ) throws ParseException {
 
         CommandLineParser parser = new DefaultParser();
@@ -76,21 +77,24 @@ public final class CommandLineConfigurationFactory {
             return null;
         }
 
+        Configuration configuration = Configuration.newInstance();
+
         switch (cmd.getArgList().size()) {
             case 0:
-                throw new ParseException("Missing appleid and password.");
+                if (requiresAuthenticationProperties) {
+                    throw new ParseException("Missing appleid and password.");
+                }
             case 1:
-                throw new ParseException("Missing password.");
+                // Authentication token
+                configuration.setProperty(Property.AUTHENTICATION_TOKEN.key(), cmd.getArgList().get(0));
             case 2:
+                // AppleId/ password pair
+                configuration.setProperty(Property.AUTHENTICATION_APPLEID.key(), cmd.getArgList().get(0));
+                configuration.setProperty(Property.AUTHENTICATION_PASSWORD.key(), cmd.getArgList().get(1));
                 break;
             default:
                 throw new ParseException("Too many non-optional arguments, expected appleid and password only.");
         }
-
-        Configuration configuration = Configuration.newInstance();
-
-        configuration.setProperty(Property.AUTHENTICATION_APPLEID.key(), cmd.getArgList().get(0));
-        configuration.setProperty(Property.AUTHENTICATION_PASSWORD.key(), cmd.getArgList().get(1));
 
         Iterator<Option> it = cmd.iterator();
 

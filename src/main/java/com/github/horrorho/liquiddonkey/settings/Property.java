@@ -23,14 +23,21 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
+import net.jcip.annotations.Immutable;
+import net.jcip.annotations.ThreadSafe;
+
 /**
+ * Configuration properties.
  *
  * @author Ahseya
  */
+@Immutable
+@ThreadSafe
 public enum Property {
 
-    AUTHENTICATION_APPLEID(""),
-    AUTHENTICATION_PASSWORD(""),
+    AUTHENTICATION_APPLEID(null),
+    AUTHENTICATION_PASSWORD(null),
+    AUTHENTICATION_TOKEN(null),
     CONFIG_PREFIX_ITEM_TYPE("ITEM_TYPE_"),
     ENGINE_BATCH_SIZE_MINIMUM("4194304"),
     ENGINE_CHUNK_LIST_DOWNLOADER_RETRY("1"),

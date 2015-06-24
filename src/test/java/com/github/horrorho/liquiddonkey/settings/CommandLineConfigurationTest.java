@@ -46,7 +46,7 @@ public class CommandLineConfigurationTest {
     @Parameters
     public void testConfiguration(Property property, String in, String expected) throws Exception {
         String[] args = in.split("\\s");
-        Configuration configuration = commandLineConfiguration.configuration(options, args, version);
+        Configuration configuration = commandLineConfiguration.configuration(options, args, version, true);
         String value = configuration.contains(property)
                 ? configuration.get(property)
                 : null;

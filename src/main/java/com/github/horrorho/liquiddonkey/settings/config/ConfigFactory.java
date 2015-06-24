@@ -55,7 +55,7 @@ public final class ConfigFactory {
     ConfigFactory() {
     }
 
-    public Config from(String[] args) {
+    public Config from(String[] args, boolean requiresAuthenticationProperties) {
         logger.trace("<< from() < {}", (Object) args);
         try {
             // Hard wired properties
@@ -72,7 +72,7 @@ public final class ConfigFactory {
 
             // Command line
             configuration.addAll(CommandLineConfigurationFactory.getInstance()
-                    .configuration(CommandLineOptions.getInstance(), args, version));
+                    .configuration(CommandLineOptions.getInstance(), args, version, requiresAuthenticationProperties));
 
             // Build config
             Config config = Config.newInstance(configuration);
