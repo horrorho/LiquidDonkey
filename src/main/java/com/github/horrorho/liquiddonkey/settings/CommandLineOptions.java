@@ -58,8 +58,8 @@ public final class CommandLineOptions {
         return new CommandLineOptions(propertyToOption(), optToProperty(propertyToOption), HELP, VERSION);
     }
 
-    static Map<Property, Option> propertyToOption() {
-        Map<Property, Option> options = new LinkedHashMap<>();
+    static LinkedHashMap<Property, Option> propertyToOption() {
+        LinkedHashMap<Property, Option> options = new LinkedHashMap<>();
 
         options.put(FILE_OUTPUT_DIRECTORY,
                 new Option("o", "output", true, "Output folder."));
@@ -148,20 +148,20 @@ public final class CommandLineOptions {
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private final Map<Property, Option> propertyToOption;
+    private final LinkedHashMap<Property, Option> propertyToOption;
     private final Map<String, Property> optToProperty;
     private final String help;
     private final String version;
 
     public CommandLineOptions(
-            Map<Property, Option> propertyToOption,
+            LinkedHashMap<Property, Option> propertyToOption,
             Map<String, Property> optToProperty,
             String help,
             String version) {
         // Defensive deep copy
-        this.propertyToOption
-                = propertyToOption.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> (Option) entry.getValue().clone()));
+        this.propertyToOption = new LinkedHashMap<>();
+        propertyToOption.forEach((k, v) -> this.propertyToOption.put(k, (Option) v.clone()));
+        
         this.optToProperty = new HashMap<>(optToProperty);
         this.help = help;
         this.version = version;
