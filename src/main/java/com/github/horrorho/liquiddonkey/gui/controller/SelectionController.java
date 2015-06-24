@@ -125,7 +125,8 @@ public class SelectionController implements Initializable {
         this.authentication = authentication;
         
         Account account = Account.newInstance(authentication.client(), Printer.instanceOf(false));
-        account.backups().stream().map(BackupProperties::newInstance).forEach(backups::add);
+        account.backups().stream()
+                .map(BackupProperties::newInstance).forEach(backups::add);
         
         downloadButtonEnabledHandler();
         checkAll.setSelected(false);

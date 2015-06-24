@@ -6,6 +6,10 @@
 package com.github.horrorho.liquiddonkey.gui.controller.data;
 
 import com.github.horrorho.liquiddonkey.cloud.Backup;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -18,7 +22,16 @@ import javafx.beans.property.StringProperty;
  */
 public class BackupProperties {
 
+    private static final DateTimeFormatter defaultDateTimeFormatter
+            = CellDateTimeFormatter.formatter().withLocale(Locale.getDefault()).withZone(ZoneId.systemDefault());
+
     public static BackupProperties newInstance(Backup backup) {
+        return newInstance(backup, defaultDateTimeFormatter);
+    }
+
+    public static BackupProperties newInstance(Backup backup, DateTimeFormatter dateTimeFormatter) {
+
+        String device = backup.marketingName() + "\n" + backup.hardwareModel();
 
         String snapshotsString = backup.snapshots().isEmpty()
                 ? "none or incomplete"
@@ -31,11 +44,13 @@ public class BackupProperties {
                 + "iOS: " + backup.productVerson() + "\n"
                 + "Size: " + backup.size() + " (Snapshot/s: " + snapshotsString + ")" + "\n";
 
+        String lastModifiedStr = dateTimeFormatter.format(Instant.ofEpochSecond(backup.lastModified()));
+
         return newInstance(
                 true,
-                backup.marketingName() + "\n" + backup.hardwareModel(),
+                device,
                 info,
-                backup.lastModified());
+                lastModifiedStr);
     }
 
     public static BackupProperties newInstance(boolean checked, String device, String info, String updated) {

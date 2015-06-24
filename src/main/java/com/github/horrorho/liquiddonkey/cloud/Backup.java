@@ -92,9 +92,11 @@ public final class Backup {
             serialNumber = NA;
         }
 
-        String lastModified = backup.hasSnapshot() && backup.getSnapshot().hasLastModified()
-                ? dateTimeFormatter.format(Instant.ofEpochSecond(backup.getSnapshot().getLastModified()))
-                : NA;
+        Instant.ofEpochSecond(backup.getSnapshot().getLastModified());
+
+        long lastModified = backup.hasSnapshot() && backup.getSnapshot().hasLastModified()
+                ? backup.getSnapshot().getLastModified()
+                : 0;
 
         String deviceName;
         String productVerson;
@@ -115,9 +117,10 @@ public final class Backup {
                 marketingName,
                 serialNumber,
                 deviceName,
-                lastModified,
                 productVerson,
-                Bytes.hex(backup.getBackupUDID()));
+                Bytes.hex(backup.getBackupUDID()),
+                dateTimeFormatter,
+                lastModified);
     }
 
     public static Backup newInstance(
@@ -128,9 +131,10 @@ public final class Backup {
             String marketingName,
             String serialNumber,
             String deviceName,
-            String lastModified,
             String productVerson,
-            String udid) {
+            String udid,
+            DateTimeFormatter dateTimeFormatter,
+            long lastModified) {
 
         return new Backup(
                 backup,
@@ -140,9 +144,10 @@ public final class Backup {
                 marketingName,
                 serialNumber,
                 deviceName,
-                lastModified,
                 productVerson,
-                udid);
+                udid,
+                dateTimeFormatter,
+                lastModified);
     }
 
     static int latestSnapshot(ICloud.MBSBackup backup) {
@@ -185,9 +190,10 @@ public final class Backup {
     private final String marketingName;
     private final String serialNumber;
     private final String deviceName;
-    private final String lastModified;
     private final String productVerson;
     private final String udid;
+    private final DateTimeFormatter dateTimeFormatter;
+    private final long lastModified;
 
     Backup(
             ICloud.MBSBackup backup,
@@ -197,20 +203,22 @@ public final class Backup {
             String marketingName,
             String serialNumber,
             String deviceName,
-            String lastModified,
             String productVerson,
-            String udid) {
+            String udid,
+            DateTimeFormatter dateTimeFormatter,
+            long lastModified) {
 
         this.backup = Objects.requireNonNull(backup);
-        this.snapshots = new ArrayList<>(Objects.requireNonNull(snapshots));
+        this.snapshots = new ArrayList<>(snapshots);
         this.size = size;
         this.hardwareModel = hardwareModel;
         this.marketingName = marketingName;
         this.serialNumber = serialNumber;
         this.deviceName = deviceName;
-        this.lastModified = lastModified;
         this.productVerson = productVerson;
         this.udid = udid;
+        this.dateTimeFormatter = Objects.requireNonNull(dateTimeFormatter);
+        this.lastModified = lastModified;
     }
 
     public List<Integer> snapshots() {
@@ -233,6 +241,9 @@ public final class Backup {
         StringWriter stringWriter = new StringWriter();
         PrintWriter print = new PrintWriter(stringWriter);
 
+        String lastModifiedStr
+                = dateTimeFormatter.format(Instant.ofEpochSecond(backup.getSnapshot().getLastModified()));
+
         String snapshotsString = snapshots.isEmpty()
                 ? "none or incomplete"
                 : snapshots.stream().map(Object::toString).collect(Collectors.joining(" "));
@@ -243,7 +254,7 @@ public final class Backup {
         print.println(INDENT + "UDID:\t" + udidString());
         print.println(INDENT + "iOS:\t" + productVerson);
         print.println(INDENT + "Size:\t" + size + " (Snapshot/s: " + snapshotsString + ")");
-        print.println(INDENT + "Last:\t" + lastModified);
+        print.println(INDENT + "Last:\t" + lastModifiedStr);
 
         return stringWriter.toString();
     }
@@ -268,7 +279,7 @@ public final class Backup {
         return deviceName;
     }
 
-    public String lastModified() {
+    public long lastModified() {
         return lastModified;
     }
 
