@@ -24,14 +24,13 @@
 package com.github.horrorho.liquiddonkey.settings.config;
 
 import com.github.horrorho.liquiddonkey.settings.Configuration;
-import com.github.horrorho.liquiddonkey.settings.CommandLineConfigurationFactory;
 import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
-import com.github.horrorho.liquiddonkey.settings.FileConfigurationFactory;
+import com.github.horrorho.liquiddonkey.settings.ConfigurationFactory;
 import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.PropertyConfigurationFactory;
 import java.io.IOException;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,12 +58,14 @@ public final class ConfigFactory {
     public Config from(String[] args) {
         logger.trace("<< from() < {}", (Object) args);
         try {
+            ConfigurationFactory factory = ConfigurationFactory.getInstance();
+
             // Hard wired properties
-            Configuration configuration = PropertyConfigurationFactory.getInstance().configuration();
+            Configuration configuration = factory.fromProperties();
 
             // Properties file
             try {
-                configuration.addAll(FileConfigurationFactory.getInstance().properties(URL));
+                configuration.addAll(factory.fromFile(URL));
             } catch (IOException ex) {
                 logger.warn("-- from() > properties file error: {}", ex);
             }
@@ -72,13 +73,21 @@ public final class ConfigFactory {
             String appName = configuration.get(Property.APP_NAME);
             String version = configuration.get(Property.PROJECT_VERSION);
 
-            Configuration commandLineConfiguration = CommandLineConfigurationFactory.getInstance().configuration(
-                    CommandLineOptions.newInstance(configuration),
-                    args,
-                    appName,
-                    version);
+            CommandLineOptions commandLineOptions = CommandLineOptions.newInstance(configuration);
 
-            if (commandLineConfiguration == null) {
+            Configuration commandLineConfiguration = factory.fromArgs(commandLineOptions, args);
+
+            if (commandLineConfiguration.contains(Property.COMMAND_LINE_HELP)) {
+                HelpFormatter helpFormatter = new HelpFormatter();
+                helpFormatter.setOptionComparator(null);
+                helpFormatter.printHelp(
+                        appName + " [OPTION]... (<token> | <appleid> <password>) ",
+                        commandLineOptions.options());
+                return null;
+            }
+
+            if (commandLineConfiguration.contains(Property.COMMAND_LINE_VERSION)) {
+                System.out.println(version);
                 return null;
             }
 
@@ -87,6 +96,11 @@ public final class ConfigFactory {
 
             // Build config
             Config config = Config.newInstance(configuration);
+
+            if (config.authentication() instanceof AuthenticationConfig.AuthenticationConfigNull) {
+                System.out.println("Missing appleid/ password or authentication token.");
+                return null;
+            }
 
             logger.trace(">> from() > {}", config);
             return config;

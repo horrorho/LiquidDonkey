@@ -49,9 +49,7 @@ public final class CommandLineOptions {
         LinkedHashMap<Property, Option> propertyToOption = propertyToOption(configuration);
         return new CommandLineOptions(
                 propertyToOption,
-                optToProperty(propertyToOption),
-                configuration.get(COMMAND_LINE_HELP),
-                configuration.get(COMMAND_LINE_VERSION));
+                optToProperty(propertyToOption));
     }
 
     static LinkedHashMap<Property, Option> propertyToOption(Configuration configuration) {
@@ -148,6 +146,11 @@ public final class CommandLineOptions {
         options.put(ENGINE_PRINT_STACK_TRACE,
                 new Option("x", "stack-trace", false, "Prints stack trace on errors, useful for debugging."));
 
+        options.put(COMMAND_LINE_HELP,
+                new Option(null, "help", false, "Display this help and exit."));
+
+        options.put(COMMAND_LINE_VERSION,
+                new Option(null, "version", false, "Output version information and exit."));
 //        options.put(FILE_FLAT,
 //                new Option("i", "--itunes-style", false, "Download files to iTunes style format."));
         return options;
@@ -179,19 +182,13 @@ public final class CommandLineOptions {
 
     private final LinkedHashMap<Property, Option> propertyToOption;
     private final Map<String, Property> optToProperty;
-    private final String help;
-    private final String version;
 
     public CommandLineOptions(
             LinkedHashMap<Property, Option> propertyToOption,
-            Map<String, Property> optToProperty,
-            String help,
-            String version) {
+            Map<String, Property> optToProperty) {
         // No defensive copies
         this.propertyToOption = Objects.requireNonNull(propertyToOption);
         this.optToProperty = Objects.requireNonNull(optToProperty);
-        this.help = help;
-        this.version = version;
     }
 
     public Options options() {
@@ -200,9 +197,6 @@ public final class CommandLineOptions {
         propertyToOption.values().stream()
                 .map(option -> (Option) option.clone())
                 .forEach(options::addOption);
-
-        options.addOption(null, help, false, "Display this help and exit.");
-        options.addOption(null, version, false, "Output version information and exit.");
 
         return options;
     }
@@ -224,13 +218,4 @@ public final class CommandLineOptions {
     public Property property(Option option) {
         return optToProperty.get(opt(option));
     }
-
-    public String help() {
-        return help;
-    }
-
-    public String version() {
-        return version;
-    }
-
 }

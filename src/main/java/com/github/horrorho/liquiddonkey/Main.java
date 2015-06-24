@@ -65,16 +65,12 @@ public class Main {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
+        logger.trace("<< main()");
 
         Config config = ConfigFactory.getInstance().from(args);
         logger.debug("-- main() > options: {}", config);
 
         if (config == null) {
-            return;
-        }
-
-        if (config.authentication() instanceof AuthenticationConfigNull) {
-            System.out.println("Missing appleid/ password or authentication token.");
             return;
         }
 
@@ -97,5 +93,7 @@ public class Main {
         if (config.print().toPrintStackTrace()) {
             DumpStackTraceHook.remove();
         }
+
+        logger.trace(">> main()");
     }
 }

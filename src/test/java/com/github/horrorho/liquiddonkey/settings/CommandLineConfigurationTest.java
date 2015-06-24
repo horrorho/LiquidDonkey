@@ -38,16 +38,14 @@ import org.junit.runner.RunWith;
 @RunWith(JUnitParamsRunner.class)
 public class CommandLineConfigurationTest {
 
-    private final CommandLineConfigurationFactory commandLineConfiguration = CommandLineConfigurationFactory.getInstance();
-    private final CommandLineOptions options = CommandLineOptions.newInstance(PropertyConfigurationFactory.getInstance().configuration());
-    private final String version = "version test";
-    private final String appName = "test";
+    private final ConfigurationFactory factory = ConfigurationFactory.getInstance();
+    private final CommandLineOptions options = CommandLineOptions.newInstance(factory.fromProperties());
 
     @Test
     @Parameters
     public void testConfiguration(Property property, String in, String expected) throws Exception {
         String[] args = in.split("\\s");
-        Configuration configuration = commandLineConfiguration.configuration(options, args, appName, version);
+        Configuration configuration = factory.fromArgs(options, args);
         String value = configuration.contains(property)
                 ? configuration.get(property)
                 : null;

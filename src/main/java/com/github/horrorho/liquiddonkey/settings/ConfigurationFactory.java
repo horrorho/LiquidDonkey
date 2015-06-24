@@ -23,8 +23,21 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.Properties;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 /**
  * ConfigurationFactory.
@@ -35,7 +48,7 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public class ConfigurationFactory {
 
-    private static ConfigurationFactory instance = new ConfigurationFactory();
+    private static final ConfigurationFactory instance = new ConfigurationFactory();
 
     public static ConfigurationFactory getInstance() {
         return instance;
@@ -44,4 +57,77 @@ public class ConfigurationFactory {
     ConfigurationFactory() {
     }
 
+    public Configuration fromArgs(CommandLineOptions commandLineOptions, String[] args) throws ParseException {
+
+        CommandLineParser parser = new DefaultParser();
+        Options options = commandLineOptions.options();
+        CommandLine cmd = parser.parse(options, args);
+
+        Configuration configuration = Configuration.newInstance();
+
+        switch (cmd.getArgList().size()) {
+            case 0:
+                // No authentication credentials
+                break;
+            case 1:
+                // Authentication token
+                configuration.setProperty(Property.AUTHENTICATION_TOKEN.key(), cmd.getArgList().get(0));
+                break;
+            case 2:
+                // AppleId/ password pair
+                configuration.setProperty(Property.AUTHENTICATION_APPLEID.key(), cmd.getArgList().get(0));
+                configuration.setProperty(Property.AUTHENTICATION_PASSWORD.key(), cmd.getArgList().get(1));
+                break;
+            default:
+                throw new ParseException(
+                        "Too many non-optional arguments, expected appleid/ password or authentication_token only.");
+        }
+
+        Iterator<Option> it = cmd.iterator();
+
+        while (it.hasNext()) {
+            Option option = it.next();
+            String opt = commandLineOptions.opt(option);
+            String key = commandLineOptions.property(option).key();
+
+            if (option.hasArgs()) {
+                configuration.setProperty(
+                        key,
+                        joined(cmd.getOptionValues(opt)));
+            } else if (option.hasArg()) {
+                configuration.setProperty(
+                        key,
+                        cmd.getOptionValue(opt));
+            } else {
+                configuration.setProperty(
+                        key,
+                        Boolean.toString(cmd.hasOption(opt)));
+            }
+        }
+        return configuration;
+    }
+
+    public Configuration fromFile(String url) throws IOException {
+        try (InputStream inputStream = this.getClass().getResourceAsStream(url)) {
+            Properties properties = new Properties();
+            if (inputStream != null) {
+                properties.load(inputStream);
+            }
+            return Configuration.newInstance().addAll(properties);
+        }
+    }
+
+    public Configuration fromProperties() {
+        Configuration configuration = Configuration.newInstance();
+        Stream.of(Property.values())
+                .filter(property -> property.getDefaultValue() != null)
+                .forEach(property -> configuration.setProperty(property.key(), property.getDefaultValue()));
+        return configuration;
+    }
+
+    String joined(String... list) {
+        return list == null
+                ? ""
+                : Arrays.asList(list).stream().collect(Collectors.joining(" "));
+    }
 }
