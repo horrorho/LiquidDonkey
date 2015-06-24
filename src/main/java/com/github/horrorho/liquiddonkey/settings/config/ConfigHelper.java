@@ -36,23 +36,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ConfigFactory.
+ * ConfigHelper.
  *
  * @author ahseya
  */
 @Immutable
 @ThreadSafe
-public final class ConfigFactory {
+public final class ConfigHelper {
 
-    public static ConfigFactory getInstance() {
+    public static ConfigHelper getInstance() {
         return instance;
     }
 
     private static final String URL = "/settings.properties";
-    private static final ConfigFactory instance = new ConfigFactory();
-    private static final Logger logger = LoggerFactory.getLogger(ConfigFactory.class);
+    private static final ConfigHelper instance = new ConfigHelper();
+    private static final Logger logger = LoggerFactory.getLogger(ConfigHelper.class);
 
-    ConfigFactory() {
+    ConfigHelper() {
     }
 
     public Config fromArgs(String[] args) {
@@ -61,68 +61,71 @@ public final class ConfigFactory {
             ConfigurationFactory factory = ConfigurationFactory.getInstance();
 
             // Hard wired properties
-            Configuration configuration = factory.fromProperties();
+            Configuration con = factory.fromProperties();
 
             // Properties file
             try {
-                configuration.addAll(factory.fromFile(URL));
+                con.addAll(factory.fromFile(URL));
             } catch (IOException ex) {
                 logger.warn("-- fromArgs() > properties file error: {}", ex);
             }
 
             // Args
-            CommandLineOptions commandLineOptions = CommandLineOptions.newInstance(configuration);
+            CommandLineOptions commandLineOptions = CommandLineOptions.newInstance(con);
             Configuration commandLineConfiguration = factory.fromArgs(commandLineOptions, args);
 
             if (commandLineConfiguration.contains(Property.COMMAND_LINE_HELP)) {
                 HelpFormatter helpFormatter = new HelpFormatter();
                 helpFormatter.setOptionComparator(null);
                 helpFormatter.printHelp(
-                        configuration.get(Property.APP_NAME) + " [OPTION]... (<token> | <appleid> <password>) ",
+                        con.get(Property.APP_NAME) + " [OPTION]... (<token> | <appleid> <password>) ",
                         commandLineOptions.options());
                 return null;
             }
 
             if (commandLineConfiguration.contains(Property.COMMAND_LINE_VERSION)) {
-                System.out.println(configuration.getOrDefault(Property.PROJECT_VERSION, ""));
+                System.out.println(con.getOrDefault(Property.PROJECT_VERSION, ""));
                 return null;
             }
 
-            configuration.addAll(commandLineConfiguration);
+            con.addAll(commandLineConfiguration);
 
             // Build config
-            Config config = Config.newInstance(configuration);
+            Config config = Config.newInstance(con);
 
             logger.trace(">> fromArgs() > {}", config);
             return config;
 
         } catch (ParseException | IllegalArgumentException | IllegalStateException ex) {
-            logger.trace("-- from() > exception: ", ex);
+            logger.trace("-- fromArgs() > exception: ", ex);
             System.out.println(ex.getLocalizedMessage());
             System.out.println("Try '--help' for more information.");
             return null;
         }
     }
 
-    public Config fromDefault() {
-        logger.trace("<< fromDefault()");
+    public Config fromConfiguration(Configuration configuration) {
+        logger.trace("<< fromConfiguration()");
 
         ConfigurationFactory factory = ConfigurationFactory.getInstance();
 
         // Hard wired properties
-        Configuration configuration = factory.fromProperties();
+        Configuration con = factory.fromProperties();
 
         // Properties file
         try {
-            configuration.addAll(factory.fromFile(URL));
+            con.addAll(factory.fromFile(URL));
         } catch (IOException ex) {
-            logger.warn("-- from() > properties file error: {}", ex);
+            logger.warn("-- fromConfiguration() > properties file error: {}", ex);
         }
 
-        // Build config
-        Config config = Config.newInstance(configuration);
+        // Configuration
+        con.addAll(configuration);
 
-        logger.trace(">> fromDefault", config);
+        // Build config
+        Config config = Config.newInstance(con);
+
+        logger.trace(">> fromConfiguration()", config);
         return config;
     }
 }
