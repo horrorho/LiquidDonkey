@@ -136,7 +136,7 @@ public class AuthenticationController implements Initializable {
             toSelection(
                     Authentication.from(
                             http,
-                            AuthenticationConfig.newInstance(appleId.getText(), password.getText())));
+                            AuthenticationConfig.newInstance(appleId.getText(), password.getText(), null)));
 
         } catch (AuthenticationException ex) {
             logger.warn("-- authenticate() > exception: ", ex);

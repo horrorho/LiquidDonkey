@@ -57,6 +57,7 @@ public final class CommandLineConfigurationFactory {
     public Configuration configuration(
             CommandLineOptions commandLineOptions,
             String[] args,
+            String appName,
             String version,
             boolean requiresAuthenticationProperties
     ) throws ParseException {
@@ -68,7 +69,8 @@ public final class CommandLineConfigurationFactory {
         if (cmd.hasOption(commandLineOptions.help())) {
             HelpFormatter helpFormatter = new HelpFormatter();
             helpFormatter.setOptionComparator(null);
-            helpFormatter.printHelp("LiquidDonkey appleid password [OPTION]...", options);
+            helpFormatter.printHelp(appName + " appleid password [OPTION]...", options);
+            helpFormatter.printHelp(appName + " authentication_token [OPTION]...", options);
             return null;
         }
 
@@ -82,7 +84,7 @@ public final class CommandLineConfigurationFactory {
         switch (cmd.getArgList().size()) {
             case 0:
                 if (requiresAuthenticationProperties) {
-                    throw new ParseException("Missing appleid and password.");
+                    throw new ParseException("Missing appleid/ password or authentication_token.");
                 }
             case 1:
                 // Authentication token
@@ -93,7 +95,8 @@ public final class CommandLineConfigurationFactory {
                 configuration.setProperty(Property.AUTHENTICATION_PASSWORD.key(), cmd.getArgList().get(1));
                 break;
             default:
-                throw new ParseException("Too many non-optional arguments, expected appleid and password only.");
+                throw new ParseException(
+                        "Too many non-optional arguments, expected appleid/ password or authentication_token only.");
         }
 
         Iterator<Option> it = cmd.iterator();

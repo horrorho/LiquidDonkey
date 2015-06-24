@@ -39,20 +39,23 @@ public final class AuthenticationConfig {
 
     public static AuthenticationConfig newInstance(Configuration configuration) {
         return AuthenticationConfig.newInstance(
-                configuration.get(Property.AUTHENTICATION_APPLEID),
-                configuration.get(Property.AUTHENTICATION_PASSWORD));
+                configuration.getOrDefault(Property.AUTHENTICATION_APPLEID, null),
+                configuration.getOrDefault(Property.AUTHENTICATION_PASSWORD, null),
+                configuration.getOrDefault(Property.AUTHENTICATION_TOKEN, null));
     }
 
-    public static AuthenticationConfig newInstance(String id, String password) {
-        return new AuthenticationConfig(id, password);
+    public static AuthenticationConfig newInstance(String id, String password, String authenticationToken) {
+        return new AuthenticationConfig(id, password, authenticationToken);
     }
 
     private final String id;
     private final String password;
+    private final String authenticationToken;
 
-    private AuthenticationConfig(String id, String password) {
+    private AuthenticationConfig(String id, String password, String authenticationToken) {
         this.id = id;
         this.password = password;
+        this.authenticationToken = authenticationToken;
     }
 
     public String id() {
@@ -63,8 +66,13 @@ public final class AuthenticationConfig {
         return password;
     }
 
+    public String authenticationToken() {
+        return authenticationToken;
+    }
+
     @Override
     public String toString() {
-        return "AuthenticationConfig{" + "id=" + id + ", password=" + password + '}';
+        return "AuthenticationConfig{" + "id=" + id + ", password=" + password + ", authenticationToken="
+                + authenticationToken + '}';
     }
 }

@@ -35,6 +35,8 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public enum Property {
 
+    // Non-null values may be expected for certain properties.
+    APP_NAME("LiquidDonkey"),
     AUTHENTICATION_APPLEID(null),
     AUTHENTICATION_PASSWORD(null),
     AUTHENTICATION_TOKEN(null),
@@ -81,7 +83,7 @@ public enum Property {
     ITEM_TYPE_SMS("sms.db"),
     ITEM_TYPE_VOICEMAILS("voicemail"),
     ITEM_TYPE_NOTES("notes"),
-    PROJECT_VERSION(""),
+    PROJECT_VERSION("N/A"),
     SELECTION_SNAPSHOT("1 -1 -2"),
     SELECTION_UDID(null);
 

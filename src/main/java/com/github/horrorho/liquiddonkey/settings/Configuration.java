@@ -59,6 +59,7 @@ public class Configuration extends Properties {
     }
 
     public Configuration addAll(Properties properties) {
+        properties.forEach((key, value) -> System.out.println(key + ":" + value));
         properties.forEach((key, value) -> setProperty(key.toString(), value.toString()));
         return this;
     }
@@ -77,6 +78,12 @@ public class Configuration extends Properties {
             illegalArgumentException("missing property: " + property);
         }
         return value;
+    }
+
+    public String getOrDefault(Property property, String defaultValue) {
+        return containsKey(property.key())
+                ? getProperty(property.key())
+                : defaultValue;
     }
 
     public <T> List<T> getList(Property property, Function<String, T> function) {

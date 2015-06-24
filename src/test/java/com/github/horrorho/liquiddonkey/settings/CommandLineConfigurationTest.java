@@ -41,12 +41,13 @@ public class CommandLineConfigurationTest {
     private final CommandLineConfigurationFactory commandLineConfiguration = CommandLineConfigurationFactory.getInstance();
     private final CommandLineOptions options = CommandLineOptions.getInstance();
     private final String version = "version test";
+    private final String appName = "test";
 
     @Test
     @Parameters
     public void testConfiguration(Property property, String in, String expected) throws Exception {
         String[] args = in.split("\\s");
-        Configuration configuration = commandLineConfiguration.configuration(options, args, version, true);
+        Configuration configuration = commandLineConfiguration.configuration(options, args, appName, version, true);
         String value = configuration.contains(property)
                 ? configuration.get(property)
                 : null;

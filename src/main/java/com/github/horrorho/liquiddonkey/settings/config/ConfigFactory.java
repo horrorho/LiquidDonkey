@@ -27,6 +27,7 @@ import com.github.horrorho.liquiddonkey.settings.Configuration;
 import com.github.horrorho.liquiddonkey.settings.CommandLineConfigurationFactory;
 import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
 import com.github.horrorho.liquiddonkey.settings.FileConfigurationFactory;
+import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.PropertyConfigurationFactory;
 import java.io.IOException;
 import net.jcip.annotations.Immutable;
@@ -68,11 +69,22 @@ public final class ConfigFactory {
                 logger.warn("-- from() > properties file error: {}", ex);
             }
 
-            String version = "N/A";
+            String appName = configuration.get(Property.APP_NAME);
+            String version = configuration.get(Property.PROJECT_VERSION);
+
+            Configuration commandLineConfiguration = CommandLineConfigurationFactory.getInstance().configuration(
+                    CommandLineOptions.getInstance(),
+                    args,
+                    appName,
+                    version,
+                    requiresAuthenticationProperties);
+
+            if (commandLineConfiguration == null) {
+                return null;
+            }
 
             // Command line
-            configuration.addAll(CommandLineConfigurationFactory.getInstance()
-                    .configuration(CommandLineOptions.getInstance(), args, version, requiresAuthenticationProperties));
+            configuration.addAll(commandLineConfiguration);
 
             // Build config
             Config config = Config.newInstance(configuration);
