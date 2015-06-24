@@ -73,7 +73,7 @@ public final class ConfigFactory {
             String version = configuration.get(Property.PROJECT_VERSION);
 
             Configuration commandLineConfiguration = CommandLineConfigurationFactory.getInstance().configuration(
-                    CommandLineOptions.getInstance(),
+                    CommandLineOptions.newInstance(configuration),
                     args,
                     appName,
                     version);

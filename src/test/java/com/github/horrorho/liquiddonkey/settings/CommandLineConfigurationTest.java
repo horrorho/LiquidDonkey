@@ -39,7 +39,7 @@ import org.junit.runner.RunWith;
 public class CommandLineConfigurationTest {
 
     private final CommandLineConfigurationFactory commandLineConfiguration = CommandLineConfigurationFactory.getInstance();
-    private final CommandLineOptions options = CommandLineOptions.getInstance();
+    private final CommandLineOptions options = CommandLineOptions.newInstance(PropertyConfigurationFactory.getInstance().configuration());
     private final String version = "version test";
     private final String appName = "test";
 

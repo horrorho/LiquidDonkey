@@ -26,11 +26,12 @@ package com.github.horrorho.liquiddonkey.settings;
 import static com.github.horrorho.liquiddonkey.settings.Property.*;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.cli.Option;
@@ -44,21 +45,16 @@ import org.apache.commons.cli.Options;
 @ThreadSafe
 public final class CommandLineOptions {
 
-    private static final String HELP = "help";
-    private static final String VERSION = "version";
-
-    private static final CommandLineOptions instance = newInstance();
-
-    public static CommandLineOptions getInstance() {
-        return instance;
+    public static CommandLineOptions newInstance(Configuration configuration) {
+        LinkedHashMap<Property, Option> propertyToOption = propertyToOption(configuration);
+        return new CommandLineOptions(
+                propertyToOption,
+                optToProperty(propertyToOption),
+                configuration.get(COMMAND_LINE_HELP),
+                configuration.get(COMMAND_LINE_VERSION));
     }
 
-    static CommandLineOptions newInstance() {
-        Map<Property, Option> propertyToOption = propertyToOption();
-        return new CommandLineOptions(propertyToOption(), optToProperty(propertyToOption), HELP, VERSION);
-    }
-
-    static LinkedHashMap<Property, Option> propertyToOption() {
+    static LinkedHashMap<Property, Option> propertyToOption(Configuration configuration) {
         LinkedHashMap<Property, Option> options = new LinkedHashMap<>();
 
         options.put(FILE_OUTPUT_DIRECTORY,
@@ -71,6 +67,7 @@ public final class CommandLineOptions {
                 Option.builder("u").longOpt("udid")
                 .desc("Download the backup/s with the specified UDID/s. "
                         + "Will match partial UDIDs. Leave empty to download all.")
+                .argName("hex")
                 .hasArgs().optionalArg(true).build());
 
         options.put(SELECTION_SNAPSHOT,
@@ -78,41 +75,56 @@ public final class CommandLineOptions {
                 .desc("Only download data in the snapshot/s specified.\n"
                         + "Negative numbers indicate relative positions from newest backup "
                         + "with -1 being the newest, -2 second newest, etc.")
+                .argName("int")
                 .hasArgs().build());
 
         options.put(FILTER_ITEM_TYPES,
                 Option.builder(null).longOpt("item-types")
-                .desc("Only download the specified item type/s:\n")
+                .desc("Only download the specified item type/s:\n" + itemTypes(configuration))
+                .argName("item_type")
                 .hasArgs().build());
 
         options.put(FILTER_DOMAIN,
                 Option.builder("d").longOpt("domain")
                 .desc("Limit files to those within the specified application domain/s.")
+                .argName("str")
                 .hasArgs().build());
 
         options.put(FILTER_RELATIVE_PATH,
                 Option.builder("r").longOpt("relative-path")
                 .desc("Limit files to those with the specified relative path/s")
+                .argName("str")
                 .hasArgs().build());
 
         options.put(FILTER_EXTENSION,
                 Option.builder("e").longOpt("extension")
                 .desc("Limit files to those with the specified extension/s.")
+                .argName("str")
                 .hasArgs().build());
 
         options.put(FILTER_DATE_MIN,
-                new Option(null, "min-date", true,
-                        "Minimum last-modified timestamp, ISO format date. E.g. 2000-12-31."));
+                Option.builder().longOpt("min-date")
+                .desc("Minimum last-modified timestamp, ISO format date. E.g. 2000-12-31.")
+                .argName("date")
+                .hasArgs().build());
 
         options.put(FILTER_DATE_MAX,
-                new Option(null, "max-date", true,
-                        "Maximum last-modified timestamp ISO format date. E.g. 2000-12-31."));
+                Option.builder().longOpt("max-date")
+                .desc("Maximum last-modified timestamp, ISO format date. E.g. 2000-12-31.")
+                .argName("date")
+                .hasArgs().build());
 
         options.put(FILTER_SIZE_MIN,
-                new Option(null, "min-size", true, "Minimum size in kilobytes."));
+                Option.builder().longOpt("min-size")
+                .desc("Minimum size in kilobytes.")
+                .argName("Kb")
+                .hasArgs().build());
 
         options.put(FILTER_SIZE_MAX,
-                new Option(null, "max-size", true, "Maximum size in kilobytes."));
+                Option.builder().longOpt("max-size")
+                .desc("Maximum size in kilobytes.")
+                .argName("Kb")
+                .hasArgs().build());
 
         options.put(FILE_FORCE,
                 new Option("f", "force", false, "Download files regardless of whether a local version exists."));
@@ -125,7 +137,10 @@ public final class CommandLineOptions {
                 new Option("a", "aggressive", false, "Aggressive retrieval tactics."));
 
         options.put(ENGINE_THREAD_COUNT,
-                new Option("t", "threads", true, "The maximum number of concurrent threads."));
+                Option.builder("t").longOpt("threads")
+                .desc("The maximum number of concurrent threads.")
+                .argName("int")
+                .hasArgs().build());
 
         options.put(HTTP_RELAX_SSL,
                 new Option(null, "relax-ssl", false, "Relaxed SSL verification, for SSL validation errors."));
@@ -136,6 +151,20 @@ public final class CommandLineOptions {
 //        options.put(FILE_FLAT,
 //                new Option("i", "--itunes-style", false, "Download files to iTunes style format."));
         return options;
+    }
+
+    static String itemTypes(Configuration configuration) {
+        String prefix = configuration.get(CONFIG_PREFIX_ITEM_TYPE);
+        int substring = prefix.length();
+
+        return Stream.of(Property.values())
+                .filter(property -> property.name().startsWith(prefix))
+                .filter(property -> !configuration.getList(property).isEmpty())
+                .map(property -> {
+                    String type = property.name().substring(substring);
+                    String paths = configuration.getList(property).stream().collect(Collectors.joining(" "));
+                    return type + "(" + paths + ")";
+                }).collect(Collectors.joining(" "));
     }
 
     static Map<String, Property> optToProperty(Map<Property, Option> options) {
@@ -158,11 +187,9 @@ public final class CommandLineOptions {
             Map<String, Property> optToProperty,
             String help,
             String version) {
-        // Defensive deep copy
-        this.propertyToOption = new LinkedHashMap<>();
-        propertyToOption.forEach((k, v) -> this.propertyToOption.put(k, (Option) v.clone()));
-        
-        this.optToProperty = new HashMap<>(optToProperty);
+        // No defensive copies
+        this.propertyToOption = Objects.requireNonNull(propertyToOption);
+        this.optToProperty = Objects.requireNonNull(optToProperty);
         this.help = help;
         this.version = version;
     }
@@ -174,8 +201,8 @@ public final class CommandLineOptions {
                 .map(option -> (Option) option.clone())
                 .forEach(options::addOption);
 
-        options.addOption(null, HELP, false, "Display this help and exit.");
-        options.addOption(null, VERSION, false, "Output version information and exit.");
+        options.addOption(null, help, false, "Display this help and exit.");
+        options.addOption(null, version, false, "Output version information and exit.");
 
         return options;
     }
