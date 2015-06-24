@@ -28,7 +28,7 @@ import com.github.horrorho.liquiddonkey.cloud.Looter;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
-import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig.AuthenticationConfigNull;
+import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import com.github.horrorho.liquiddonkey.settings.config.ConfigFactory;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import org.slf4j.Logger;
@@ -39,8 +39,8 @@ import org.slf4j.LoggerFactory;
  * <p>
  * <b>This tool is for educational purposes only. Before you start, make sure it's not illegal in your country.</b>
  * <p>
- * Java implementation reworked from iLoot, iphone-dataprotection and mobileme scripts. All copyrights belong to their
- * respective owners.
+ * Java implementation reworked fromArgs iLoot, iphone-dataprotection and mobileme scripts. All copyrights belong to
+ * their respective owners.
  * <p>
  *
  * GitHub: https://github.com/horrorho/LiquidDonkey
@@ -67,10 +67,15 @@ public class Main {
     public static void main(String[] args) {
         logger.trace("<< main()");
 
-        Config config = ConfigFactory.getInstance().from(args);
+        Config config = ConfigFactory.getInstance().fromArgs(args);
         logger.debug("-- main() > options: {}", config);
 
         if (config == null) {
+            return;
+        }
+
+        if (config.authentication() instanceof AuthenticationConfig.AuthenticationConfigNull) {
+            System.out.println("Missing appleid/ password or authentication token.");
             return;
         }
 

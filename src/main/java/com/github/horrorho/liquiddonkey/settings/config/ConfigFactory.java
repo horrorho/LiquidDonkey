@@ -55,7 +55,7 @@ public final class ConfigFactory {
     ConfigFactory() {
     }
 
-    public Config from(String[] args) {
+    public Config fromArgs(String[] args) {
         logger.trace("<< from() < {}", (Object) args);
         try {
             ConfigurationFactory factory = ConfigurationFactory.getInstance();
@@ -70,37 +70,28 @@ public final class ConfigFactory {
                 logger.warn("-- from() > properties file error: {}", ex);
             }
 
-            String appName = configuration.get(Property.APP_NAME);
-            String version = configuration.get(Property.PROJECT_VERSION);
-
+            // Args
             CommandLineOptions commandLineOptions = CommandLineOptions.newInstance(configuration);
-
             Configuration commandLineConfiguration = factory.fromArgs(commandLineOptions, args);
 
             if (commandLineConfiguration.contains(Property.COMMAND_LINE_HELP)) {
                 HelpFormatter helpFormatter = new HelpFormatter();
                 helpFormatter.setOptionComparator(null);
                 helpFormatter.printHelp(
-                        appName + " [OPTION]... (<token> | <appleid> <password>) ",
+                        configuration.get(Property.APP_NAME) + " [OPTION]... (<token> | <appleid> <password>) ",
                         commandLineOptions.options());
                 return null;
             }
 
             if (commandLineConfiguration.contains(Property.COMMAND_LINE_VERSION)) {
-                System.out.println(version);
+                System.out.println(configuration.getOrDefault(Property.PROJECT_VERSION, ""));
                 return null;
             }
 
-            // Command line
             configuration.addAll(commandLineConfiguration);
 
             // Build config
             Config config = Config.newInstance(configuration);
-
-            if (config.authentication() instanceof AuthenticationConfig.AuthenticationConfigNull) {
-                System.out.println("Missing appleid/ password or authentication token.");
-                return null;
-            }
 
             logger.trace(">> from() > {}", config);
             return config;
@@ -111,5 +102,27 @@ public final class ConfigFactory {
             System.out.println("Try '--help' for more information.");
             return null;
         }
+    }
+
+    public Config fromDefault() {
+        logger.trace("<< defaultConfig()");
+
+        ConfigurationFactory factory = ConfigurationFactory.getInstance();
+
+        // Hard wired properties
+        Configuration configuration = factory.fromProperties();
+
+        // Properties file
+        try {
+            configuration.addAll(factory.fromFile(URL));
+        } catch (IOException ex) {
+            logger.warn("-- from() > properties file error: {}", ex);
+        }
+
+        // Build config
+        Config config = Config.newInstance(configuration);
+
+        logger.trace(">> defaultConfig", config);
+        return config;
     }
 }
