@@ -151,6 +151,7 @@ public final class CommandLineOptions {
 
         options.put(COMMAND_LINE_VERSION,
                 new Option(null, "version", false, "Output version information and exit."));
+
 //        options.put(FILE_FLAT,
 //                new Option("i", "--itunes-style", false, "Download files to iTunes style format."));
         return options;
