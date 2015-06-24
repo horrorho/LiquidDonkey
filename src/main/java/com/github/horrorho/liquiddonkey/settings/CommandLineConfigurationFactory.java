@@ -58,8 +58,7 @@ public final class CommandLineConfigurationFactory {
             CommandLineOptions commandLineOptions,
             String[] args,
             String appName,
-            String version,
-            boolean requiresAuthenticationProperties
+            String version
     ) throws ParseException {
 
         CommandLineParser parser = new DefaultParser();
@@ -81,14 +80,14 @@ public final class CommandLineConfigurationFactory {
 
         Configuration configuration = Configuration.newInstance();
 
-        switch (cmd.getArgList().size()) {
+        switch (cmd.getArgList().size()) {        
             case 0:
-                if (requiresAuthenticationProperties) {
-                    throw new ParseException("Missing appleid/ password or authentication_token.");
-                }
+                // No authentication credentials
+                break;
             case 1:
                 // Authentication token
                 configuration.setProperty(Property.AUTHENTICATION_TOKEN.key(), cmd.getArgList().get(0));
+                break;
             case 2:
                 // AppleId/ password pair
                 configuration.setProperty(Property.AUTHENTICATION_APPLEID.key(), cmd.getArgList().get(0));

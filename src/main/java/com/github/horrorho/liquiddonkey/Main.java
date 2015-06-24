@@ -28,6 +28,7 @@ import com.github.horrorho.liquiddonkey.cloud.Looter;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
+import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig.AuthenticationConfigNull;
 import com.github.horrorho.liquiddonkey.settings.config.ConfigFactory;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import org.slf4j.Logger;
@@ -64,11 +65,16 @@ public class Main {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        Config config = ConfigFactory.getInstance().from(args, true);
 
+        Config config = ConfigFactory.getInstance().from(args);
         logger.debug("-- main() > options: {}", config);
 
         if (config == null) {
+            return;
+        }
+
+        if (config.authentication() instanceof AuthenticationConfigNull) {
+            System.out.println("Missing appleid/ password or authentication token.");
             return;
         }
 

@@ -47,7 +47,7 @@ public class CommandLineConfigurationTest {
     @Parameters
     public void testConfiguration(Property property, String in, String expected) throws Exception {
         String[] args = in.split("\\s");
-        Configuration configuration = commandLineConfiguration.configuration(options, args, appName, version, true);
+        Configuration configuration = commandLineConfiguration.configuration(options, args, appName, version);
         String value = configuration.contains(property)
                 ? configuration.get(property)
                 : null;
@@ -56,6 +56,7 @@ public class CommandLineConfigurationTest {
 
     public static Object[] parametersForTestConfiguration() {
         return new Object[]{
+            $(Property.AUTHENTICATION_TOKEN, "token", "token"),
             $(Property.AUTHENTICATION_APPLEID, "username password", "username"),
             $(Property.AUTHENTICATION_PASSWORD, "username password", "password"),
             $(Property.ENGINE_AGGRESSIVE, "u p", null),

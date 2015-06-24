@@ -24,9 +24,9 @@
 package com.github.horrorho.liquiddonkey.settings.config;
 
 import com.github.horrorho.liquiddonkey.settings.Property;
+import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig.AuthenticationConfigAppleIdPassword;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -52,15 +52,15 @@ public class ConfigFactoryTest {
     @Parameters
     public <T> void testFrom(String in, Function<Config, T> function, T expected) {
         String[] args = in.split("\\s");
-        Config config = factory.from(args, true);
+        Config config = factory.from(args);
         T value = function.apply(config);
         assertThat(value, is(expected));
     }
 
     public static Object[] parametersForTestFrom() {
         return new Object[]{
-            o("user password", config -> config.authentication().id(), "user"),
-            o("user password", config -> config.authentication().password(), "password"),
+            o("user password", config -> ((AuthenticationConfigAppleIdPassword) config.authentication()).id(), "user"),
+            o("user password", config -> ((AuthenticationConfigAppleIdPassword) config.authentication()).password(), "password"),
             o("u p --output test/folder", config -> config.directory().base(), Paths.get("test/folder").toAbsolutePath()),
             o("u p --udid", config -> config.selection().udids(), set("")),
             o("u p --udid 1FfF", config -> config.selection().udids(), set("1FfF")),

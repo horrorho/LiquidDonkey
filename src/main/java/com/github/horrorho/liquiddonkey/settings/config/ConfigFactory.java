@@ -56,7 +56,7 @@ public final class ConfigFactory {
     ConfigFactory() {
     }
 
-    public Config from(String[] args, boolean requiresAuthenticationProperties) {
+    public Config from(String[] args) {
         logger.trace("<< from() < {}", (Object) args);
         try {
             // Hard wired properties
@@ -76,8 +76,7 @@ public final class ConfigFactory {
                     CommandLineOptions.getInstance(),
                     args,
                     appName,
-                    version,
-                    requiresAuthenticationProperties);
+                    version);
 
             if (commandLineConfiguration == null) {
                 return null;
@@ -92,7 +91,7 @@ public final class ConfigFactory {
             logger.trace(">> from() > {}", config);
             return config;
 
-        } catch (ParseException | IllegalArgumentException ex) {
+        } catch (ParseException | IllegalArgumentException | IllegalStateException ex) {
             logger.trace("-- from() > exception: ", ex);
             System.out.println(ex.getLocalizedMessage());
             System.out.println("Try '--help' for more information.");

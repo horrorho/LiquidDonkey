@@ -47,7 +47,7 @@ public final class PropertyLists {
 
     private static final Logger logger = LoggerFactory.getLogger(PropertyLists.class);
 
-    public static String stringValue(String defaultValue, NSDictionary dictionary, String... path) {
+    public static String stringValueOrDefault(String defaultValue, NSDictionary dictionary, String... path) {
         try {
             return stringValue(dictionary, path);
         } catch (PropertyListFormatException ex) {
