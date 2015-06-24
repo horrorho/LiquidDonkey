@@ -16,7 +16,7 @@
    <center>
       <Accordion fx:id="accordion" layoutX="14.0" layoutY="14.0" prefHeight="288.0" prefWidth="298.0">
         <panes>
-          <TitledPane fx:id="authentication" text="Authentication">
+          <TitledPane fx:id="authentication" text="AppleId Password">
                <content>
                   <BorderPane>
                      <top>
@@ -38,7 +38,7 @@
                      <bottom>
                         <HBox alignment="BOTTOM_RIGHT" prefHeight="100.0" prefWidth="200.0" BorderPane.alignment="CENTER">
                            <children>
-                              <Button fx:id="go" mnemonicParsing="false" onAction="#handleGoButton" onKeyPressed="#handleGoButton" text="Go" />
+                              <Button fx:id="goAppleIdPassword" mnemonicParsing="false" onAction="#handleGoAppleIdPassword" text="Go" />
                            </children>
                         </HBox>
                      </bottom>
@@ -57,6 +57,46 @@
                   </BorderPane>
                </content>
           </TitledPane>
+            <TitledPane prefHeight="200.0" prefWidth="200.0" text="Authorization Token">
+               <content>
+                  <BorderPane prefHeight="200.0" prefWidth="200.0">
+                     <top>
+                        <VBox alignment="CENTER" BorderPane.alignment="CENTER">
+                           <children>
+                              <ImageView pickOnBounds="true" preserveRatio="true">
+                                 <image>
+                                    <Image url="@../images/lqea.png" />
+                                 </image>
+                              </ImageView>
+                              <Label text="LiquidDonkey">
+                                 <font>
+                                    <Font size="26.0" />
+                                 </font>
+                              </Label>
+                           </children>
+                        </VBox>
+                     </top>
+                     <bottom>
+                        <HBox alignment="BOTTOM_RIGHT" prefHeight="100.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+                           <children>
+                              <Button fx:id="goAuthToken" mnemonicParsing="false" onAction="#handleGoAuthToken" text="Go" />
+                           </children>
+                        </HBox>
+                     </bottom>
+                     <center>
+                        <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" BorderPane.alignment="CENTER">
+                           <children>
+                              <VBox alignment="CENTER" prefWidth="480.0">
+                                 <children>
+                                    <TextField fx:id="authToken" onAction="#handleAuthToken" promptText="Authorization Token" />
+                                 </children>
+                              </VBox>
+                           </children>
+                        </HBox>
+                     </center>
+                  </BorderPane>
+               </content>
+            </TitledPane>
           <TitledPane fx:id="advanced" text="Advanced">
             <content>
               <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />

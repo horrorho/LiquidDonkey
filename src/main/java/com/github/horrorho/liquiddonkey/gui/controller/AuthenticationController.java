@@ -24,12 +24,13 @@
 package com.github.horrorho.liquiddonkey.gui.controller;
 
 import com.github.horrorho.liquiddonkey.cloud.Authentication;
-import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.HttpFactory;
 import com.github.horrorho.liquiddonkey.printer.Printer;
+import com.github.horrorho.liquiddonkey.settings.Configuration;
+import com.github.horrorho.liquiddonkey.settings.ConfigurationFactory;
 import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import com.github.horrorho.liquiddonkey.settings.config.HttpConfig;
 import java.io.IOException;
@@ -64,6 +65,8 @@ public class AuthenticationController implements Initializable {
 
     private final static PseudoClass error = PseudoClass.getPseudoClass("error");
 
+    private final Configuration configuration = ConfigurationFactory.getInstance().fromProperties();
+
     void warnOnEmpty(TextField textField) {
 
         textField.textProperty().addListener((observable, oldValue, newValue)
@@ -87,7 +90,13 @@ public class AuthenticationController implements Initializable {
     private TextField password;
 
     @FXML
-    private Button go;
+    private TextField authToken;
+
+    @FXML
+    private Button goAppleIdPassword;
+
+    @FXML
+    private Button goAuthToken;
 
     @FXML
     private void handleAppleId(ActionEvent event) {
@@ -95,7 +104,7 @@ public class AuthenticationController implements Initializable {
             if (password.getText().isEmpty()) {
                 password.requestFocus();
             } else {
-                go.requestFocus();
+                goAppleIdPassword.requestFocus();
             }
         }
     }
@@ -106,14 +115,20 @@ public class AuthenticationController implements Initializable {
             if (appleId.getText().isEmpty()) {
                 appleId.requestFocus();
             } else {
-                go.requestFocus();
+                goAppleIdPassword.requestFocus();
             }
         }
     }
 
     @FXML
-    private void handleGoButton(Event event) {
+    private void handleAuthToken(ActionEvent event) {
+        if (!authToken.getText().isEmpty()) {
+            goAuthToken.requestFocus();
+        }
+    }
 
+    @FXML
+    private void handleGoAppleIdPassword(Event event) {
         appleId.pseudoClassStateChanged(error, appleId.getText().isEmpty());
         password.pseudoClassStateChanged(error, password.getText().isEmpty());
 
@@ -122,21 +137,32 @@ public class AuthenticationController implements Initializable {
         } else if (password.getText().isEmpty()) {
             password.requestFocus();
         } else {
-            //authenticate();
+            //authenticate(AuthenticationConfig.fromAppleIdPassword(appleId.getText(), password.getText()));
             toSelection(Authentication.newInstance(null, "test@apple.com", "jon snow"));
+        }
+
+    }
+
+    @FXML
+    private void handleGoAuthToken(Event event) {
+        authToken.pseudoClassStateChanged(error, authToken.getText().isEmpty());
+
+        if (authToken.getText().isEmpty()) {
+            authToken.requestFocus();
+        } else {
+            authenticate(AuthenticationConfig.fromAuthorizationToken(authToken.getText()));
+            // toSelection(Authentication.newInstance(null, "test@apple.com", "king lear"));
         }
     }
 
-    void authenticate() {
+    void authenticate(AuthenticationConfig authenticationConfig) {
+
         try {
             Http http = HttpFactory.newInstance(
-                    HttpConfig.newInstance(null), // TODO
+                    HttpConfig.newInstance(configuration),
                     Printer.instanceOf(false));
 
-            toSelection(
-                    Authentication.from(
-                            http,
-                            AuthenticationConfig.fromAppleIdPassword(appleId.getText(), password.getText())));
+            toSelection(Authentication.from(http, authenticationConfig));
 
         } catch (AuthenticationException ex) {
             logger.warn("-- authenticate() > exception: ", ex);
@@ -145,7 +171,7 @@ public class AuthenticationController implements Initializable {
     }
 
     void badAuthentication(AuthenticationException ex) {
-        Alert alert = new Alert(AlertType.ERROR);
+        Alert alert = new Alert(AlertType.INFORMATION);
         alert.setTitle("Error");
         alert.setHeaderText("Unable to authenticate.");
         alert.setContentText(ex.getLocalizedMessage());
@@ -153,7 +179,7 @@ public class AuthenticationController implements Initializable {
     }
 
     void toSelection(Authentication authentication) {
-        Stage stage = (Stage) go.getScene().getWindow();
+        Stage stage = (Stage) goAppleIdPassword.getScene().getWindow();
         Parent root;
 
         try {

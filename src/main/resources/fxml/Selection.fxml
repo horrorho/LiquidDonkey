@@ -37,12 +37,12 @@
                                     <CheckBox fx:id="checkAll" mnemonicParsing="false" onAction="#checkAllHandler" />
                                  </graphic>
                                   </TableColumn>
-                                  <TableColumn editable="false" minWidth="73.0" prefWidth="127.0" resizable="false" sortable="false" text="Device">
+                                  <TableColumn editable="false" minWidth="73.0" prefWidth="100.0" resizable="false" sortable="false" text="Device">
                                       <cellValueFactory>
                                           <PropertyValueFactory property="device" />
                                       </cellValueFactory>
                                   </TableColumn>
-                                  <TableColumn editable="false" prefWidth="353.0" resizable="false" sortable="false" text="Info">
+                                  <TableColumn editable="false" prefWidth="360.0" resizable="false" sortable="false" text="Info">
                                       <cellValueFactory>
                                           <PropertyValueFactory property="info" />
                                       </cellValueFactory>

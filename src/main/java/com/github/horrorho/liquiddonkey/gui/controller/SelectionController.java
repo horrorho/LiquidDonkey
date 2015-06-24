@@ -23,14 +23,13 @@ package com.github.horrorho.liquiddonkey.gui.controller;
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+import com.github.horrorho.liquiddonkey.cloud.Account;
 import com.github.horrorho.liquiddonkey.cloud.Authentication;
 import com.github.horrorho.liquiddonkey.gui.controller.data.BackupProperties;
+import com.github.horrorho.liquiddonkey.printer.Printer;
 import java.net.URL;
 import java.util.ResourceBundle;
-import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -124,7 +123,10 @@ public class SelectionController implements Initializable {
 
     public void initData(Authentication authentication) {
         this.authentication = authentication;
-
+        
+        Account account = Account.newInstance(authentication.client(), Printer.instanceOf(false));
+        account.backups().stream().map(BackupProperties::newInstance).forEach(backups::add);
+        
         downloadButtonEnabledHandler();
         checkAll.setSelected(false);
 

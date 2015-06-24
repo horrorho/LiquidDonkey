@@ -33,7 +33,7 @@ public class BackupProperties {
 
         return newInstance(
                 true,
-                backup.hardwareModel(),
+                backup.marketingName() + "\n" + backup.hardwareModel(),
                 info,
                 backup.lastModified());
     }

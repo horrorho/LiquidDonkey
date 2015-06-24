@@ -24,4 +24,8 @@
 
 .table-row-cell:odd:filled:selected {
     -fx-background: -fx-control-inner-background-alt ;
-}
+} 
+
+.table-cell { 
+    -fx-font-size: 12px;
+} 
