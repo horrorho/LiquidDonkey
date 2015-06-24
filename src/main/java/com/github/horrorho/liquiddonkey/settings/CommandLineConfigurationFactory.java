@@ -68,7 +68,7 @@ public final class CommandLineConfigurationFactory {
         if (cmd.hasOption(commandLineOptions.help())) {
             HelpFormatter helpFormatter = new HelpFormatter();
             helpFormatter.setOptionComparator(null); 
-            helpFormatter.printHelp(appName + " [OPTION]... (<appleid> <password> | <token>) ", options); 
+            helpFormatter.printHelp(appName + " [OPTION]... (<token> | <appleid> <password>) ", options); 
             return null;
         }
 
