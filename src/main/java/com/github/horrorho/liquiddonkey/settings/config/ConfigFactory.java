@@ -56,7 +56,7 @@ public final class ConfigFactory {
     }
 
     public Config fromArgs(String[] args) {
-        logger.trace("<< from() < {}", (Object) args);
+        logger.trace("<< fromArgs() < {}", (Object) args);
         try {
             ConfigurationFactory factory = ConfigurationFactory.getInstance();
 
@@ -67,7 +67,7 @@ public final class ConfigFactory {
             try {
                 configuration.addAll(factory.fromFile(URL));
             } catch (IOException ex) {
-                logger.warn("-- from() > properties file error: {}", ex);
+                logger.warn("-- fromArgs() > properties file error: {}", ex);
             }
 
             // Args
@@ -93,7 +93,7 @@ public final class ConfigFactory {
             // Build config
             Config config = Config.newInstance(configuration);
 
-            logger.trace(">> from() > {}", config);
+            logger.trace(">> fromArgs() > {}", config);
             return config;
 
         } catch (ParseException | IllegalArgumentException | IllegalStateException ex) {
@@ -105,7 +105,7 @@ public final class ConfigFactory {
     }
 
     public Config fromDefault() {
-        logger.trace("<< defaultConfig()");
+        logger.trace("<< fromDefault()");
 
         ConfigurationFactory factory = ConfigurationFactory.getInstance();
 
@@ -122,7 +122,7 @@ public final class ConfigFactory {
         // Build config
         Config config = Config.newInstance(configuration);
 
-        logger.trace(">> defaultConfig", config);
+        logger.trace(">> fromDefault", config);
         return config;
     }
 }
