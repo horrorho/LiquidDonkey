@@ -27,6 +27,7 @@ import static com.github.horrorho.liquiddonkey.settings.Property.*;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -58,7 +59,7 @@ public final class CommandLineOptions {
     }
 
     static Map<Property, Option> propertyToOption() {
-        Map<Property, Option> options = new HashMap<>();
+        Map<Property, Option> options = new LinkedHashMap<>();
 
         options.put(FILE_OUTPUT_DIRECTORY,
                 new Option("o", "output", true, "Output folder."));

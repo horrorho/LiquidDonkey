@@ -61,21 +61,7 @@ public final class Authentication {
     public static Authentication from(Http http, AuthenticationConfig config) {
 
         try {
-            if (config instanceof AuthenticationConfigNull) {
-                throw new IllegalArgumentException("No appleid/ password or authentication token suppled.");
-            }
-
-            if (config instanceof AuthenticationConfigAppleIdPassword) {
-                return doAuthentication(http, (AuthenticationConfigAppleIdPassword) config);
-
-            }
-
-            if (config instanceof AuthenticationConfigAuthorizationToken) {
-                return doAuthentication(http, (AuthenticationConfigAuthorizationToken) config);
-            }
-
-            throw new IllegalArgumentException("Unknown configuration class: "
-                    + (config == null ? null : config.getClass()));
+            return doAuthentication(http, config);
 
         } catch (HttpResponseException ex) {
             logger.warn("-- authenticate() >  HttpResponseException", ex);
@@ -89,6 +75,26 @@ public final class Authentication {
         } catch (IOException | BadDataException ex) {
             throw new AuthenticationException(ex);
         }
+    }
+
+    static Authentication doAuthentication(Http http, AuthenticationConfig config)
+            throws IOException, BadDataException {
+
+        if (config instanceof AuthenticationConfigNull) {
+            throw new IllegalArgumentException("No appleid/ password or authentication token suppled.");
+        }
+
+        if (config instanceof AuthenticationConfigAppleIdPassword) {
+            return doAuthentication(http, (AuthenticationConfigAppleIdPassword) config);
+
+        }
+
+        if (config instanceof AuthenticationConfigAuthorizationToken) {
+            return doAuthentication(http, (AuthenticationConfigAuthorizationToken) config);
+        }
+
+        throw new IllegalArgumentException("Unknown configuration class: "
+                + (config == null ? null : config.getClass()));
     }
 
     static Authentication doAuthentication(Http http, AuthenticationConfigAppleIdPassword config)

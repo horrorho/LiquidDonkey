@@ -67,9 +67,8 @@ public final class CommandLineConfigurationFactory {
 
         if (cmd.hasOption(commandLineOptions.help())) {
             HelpFormatter helpFormatter = new HelpFormatter();
-            helpFormatter.setOptionComparator(null);
-            helpFormatter.printHelp(appName + " appleid password [OPTION]...", options);
-            helpFormatter.printHelp(appName + " authentication_token [OPTION]...", options);
+            helpFormatter.setOptionComparator(null); 
+            helpFormatter.printHelp(appName + " (<appleid> <password> | <authorization token>) [OPTION]...", options); 
             return null;
         }
 
