@@ -28,12 +28,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import java.util.Objects;
-import java.util.function.Function;
 import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,24 +46,16 @@ public class PropsManager<E extends Enum<E>> implements Closeable {
 
     private static final Logger logger = LoggerFactory.getLogger(PropsManager.class);
 
-    public static <E extends Enum<E>> PropsManager
-            fromDefaults(Class<E> type, E pathProperty, Function<E, String> defaultValue) {
-
-        return from(
-                PropsBuilder.fromDefaults(type, defaultValue).path(pathProperty).build(),
-                pathProperty);
-    }
-
-    public static <E extends Enum<E>> PropsManager<E> from(Props<E> props, E pathProperty) {
-        return new PropsManager(props, pathProperty);
+    public static <E extends Enum<E>> PropsManager<E> from(Props<E> props, Path path) {
+        return new PropsManager(props, path);
     }
 
     private final Props<E> props;
-    private final E pathProperty;
+    private final Path path;
 
-    PropsManager(Props<E> props, E pathProperty) {
+    PropsManager(Props<E> props, Path path) {
         this.props = Objects.requireNonNull(props);
-        this.pathProperty = Objects.requireNonNull(pathProperty);
+        this.path = Objects.requireNonNull(path);
     }
 
     public Props<E> props() {
@@ -74,7 +64,6 @@ public class PropsManager<E extends Enum<E>> implements Closeable {
 
     @Override
     public void close() throws IOException {
-        Path path = Paths.get(props.get(pathProperty));
         try (OutputStream outputStream = Files.newOutputStream(path, CREATE, WRITE, TRUNCATE_EXISTING)) {
             props.distinct().properties().store(outputStream, "auto");
             logger.debug("-- close() > properties written to: {}", path);

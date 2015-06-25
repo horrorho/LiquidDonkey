@@ -11,7 +11,7 @@
  * furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions from the Software.
+ * values copies or substantial portions from the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -65,7 +65,7 @@ public class AuthenticationController implements Initializable {
 
     private final static PseudoClass error = PseudoClass.getPseudoClass("error");
 
-    private final Props<Property> configuration = Property.propsBuilder().build();
+    private final Props<Property> configuration = Property.props();
 
     void warnOnEmpty(TextField textField) {
 

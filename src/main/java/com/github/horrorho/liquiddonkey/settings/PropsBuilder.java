@@ -11,7 +11,7 @@
  * furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * values copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -29,11 +29,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import static java.nio.file.StandardOpenOption.READ;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
@@ -50,17 +48,19 @@ public class PropsBuilder<E extends Enum<E>> {
 
     private static final Logger logger = LoggerFactory.getLogger(PropsBuilder.class);
 
-    public static <E extends Enum<E>> PropsBuilder<E> fromDefaults(Class<E> type, Function<E, String> defaultValue) {
-        return new PropsBuilder(type, defaultValue, null).defaults();
+    public static <E extends Enum<E>> PropsBuilder<E> fromDefaults(Class<E> type) {
+        return new PropsBuilder(type, null);
+    }
+
+    public static <E extends Enum<E>> PropsBuilder<E> fromDefaults(Class<E> type, Props<E> defaults) {
+        return new PropsBuilder(type, defaults);
     }
 
     private final Class<E> type;
-    private final Function<E, String> defaultValue;
     private Props<E> props;
 
-    PropsBuilder(Class<E> type, Function<E, String> defaultValue, Props<E> props) {
+    PropsBuilder(Class<E> type, Props<E> props) {
         this.type = Objects.requireNonNull(type);
-        this.defaultValue = Objects.requireNonNull(defaultValue);
         this.props = props;
     }
 
@@ -99,15 +99,15 @@ public class PropsBuilder<E extends Enum<E>> {
         return this;
     }
 
-    public Props<E> build() {
-        return props;
-    }
-
-    PropsBuilder<E> defaults() {
+    PropsBuilder<E> values(Function<E, String> value) {
         props = Props.newInstance(type, props);
         Stream.of(type.getEnumConstants())
-                .filter(property -> defaultValue.apply(property) != null)
-                .forEach(property -> props.put(property, defaultValue.apply(property)));
+                .filter(property -> value.apply(property) != null)
+                .forEach(property -> props.put(property, value.apply(property)));
         return this;
+    }
+
+    public Props<E> build() {
+        return props;
     }
 }

@@ -1,4 +1,4 @@
-/* 
+/*
  * The MIT License
  *
  * Copyright 2015 Ahseya.
@@ -11,7 +11,7 @@
  * furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * values copies or substantial portions of the Software.
+ * all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -21,83 +21,37 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.settings.config;
+package com.github.horrorho.liquiddonkey.settings;
 
-import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
-import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.Props;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.stream.Collectors;
-import net.jcip.annotations.Immutable;
-import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * CommandLineConfig.
  *
- * @author ahseya
+ * @author Ahseya
  */
-@Immutable
-@ThreadSafe
-public final class CommandLineConfig {
+public class CommandLinePropsFactory {
 
-    public static CommandLineConfig getInstance() {
+    public CommandLinePropsFactory instance = new CommandLinePropsFactory();
+
+    public CommandLinePropsFactory getInstance() {
         return instance;
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(CommandLineConfig.class);
-    private static final CommandLineConfig instance = new CommandLineConfig();
-
-    CommandLineConfig() {
+    CommandLinePropsFactory() {
     }
 
-    public Config fromArgs(String[] args) {
-        logger.trace("<< fromArgs() < {}", (Object) args);
-        try {
-            Props<Property> props = Property.props();
-
-            // Add command line args
-            CommandLineOptions commandLineOptions = CommandLineOptions.newInstance(props);
-
-            props = commandLine(props, commandLineOptions, args);
-
-            if (props.contains(Property.COMMAND_LINE_HELP)) {
-                HelpFormatter helpFormatter = new HelpFormatter();
-                helpFormatter.setOptionComparator(null);
-                helpFormatter.printHelp(props.get(Property.APP_NAME) + " [OPTION]... (<token> | <appleid> <password>) ",
-                        commandLineOptions.options());
-                return null;
-            }
-
-            if (props.contains(Property.COMMAND_LINE_VERSION)) {
-                System.out.println(props.get(Property.PROJECT_VERSION));
-                return null;
-            }
-
-            // Build config
-            Config config = Config.newInstance(props);
-
-            logger.trace(">> fromArgs() > {}", config);
-            return config;
-
-        } catch (ParseException | IllegalArgumentException | IllegalStateException ex) {
-            logger.trace("-- fromArgs() > exception: ", ex);
-            System.out.println(ex.getLocalizedMessage());
-            System.out.println("Try '--help' for more information.");
-            return null;
-        }
-    }
-
-    public Props<Property> commandLine(Props<Property> defaults, CommandLineOptions commandLineOptions, String[] args)
+    public Props<Property> fromCommandLine(
+            Props<Property> defaults,
+            CommandLineOptions commandLineOptions,
+            String[] args)
             throws ParseException {
 
         Props<Property> props = Props.newInstance(Property.class, defaults);

@@ -97,13 +97,12 @@ public enum Property {
         return DateTimeFormatter.ISO_DATE;
     }
 
-    public static PropsBuilder<Property> propsBuilder() {
-        return PropsBuilder.fromDefaults(Property.class, Property::getDefaultValue)
-                .resource(PROPERTIES_JAR).path(PROPERTIES_USER);
-    }
-
-    public static PropsManager<Property> propsManager(Property pathProperty) {
-        return PropsManager.fromDefaults(Property.class, pathProperty, Property::getDefaultValue);
+    public static Props<Property> props() {
+        return PropsBuilder.fromDefaults(Property.class)
+                .values(Property::getDefaultValue)
+                .resource(PROPERTIES_JAR)
+                .path(PROPERTIES_USER)
+                .build();
     }
 
     public static Parsers parsers() {

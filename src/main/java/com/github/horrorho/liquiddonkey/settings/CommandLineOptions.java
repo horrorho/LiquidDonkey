@@ -46,13 +46,14 @@ import org.apache.commons.cli.Options;
 public final class CommandLineOptions {
 
     public static CommandLineOptions newInstance(Props<Property> props) {
-        LinkedHashMap<Property, Option> propertyToOption = propertyToOption(props);
+        LinkedHashMap<Property, Option> propertyToOption = propertyToOption(itemTypes(props));
+
         return new CommandLineOptions(
                 propertyToOption,
                 optToProperty(propertyToOption));
     }
 
-    static LinkedHashMap<Property, Option> propertyToOption(Props<Property> props) {
+    static LinkedHashMap<Property, Option> propertyToOption(String itemTypes) {
         LinkedHashMap<Property, Option> options = new LinkedHashMap<>();
 
         options.put(FILE_OUTPUT_DIRECTORY,
@@ -78,7 +79,7 @@ public final class CommandLineOptions {
 
         options.put(FILTER_ITEM_TYPES,
                 Option.builder(null).longOpt("item-types")
-                .desc("Only download the specified item type/s:\n" + itemTypes(props))
+                .desc("Only download the specified item type/s:\n" + itemTypes)
                 .argName("item_type")
                 .hasArgs().build());
 
@@ -159,6 +160,10 @@ public final class CommandLineOptions {
 
     static String itemTypes(Props<Property> props) {
         String prefix = props.get(CONFIG_PREFIX_ITEM_TYPE);
+        if (prefix == null) {
+            return "";
+        }
+
         int substring = prefix.length();
 
         return Stream.of(Property.values())
