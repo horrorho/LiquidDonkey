@@ -36,6 +36,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 /**
+ * CommandLinePropsFactory.
  *
  * @author Ahseya
  */

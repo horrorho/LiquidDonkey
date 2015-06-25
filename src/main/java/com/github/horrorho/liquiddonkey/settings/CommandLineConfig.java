@@ -23,10 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
-import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
-import com.github.horrorho.liquiddonkey.settings.CommandLinePropsFactory;
-import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.Props;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;

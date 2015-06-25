@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Props.
  *
- * Lightweight properties with parsers.
+ * Lightweight properties.
  *
  * @author Ahseya
  * @param <E>
@@ -152,6 +152,10 @@ public class Props<E extends Enum<E>> {
         return getList(property).stream()
                 .map(function::apply)
                 .collect(Collectors.toList());
+    }
+
+    public Class<E> type() {
+        return type;
     }
 
     @Override

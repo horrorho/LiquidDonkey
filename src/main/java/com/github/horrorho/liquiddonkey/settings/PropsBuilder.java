@@ -48,11 +48,11 @@ public class PropsBuilder<E extends Enum<E>> {
 
     private static final Logger logger = LoggerFactory.getLogger(PropsBuilder.class);
 
-    public static <E extends Enum<E>> PropsBuilder<E> fromDefaults(Class<E> type) {
+    public static <E extends Enum<E>> PropsBuilder<E> from(Class<E> type) {
         return new PropsBuilder(type, null);
     }
 
-    public static <E extends Enum<E>> PropsBuilder<E> fromDefaults(Class<E> type, Props<E> defaults) {
+    public static <E extends Enum<E>> PropsBuilder<E> from(Class<E> type, Props<E> defaults) {
         return new PropsBuilder(type, defaults);
     }
 
@@ -64,22 +64,22 @@ public class PropsBuilder<E extends Enum<E>> {
         this.props = props;
     }
 
-    public PropsBuilder<E> resource(E url) {
-        if (!props.contains(url)) {
-            logger.warn("-- resource() > missing url property: {}", url);
+    public PropsBuilder<E> resource(E urlProperty) {
+        if (!props.contains(urlProperty)) {
+            logger.warn("-- resource() > missing url property: {}", urlProperty);
             return this;
         }
-        logger.debug("-- resource() > url: {} / {}", url, props.get(url));
-        return inputStream(() -> this.getClass().getResourceAsStream(props.get(url)));
+        logger.debug("-- resource() > url: {} / {}", urlProperty, props.get(urlProperty));
+        return inputStream(() -> this.getClass().getResourceAsStream(props.get(urlProperty)));
     }
 
-    public PropsBuilder<E> path(E path) {
-        if (!props.contains(path)) {
-            logger.warn("-- path() > missing path property: {}", path);
+    public PropsBuilder<E> path(E pathProperty) {
+        if (!props.contains(pathProperty)) {
+            logger.warn("-- path() > missing path property: {}", pathProperty);
             return this;
         }
-        logger.debug("-- path() > path: {} / {}", path, props.get(path));
-        return inputStream(() -> Files.newInputStream(Paths.get(props.get(path)), READ));
+        logger.debug("-- path() > path: {} / {}", pathProperty, props.get(pathProperty));
+        return inputStream(() -> Files.newInputStream(Paths.get(props.get(pathProperty)), READ));
     }
 
     public PropsBuilder<E> inputStream(IOSupplier<InputStream> supplier) {

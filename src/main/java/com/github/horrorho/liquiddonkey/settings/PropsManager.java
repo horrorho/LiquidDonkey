@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -37,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * PropsManager.
  *
  * @author Ahseya
  * @param <E> enum type
@@ -46,16 +48,18 @@ public class PropsManager<E extends Enum<E>> implements Closeable {
 
     private static final Logger logger = LoggerFactory.getLogger(PropsManager.class);
 
-    public static <E extends Enum<E>> PropsManager<E> from(Props<E> props, Path path) {
-        return new PropsManager(props, path);
+    public static <E extends Enum<E>> PropsManager<E> from(E pathProperty, Props<E> defaults) {
+        return new PropsManager(
+                PropsBuilder.from(pathProperty.getDeclaringClass(), defaults).path(pathProperty).build(),
+                pathProperty);
     }
 
     private final Props<E> props;
-    private final Path path;
+    private final E pathProperty;
 
-    PropsManager(Props<E> props, Path path) {
+    PropsManager(Props<E> props, E pathProperty) {
         this.props = Objects.requireNonNull(props);
-        this.path = Objects.requireNonNull(path);
+        this.pathProperty = Objects.requireNonNull(pathProperty);
     }
 
     public Props<E> props() {
@@ -64,6 +68,7 @@ public class PropsManager<E extends Enum<E>> implements Closeable {
 
     @Override
     public void close() throws IOException {
+        Path path = Paths.get(props.get(pathProperty));
         try (OutputStream outputStream = Files.newOutputStream(path, CREATE, WRITE, TRUNCATE_EXISTING)) {
             props.distinct().properties().store(outputStream, "auto");
             logger.debug("-- close() > properties written to: {}", path);
