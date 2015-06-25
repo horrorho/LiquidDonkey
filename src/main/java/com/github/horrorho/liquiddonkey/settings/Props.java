@@ -23,13 +23,12 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
-import com.github.horrorho.liquiddonkey.settings.Property;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.EnumMap;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -56,9 +55,7 @@ public class Props {
 
     public static Props newInstance(Properties properties) {
         Props props = newInstance();
-        properties.stringPropertyNames().stream()
-                .forEach(key -> props.put(Property.valueOf(key), properties.getProperty(key)));
-        return props;
+        return props.addAll(properties);
     }
 
     public static Props newInstance() {
@@ -90,11 +87,9 @@ public class Props {
     }
 
     public Set<Property> keySet() {
-        Set<Property> set = new HashSet<>();
-
-        if (defaults != null) {
-            set.addAll(defaults.keySet());
-        }
+        Set<Property> set = defaults == null
+                ? EnumSet.noneOf(Property.class)
+                : defaults.keySet();
 
         set.addAll(map.keySet());
         return set;
@@ -102,6 +97,12 @@ public class Props {
 
     public Props distinct() {
         return Props.newInstance(new EnumMap<>(map), defaults);
+    }
+
+    public Props addAll(Properties properties) {
+        properties.stringPropertyNames().stream()
+                .forEach(key -> put(Property.valueOf(key), properties.getProperty(key)));
+        return this;
     }
 
     public Properties properties() {

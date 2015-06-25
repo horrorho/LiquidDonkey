@@ -126,9 +126,7 @@ public class PropsFactory {
         }
 
         Props props = Props.newInstance(defaults);
-        properties.stringPropertyNames().stream()
-                .forEach(key -> props.put(Property.valueOf(key), properties.getProperty(key)));
-        return props;
+        return props.addAll(properties);
     }
 
     public Props fromPropertyDefaults() {
