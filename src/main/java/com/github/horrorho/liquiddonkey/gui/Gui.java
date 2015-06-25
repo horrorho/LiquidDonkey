@@ -27,10 +27,14 @@ public class Gui extends Application {
 
         propsManager = PropsManager.from(Property.PROPERTIES_GUI_PATH);
 
+        
+        
         System.out.println(propsManager.props().get(Property.APP_NAME) + "\n\n\n\n\n");
         
         System.out.println(propsManager.props().distinct());
 
+
+        
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Authentication.fxml"));
         Parent root = loader.load();
         AuthenticationController controller = loader.<AuthenticationController>getController();

@@ -154,6 +154,7 @@ public class PropsBuilder {
         } catch (IOException ex) {
             logger.warn("-- inputStream() > exception: {}", ex);
         }
+        props.addAll(properties);
         return this;
     }
 
