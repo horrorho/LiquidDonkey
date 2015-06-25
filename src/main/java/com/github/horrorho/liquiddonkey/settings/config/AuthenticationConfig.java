@@ -35,7 +35,7 @@ import net.jcip.annotations.ThreadSafe;
  */
 public class AuthenticationConfig {
 
-    public static AuthenticationConfig newInstance(Props props) {
+    public static AuthenticationConfig newInstance(Props<Property> props) {
         String id = props.get(Property.AUTHENTICATION_APPLEID);
         String password = props.get(Property.AUTHENTICATION_PASSWORD);
         String token = props.get(Property.AUTHENTICATION_TOKEN);

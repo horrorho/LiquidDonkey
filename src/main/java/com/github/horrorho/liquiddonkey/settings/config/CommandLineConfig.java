@@ -26,55 +26,50 @@ package com.github.horrorho.liquiddonkey.settings.config;
 import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.Props;
-import com.github.horrorho.liquiddonkey.settings.PropsFactory;
-import java.io.IOException;
-import java.util.logging.Level;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ConfigHelper.
+ * CommandLineConfig.
  *
  * @author ahseya
  */
 @Immutable
 @ThreadSafe
-public final class ConfigHelper {
+public final class CommandLineConfig {
 
-    public static ConfigHelper getInstance() {
+    public static CommandLineConfig getInstance() {
         return instance;
     }
 
     private static final String URL = "/settings.properties";
-    private static final ConfigHelper instance = new ConfigHelper();
-    private static final Logger logger = LoggerFactory.getLogger(ConfigHelper.class);
+    private static final CommandLineConfig instance = new CommandLineConfig();
+    private static final Logger logger = LoggerFactory.getLogger(CommandLineConfig.class);
 
-    ConfigHelper() {
+    CommandLineConfig() {
     }
 
     public Config fromArgs(String[] args) {
         logger.trace("<< fromArgs() < {}", (Object) args);
         try {
-            PropsFactory factory = PropsFactory.getInstance();
-
-            // Defaults
-            Props props = factory.fromPropertyDefaults();
-
-            // Add properties file
-            try {
-                props = factory.fromResource(props, URL);
-            } catch (IOException ex) {
-                logger.warn("-- fromArgs() > failed to load properties file: {}", ex);
-            }
+            Props<Property> props = Property.propsBuilder().build();
 
             // Add command line args
             CommandLineOptions commandLineOptions = CommandLineOptions.newInstance(props);
 
-            props = factory.fromCommandLine(props, commandLineOptions, args);
+            props = commandLine(props, commandLineOptions, args);
 
             if (props.contains(Property.COMMAND_LINE_HELP)) {
                 HelpFormatter helpFormatter = new HelpFormatter();
@@ -103,25 +98,62 @@ public final class ConfigHelper {
         }
     }
 
-    public Config fromConfiguration() {
-        logger.trace("<< fromConfiguration()");
+    public Props<Property> commandLine(Props<Property> defaults, CommandLineOptions commandLineOptions, String[] args)
+            throws ParseException {
 
-        PropsFactory factory = PropsFactory.getInstance();
+        Props<Property> props = Props.newInstance(Property.class, defaults);
+        CommandLineParser parser = new DefaultParser();
+        Options options = commandLineOptions.options();
+        CommandLine cmd = parser.parse(options, args);
 
-        // Defaults
-        Props props = factory.fromPropertyDefaults();
-
-        // Add properties file
-        try {
-            props = factory.fromResource(props, URL);
-        } catch (IOException ex) {
-            logger.warn("-- fromArgs() > failed to load properties file: {}", ex);
+        switch (cmd.getArgList().size()) {
+            case 0:
+                // No authentication credentials
+                break;
+            case 1:
+                // Authentication token
+                props.put(Property.AUTHENTICATION_TOKEN, cmd.getArgList().get(0));
+                break;
+            case 2:
+                // AppleId/ password pair
+                props.put(Property.AUTHENTICATION_APPLEID, cmd.getArgList().get(0));
+                props.put(Property.AUTHENTICATION_PASSWORD, cmd.getArgList().get(1));
+                break;
+            default:
+                throw new ParseException(
+                        "Too many non-optional arguments, expected appleid/ password or authentication token only.");
         }
 
-        // Build config
-        Config config = Config.newInstance(props);
+        Iterator<Option> it = cmd.iterator();
 
-        logger.trace(">> fromConfiguration()", config);
-        return config;
+        while (it.hasNext()) {
+            Option option = it.next();
+            String opt = commandLineOptions.opt(option);
+            Property property = commandLineOptions.property(option);
+
+            if (option.hasArgs()) {
+                // String array
+                props.put(
+                        property,
+                        joined(cmd.getOptionValues(opt)));
+            } else if (option.hasArg()) {
+                // String value
+                props.put(
+                        property,
+                        cmd.getOptionValue(opt));
+            } else {
+                // String boolean
+                props.put(
+                        property,
+                        Boolean.toString(cmd.hasOption(opt)));
+            }
+        }
+        return props;
+    }
+
+    String joined(String... list) {
+        return list == null
+                ? ""
+                : Arrays.asList(list).stream().collect(Collectors.joining(" "));
     }
 }

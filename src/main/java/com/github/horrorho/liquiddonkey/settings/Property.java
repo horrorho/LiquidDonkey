@@ -97,6 +97,21 @@ public enum Property {
         return DateTimeFormatter.ISO_DATE;
     }
 
+    public static PropsBuilder<Property> propsBuilder() {
+        return PropsBuilder.fromDefaults(Property.class, Property::getDefaultValue)
+                .resource(PROPERTIES_JAR).path(PROPERTIES_USER);
+    }
+
+    public static PropsManager<Property> propsManager(Property pathProperty) {
+        return PropsManager.fromDefaults(Property.class, pathProperty, Property::getDefaultValue);
+    }
+
+    public static Parsers parsers() {
+        return parsers;
+    }
+
+    private static final Parsers parsers = Parsers.newInstance(dateTimeFormatter());
+
     private final String defaultValue;
 
     private Property(String defaultValue) {

@@ -29,8 +29,8 @@ import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.HttpFactory;
 import com.github.horrorho.liquiddonkey.printer.Printer;
-import com.github.horrorho.liquiddonkey.settings.Props;
-import com.github.horrorho.liquiddonkey.settings.PropsFactory;
+import com.github.horrorho.liquiddonkey.settings.Property;
+import com.github.horrorho.liquiddonkey.settings.Props; 
 import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import com.github.horrorho.liquiddonkey.settings.config.HttpConfig;
 import java.io.IOException;
@@ -65,7 +65,7 @@ public class AuthenticationController implements Initializable {
 
     private final static PseudoClass error = PseudoClass.getPseudoClass("error");
 
-    private final Props configuration = PropsFactory.getInstance().fromPropertyDefaults();
+    private final Props<Property> configuration = Property.propsBuilder().build();
 
     void warnOnEmpty(TextField textField) {
 
@@ -199,7 +199,7 @@ public class AuthenticationController implements Initializable {
         }
     }
 
-    public void initData(Props properties) {
+    public void initData(Props<Property> properties) {
 
     }
 

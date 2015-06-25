@@ -45,14 +45,14 @@ import org.apache.commons.cli.Options;
 @ThreadSafe
 public final class CommandLineOptions {
 
-    public static CommandLineOptions newInstance(Props props) {
+    public static CommandLineOptions newInstance(Props<Property> props) {
         LinkedHashMap<Property, Option> propertyToOption = propertyToOption(props);
         return new CommandLineOptions(
                 propertyToOption,
                 optToProperty(propertyToOption));
     }
 
-    static LinkedHashMap<Property, Option> propertyToOption(Props props) {
+    static LinkedHashMap<Property, Option> propertyToOption(Props<Property> props) {
         LinkedHashMap<Property, Option> options = new LinkedHashMap<>();
 
         options.put(FILE_OUTPUT_DIRECTORY,
@@ -157,7 +157,7 @@ public final class CommandLineOptions {
         return options;
     }
 
-    static String itemTypes(Props props) {
+    static String itemTypes(Props<Property> props) {
         String prefix = props.get(CONFIG_PREFIX_ITEM_TYPE);
         int substring = prefix.length();
 

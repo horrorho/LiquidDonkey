@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.Parsers;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.Props;
 import java.util.HashSet;
@@ -42,11 +43,12 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class ItemTypes {
 
-    public static ItemTypes newInstance(Props props) {
+    public static ItemTypes newInstance(Props<Property> props) {
         return new ItemTypes(itemTypeToPaths(props));
     }
 
-    static Map<String, Set<String>> itemTypeToPaths(Props props) {
+    static Map<String, Set<String>> itemTypeToPaths(Props<Property> props) {
+        Parsers parsers = Property.parsers();
         String itemTypePrefix = props.get(Property.CONFIG_PREFIX_ITEM_TYPE);
         int prefixLength = itemTypePrefix.length();
 

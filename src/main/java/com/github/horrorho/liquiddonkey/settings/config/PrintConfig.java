@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.Parsers;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.Props;
 import net.jcip.annotations.Immutable;
@@ -37,8 +38,10 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public class PrintConfig {
 
-    public static PrintConfig newInstance(Props props) {
-        return newInstance(props.get(Property.ENGINE_PRINT_STACK_TRACE, props::asBoolean));
+    public static PrintConfig newInstance(Props<Property> props) {
+        Parsers parsers = Property.parsers();
+
+        return newInstance(props.get(Property.ENGINE_PRINT_STACK_TRACE, parsers::asBoolean));
     }
 
     public static PrintConfig newInstance(boolean toPrintStackTrace) {

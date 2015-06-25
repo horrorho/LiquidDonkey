@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.Parsers;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.Props;
 import java.util.ArrayList;
@@ -43,15 +44,17 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class SelectionConfig {
 
-    public static SelectionConfig newInstance(Props props) {
+    public static SelectionConfig newInstance(Props<Property> props) {
+        Parsers parsers = Property.parsers();
+
         List<String> udid = props.contains(Property.SELECTION_UDID)
                 ? props.get(Property.SELECTION_UDID).isEmpty()
                         ? Arrays.asList("")
-                        : props.getList(Property.SELECTION_UDID, props::asHex)
+                        : props.getList(Property.SELECTION_UDID, parsers::asHex)
                 : new ArrayList<>();
 
         return newInstance(new HashSet<>(udid),
-                new HashSet<>(props.getList(Property.SELECTION_SNAPSHOT, props::asInteger)));
+                new HashSet<>(props.getList(Property.SELECTION_SNAPSHOT, parsers::asInteger)));
     }
 
     public static SelectionConfig newInstance(Set<String> backups, Set<Integer> snapshots) {

@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.Parsers;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.Props;
 import net.jcip.annotations.Immutable;
@@ -37,12 +38,13 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class DonkeyFactoryConfig {
 
-    public static DonkeyFactoryConfig newInstance(Props props) {
+    public static DonkeyFactoryConfig newInstance(Props<Property> props) {
+        Parsers parsers = Property.parsers();
 
-        return DonkeyFactoryConfig.newInstance(props.get(Property.ENGINE_AGGRESSIVE, props::asBoolean),
-                props.get(Property.FILE_FORCE, props::asBoolean),
-                props.get(Property.FILE_SET_LAST_MODIFIED_TIMESTAMP, props::asBoolean),
-                props.get(Property.ENGINE_BATCH_SIZE_MINIMUM, props::asInteger));
+        return DonkeyFactoryConfig.newInstance(props.get(Property.ENGINE_AGGRESSIVE, parsers::asBoolean),
+                props.get(Property.FILE_FORCE, parsers::asBoolean),
+                props.get(Property.FILE_SET_LAST_MODIFIED_TIMESTAMP, parsers::asBoolean),
+                props.get(Property.ENGINE_BATCH_SIZE_MINIMUM, parsers::asInteger));
     }
 
     public static DonkeyFactoryConfig newInstance(

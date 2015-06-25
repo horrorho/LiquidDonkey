@@ -46,7 +46,7 @@ import org.junit.runner.RunWith;
 @RunWith(JUnitParamsRunner.class)
 public class ConfigFactoryTest {
 
-    private final ConfigHelper factory = ConfigHelper.getInstance();
+    private final CommandLineConfig factory = CommandLineConfig.getInstance();
 
     @Test
     @Parameters

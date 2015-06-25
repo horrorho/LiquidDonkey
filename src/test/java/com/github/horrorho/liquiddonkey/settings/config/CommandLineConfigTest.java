@@ -21,8 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.settings;
+package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
+import com.github.horrorho.liquiddonkey.settings.Property;
+import com.github.horrorho.liquiddonkey.settings.Props;
 import junitparams.JUnitParamsRunner;
 import static junitparams.JUnitParamsRunner.$;
 import junitparams.Parameters;
@@ -36,16 +39,15 @@ import org.junit.runner.RunWith;
  * @author Ahseya
  */
 @RunWith(JUnitParamsRunner.class)
-public class CommandLineConfigurationTest {
+public class CommandLineConfigTest {
 
-    private final PropsFactory factory = PropsFactory.getInstance();
-    private final CommandLineOptions options = CommandLineOptions.newInstance(factory.fromPropertyDefaults()); // TODO can pass empty here? or create
+    private final CommandLineOptions options = CommandLineOptions.newInstance(Property.propsBuilder().build()); // TODO can pass empty here? or create
 
     @Test
     @Parameters
     public void testConfiguration(Property property, String in, String expected) throws Exception {
         String[] args = in.split("\\s");
-        Props props = factory.fromCommandLine(null, options, args);
+        Props<Property> props = CommandLineConfig.getInstance().commandLine(null, options, args);
         String value = props.contains(property)
                 ? props.get(property)
                 : null;

@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.Parsers;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.Props;
 import net.jcip.annotations.Immutable;
@@ -37,10 +38,12 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class SnapshotDownloaderConfig {
 
-    public static SnapshotDownloaderConfig newInstance(Props props) {
-        return newInstance(props.get(Property.ENGINE_THREAD_COUNT, props::asInteger),
-                props.get(Property.ENGINE_THREAD_STAGGER_DELAY, props::asInteger),
-                props.get(Property.ENGINE_AGGRESSIVE, props::asBoolean)
+    public static SnapshotDownloaderConfig newInstance(Props<Property> props) {
+        Parsers parsers = Property.parsers();
+
+        return newInstance(props.get(Property.ENGINE_THREAD_COUNT, parsers::asInteger),
+                props.get(Property.ENGINE_THREAD_STAGGER_DELAY, parsers::asInteger),
+                props.get(Property.ENGINE_AGGRESSIVE, parsers::asBoolean)
                         ? 2 // TODO
                         : 1);
     }

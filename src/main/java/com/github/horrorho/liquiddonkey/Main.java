@@ -29,7 +29,7 @@ import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
-import com.github.horrorho.liquiddonkey.settings.config.ConfigHelper;
+import com.github.horrorho.liquiddonkey.settings.config.CommandLineConfig;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +67,7 @@ public class Main {
     public static void main(String[] args) {
         logger.trace("<< main()");
 
-        Config config = ConfigHelper.getInstance().fromArgs(args);
+        Config config = CommandLineConfig.getInstance().fromArgs(args);
         logger.debug("-- main() > options: {}", config);
 
         if (config == null) {

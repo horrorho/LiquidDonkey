@@ -32,6 +32,8 @@ import java.nio.file.Paths;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
+import java.util.Objects;
+import java.util.function.Function;
 import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,29 +41,34 @@ import org.slf4j.LoggerFactory;
 /**
  *
  * @author Ahseya
+ * @param <E> enum type
  */
 @NotThreadSafe
-public class PropsManager implements Closeable {
+public class PropsManager<E extends Enum<E>> implements Closeable {
 
     private static final Logger logger = LoggerFactory.getLogger(PropsManager.class);
 
-    public static PropsManager from(Property pathProperty) {
-        return from(PropsBuilder.fromDefaults().path(pathProperty).build(), pathProperty);
+    public static <E extends Enum<E>> PropsManager
+            fromDefaults(Class<E> type, E pathProperty, Function<E, String> defaultValue) {
+
+        return from(
+                PropsBuilder.fromDefaults(type, defaultValue).path(pathProperty).build(),
+                pathProperty);
     }
 
-    public static PropsManager from(Props props, Property pathProperty) {
+    public static <E extends Enum<E>> PropsManager<E> from(Props<E> props, E pathProperty) {
         return new PropsManager(props, pathProperty);
     }
 
-    private final Props props;
-    private final Property pathProperty;
+    private final Props<E> props;
+    private final E pathProperty;
 
-    PropsManager(Props props, Property pathProperty) {
-        this.props = props;
-        this.pathProperty = pathProperty;
+    PropsManager(Props<E> props, E pathProperty) {
+        this.props = Objects.requireNonNull(props);
+        this.pathProperty = Objects.requireNonNull(pathProperty);
     }
 
-    public Props props() {
+    public Props<E> props() {
         return props;
     }
 

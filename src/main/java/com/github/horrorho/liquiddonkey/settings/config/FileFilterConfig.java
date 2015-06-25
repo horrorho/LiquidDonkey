@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.Parsers;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.Props;
 import java.util.Collection;
@@ -41,7 +42,8 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class FileFilterConfig {
 
-    public static FileFilterConfig newInstance(Props props) {
+    public static FileFilterConfig newInstance(Props<Property> props) {
+        Parsers parsers = Property.parsers();
         ItemTypes itemTypes = ItemTypes.newInstance(props);
 
         Collection<String> domains = new HashSet<>();
@@ -83,11 +85,11 @@ public final class FileFilterConfig {
         return newInstance(domains,
                 relativePath,
                 extensions,
-                props.get(Property.FILTER_DATE_MAX, props::asTimestamp),
-                props.get(Property.FILTER_DATE_MIN, props::asTimestamp),
+                props.get(Property.FILTER_DATE_MAX, parsers::asTimestamp),
+                props.get(Property.FILTER_DATE_MIN, parsers::asTimestamp),
                 // * 1024 as kilobytes to bytes
-                props.get(Property.FILTER_SIZE_MAX, props::asLong) * 1024,
-                props.get(Property.FILTER_SIZE_MIN, props::asLong) * 1024);
+                props.get(Property.FILTER_SIZE_MAX, parsers::asLong) * 1024,
+                props.get(Property.FILTER_SIZE_MIN, parsers::asLong) * 1024);
     }
 
     public static FileFilterConfig newInstance(

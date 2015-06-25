@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.Parsers;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.Props;
 import java.nio.file.Path;
@@ -39,10 +40,12 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class DirectoryConfig {
 
-    public static DirectoryConfig newInstance(Props props) {
+    public static DirectoryConfig newInstance(Props<Property> props) {
+        Parsers parsers = Property.parsers();
+
         return newInstance(Paths.get(props.get(Property.FILE_OUTPUT_DIRECTORY)),
-                props.get(Property.FILE_COMBINED, props::asBoolean),
-                props.get(Property.FILE_FLAT, props::asBoolean));
+                props.get(Property.FILE_COMBINED, parsers::asBoolean),
+                props.get(Property.FILE_FLAT, parsers::asBoolean));
     }
 
     public static DirectoryConfig newInstance(Path base, boolean isCombined, boolean isFlat) {

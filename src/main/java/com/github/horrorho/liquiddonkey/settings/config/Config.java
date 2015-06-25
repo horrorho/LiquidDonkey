@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.Props;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
@@ -37,7 +38,7 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class Config {
 
-    public static Config newInstance(Props props) {
+    public static Config newInstance(Props<Property> props) {
         return newInstance(
                 AuthenticationConfig.newInstance(props),
                 SnapshotFactoryConfig.newInstance(props),
