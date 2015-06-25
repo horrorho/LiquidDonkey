@@ -56,7 +56,7 @@ public enum Property {
     FILE_COMBINED("false"),
     FILE_FORCE("false"), // TODO
     FILE_FLAT("false"),
-    FILE_OUTPUT_DIRECTORY("ouput"),
+    FILE_OUTPUT_DIRECTORY("output"),
     FILE_SET_LAST_MODIFIED_TIMESTAMP("true"),
     FILTER_DATE_MIN("0000-01-01"),
     FILTER_DATE_MAX("9999-01-01"),

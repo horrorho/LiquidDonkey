@@ -305,6 +305,7 @@ public class AuthenticationController implements Initializable {
 
     void setThreads(int value) {
         ObservableList<Integer> list = threads.getItems();
+        // Add value to the list if required.
         if (!list.contains(value)) {
             list.add(value);
             Collections.sort(list);
