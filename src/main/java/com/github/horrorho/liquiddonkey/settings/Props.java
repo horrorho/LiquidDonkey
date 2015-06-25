@@ -101,7 +101,13 @@ public class Props {
 
     public Props addAll(Properties properties) {
         properties.stringPropertyNames().stream()
-                .forEach(key -> put(Property.valueOf(key), properties.getProperty(key)));
+                .forEach(key -> {
+                    try {
+                        put(Property.valueOf(key), properties.getProperty(key));
+                    } catch (IllegalArgumentException ex) {
+                        logger.warn("-- addAll() - unknown Property type: {}", key);
+                    }
+                });
         return this;
     }
 

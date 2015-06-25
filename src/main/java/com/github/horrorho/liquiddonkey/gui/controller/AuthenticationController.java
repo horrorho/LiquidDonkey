@@ -26,7 +26,6 @@ package com.github.horrorho.liquiddonkey.gui.controller;
 import com.github.horrorho.liquiddonkey.cloud.Authentication;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
-import com.github.horrorho.liquiddonkey.gui.GuiProps;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.HttpFactory;
 import com.github.horrorho.liquiddonkey.printer.Printer;
@@ -200,7 +199,7 @@ public class AuthenticationController implements Initializable {
         }
     }
 
-    public void initData(GuiProps properties) {
+    public void initData(Props properties) {
 
     }
 

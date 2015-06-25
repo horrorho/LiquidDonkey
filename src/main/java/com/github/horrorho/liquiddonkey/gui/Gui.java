@@ -2,8 +2,7 @@ package com.github.horrorho.liquiddonkey.gui;
 
 import com.github.horrorho.liquiddonkey.gui.controller.AuthenticationController;
 import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.Props;
-import com.github.horrorho.liquiddonkey.settings.PropsFactory;
+import com.github.horrorho.liquiddonkey.settings.PropsManager;
 import java.util.Arrays;
 import javafx.application.Application;
 import static javafx.application.Application.launch;
@@ -18,7 +17,7 @@ public class Gui extends Application {
 
     private static final Logger logger = LoggerFactory.getLogger(Gui.class);
 
-    GuiProps guiProps;
+    PropsManager propsManager;
     Stage stage;
 
     @Override
@@ -26,14 +25,16 @@ public class Gui extends Application {
         logger.trace("<< start()");
         this.stage = stage;
 
-        guiProps = GuiProps.newInstance();
+        propsManager = PropsManager.from(Property.PROPERTIES_GUI_PATH);
 
-        System.out.println(guiProps.props().distinct());
+        System.out.println(propsManager.props().get(Property.APP_NAME) + "\n\n\n\n\n");
         
+        System.out.println(propsManager.props().distinct());
+
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Authentication.fxml"));
         Parent root = loader.load();
         AuthenticationController controller = loader.<AuthenticationController>getController();
-        controller.initData(guiProps);
+        controller.initData(propsManager.props());
         Scene scene = new Scene(root);
         scene.getStylesheets().add("/styles/Styles.css"); // TODO is this problematic?
         stage.setResizable(false);
@@ -45,18 +46,12 @@ public class Gui extends Application {
     @Override
     public void stop() throws Exception {
         logger.trace("<< stop()");
-        if (guiProps != null) {
-            guiProps.close();
+        if (propsManager != null) {
+            propsManager.close();
         }
         logger.trace(">> stop()");
     }
 
-//    public void next(String fxml) throws IOException {
-//        Parent root = FXMLLoader.load(getClass().getResource(fxml));
-//        Scene scene = new Scene(root);
-//        stage.setScene(scene);
-//        stage.show();
-//    }
     /**
      * The main() method is ignored in correctly deployed JavaFX application. main() serves only as fallback in case the
      * application can not be launched through deployment artifacts, e.g., in IDEs with limited FX support. NetBeans

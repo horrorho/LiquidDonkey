@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
@@ -44,16 +45,20 @@ public class PropsManager implements Closeable {
 
     private static final Logger logger = LoggerFactory.getLogger(PropsManager.class);
 
-    public static PropsManager newInstance(Props props, Path path) {
-        return new PropsManager(props, path);
+    public static PropsManager from(Property pathProperty) {
+        return from(PropsBuilder.fromDefaults().path(pathProperty).build(), pathProperty);
+    }
+
+    public static PropsManager from(Props props, Property pathProperty) {
+        return new PropsManager(props, pathProperty);
     }
 
     private final Props props;
-    private final Path path;
+    private final Property pathProperty;
 
-    PropsManager(Props props, Path path) {
+    PropsManager(Props props, Property pathProperty) {
         this.props = props;
-        this.path = path;
+        this.pathProperty = pathProperty;
     }
 
     public Props props() {
@@ -61,7 +66,8 @@ public class PropsManager implements Closeable {
     }
 
     @Override
-    public void close() throws IOException { 
+    public void close() throws IOException {
+        Path path = Paths.get(props.get(pathProperty));
         try (OutputStream outputStream = Files.newOutputStream(path, CREATE, WRITE, TRUNCATE_EXISTING)) {
             props.distinct().properties().store(outputStream, "auto");
             logger.debug("-- close() > properties written to: {}", path);
