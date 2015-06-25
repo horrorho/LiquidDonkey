@@ -23,14 +23,16 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
+import com.github.horrorho.liquiddonkey.settings.Property;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
@@ -43,7 +45,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Props.
  *
- * Lightweight properties.
+ * Lightweight properties with parsers.
  *
  * @author Ahseya
  */
@@ -54,7 +56,8 @@ public class Props {
 
     public static Props newInstance(Properties properties) {
         Props props = newInstance();
-        props.addAll(properties);
+        properties.stringPropertyNames().stream()
+                .forEach(key -> props.put(Property.valueOf(key), properties.getProperty(key)));
         return props;
     }
 
@@ -63,20 +66,19 @@ public class Props {
     }
 
     public static Props newInstance(Props defaults) {
-        return new Props(defaults);
+        return new Props(new EnumMap<>(Property.class), defaults);
     }
 
-    private final Map<Property, String> map = new HashMap<>();
+    static Props newInstance(Map<Property, String> map, Props defaults) {
+        return new Props(map, defaults);
+    }
+
+    private final Map<Property, String> map;
     private final Props defaults;
 
-    Props(Props defaults) {
+    Props(Map<Property, String> map, Props defaults) {
+        this.map = Objects.requireNonNull(map);
         this.defaults = defaults;
-    }
-
-    public Props addAll(Properties properties) {
-        properties.stringPropertyNames().stream()
-                .forEach(key -> put(Property.valueOf(key), properties.getProperty(key)));
-        return this;
     }
 
     public boolean contains(Property property) {
@@ -95,8 +97,17 @@ public class Props {
         }
 
         set.addAll(map.keySet());
-
         return set;
+    }
+
+    public Props distinct() {
+        return Props.newInstance(new EnumMap<>(map), defaults);
+    }
+
+    public Properties properties() {
+        Properties properties = new Properties();
+        keySet().stream().forEach(property -> properties.setProperty(property.name(), map.get(property)));
+        return properties;
     }
 
     public String put(Property property, String value) {

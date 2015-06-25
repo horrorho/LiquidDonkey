@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
+import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -121,10 +122,13 @@ public class PropsFactory {
                 properties.load(inputStream);
             }
         } catch (IOException ex) {
-            logger.warn("-- addFromFile() > excepion: ", ex);
+            logger.warn("-- fromUrl() > excepion: ", ex);
         }
 
-        return Props.newInstance(defaults).addAll(properties);
+        Props props = Props.newInstance(defaults);
+        properties.stringPropertyNames().stream()
+                .forEach(key -> props.put(Property.valueOf(key), properties.getProperty(key)));
+        return props;
     }
 
     public Props fromPropertyDefaults() {
