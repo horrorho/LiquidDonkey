@@ -23,8 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import com.github.horrorho.liquiddonkey.settings.Configuration;
 import com.github.horrorho.liquiddonkey.settings.Property;
+import com.github.horrorho.liquiddonkey.settings.Props;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
@@ -35,10 +35,10 @@ import net.jcip.annotations.ThreadSafe;
  */
 public class AuthenticationConfig {
 
-    public static AuthenticationConfig newInstance(Configuration configuration) {
-        String id = configuration.getOrDefault(Property.AUTHENTICATION_APPLEID, null);
-        String password = configuration.getOrDefault(Property.AUTHENTICATION_PASSWORD, null);
-        String token = configuration.getOrDefault(Property.AUTHENTICATION_TOKEN, null);
+    public static AuthenticationConfig newInstance(Props props) {
+        String id = props.get(Property.AUTHENTICATION_APPLEID);
+        String password = props.get(Property.AUTHENTICATION_PASSWORD);
+        String token = props.get(Property.AUTHENTICATION_TOKEN);
 
         if (id != null && password != null && token != null) {
             throw new IllegalStateException("Expected authorization token or appleid/ password only.");

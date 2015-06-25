@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
+import java.time.format.DateTimeFormatter;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
@@ -89,6 +90,10 @@ public enum Property {
     SELECTION_SNAPSHOT("1 -1 -2"),
     SELECTION_UDID(null);
 
+    public static DateTimeFormatter dateTimeFormatter() {
+        return DateTimeFormatter.ISO_DATE;
+    }
+   
     private final String defaultValue;
 
     private Property(String defaultValue) {
@@ -97,9 +102,5 @@ public enum Property {
 
     public String getDefaultValue() {
         return defaultValue;
-    }
-
-    public String key() {
-        return name();
     }
 }

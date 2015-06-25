@@ -23,11 +23,10 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import com.github.horrorho.liquiddonkey.settings.Configuration;
 import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
-import com.github.horrorho.liquiddonkey.settings.ConfigurationFactory;
+import com.github.horrorho.liquiddonkey.settings.PropsFactory;
 import com.github.horrorho.liquiddonkey.settings.Property;
-import java.io.IOException;
+import com.github.horrorho.liquiddonkey.settings.Props;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.cli.HelpFormatter;
@@ -58,40 +57,34 @@ public final class ConfigHelper {
     public Config fromArgs(String[] args) {
         logger.trace("<< fromArgs() < {}", (Object) args);
         try {
-            ConfigurationFactory factory = ConfigurationFactory.getInstance();
+            PropsFactory factory = PropsFactory.getInstance();
 
-            // Hard wired properties
-            Configuration con = factory.fromProperties();
+            // Defaults
+            Props props = factory.fromPropertyDefaults();
 
-            // Properties file
-            try {
-                con.addAll(factory.fromFile(URL));
-            } catch (IOException ex) {
-                logger.warn("-- fromArgs() > properties file error: {}", ex);
-            }
+            // Add properties file
+            props = factory.fromUrl(props, URL);
 
-            // Args
-            CommandLineOptions commandLineOptions = CommandLineOptions.newInstance(con);
-            Configuration commandLineConfiguration = factory.fromArgs(commandLineOptions, args);
+            // Add command line args
+            CommandLineOptions commandLineOptions = CommandLineOptions.newInstance(props);
 
-            if (commandLineConfiguration.contains(Property.COMMAND_LINE_HELP)) {
+            props = factory.fromCommandLine(props, commandLineOptions, args);
+
+            if (props.contains(Property.COMMAND_LINE_HELP)) {
                 HelpFormatter helpFormatter = new HelpFormatter();
                 helpFormatter.setOptionComparator(null);
-                helpFormatter.printHelp(
-                        con.get(Property.APP_NAME) + " [OPTION]... (<token> | <appleid> <password>) ",
+                helpFormatter.printHelp(props.get(Property.APP_NAME) + " [OPTION]... (<token> | <appleid> <password>) ",
                         commandLineOptions.options());
                 return null;
             }
 
-            if (commandLineConfiguration.contains(Property.COMMAND_LINE_VERSION)) {
-                System.out.println(con.getOrDefault(Property.PROJECT_VERSION, ""));
+            if (props.contains(Property.COMMAND_LINE_VERSION)) {
+                System.out.println(props.get(Property.PROJECT_VERSION));
                 return null;
             }
 
-            con.addAll(commandLineConfiguration);
-
             // Build config
-            Config config = Config.newInstance(con);
+            Config config = Config.newInstance(props);
 
             logger.trace(">> fromArgs() > {}", config);
             return config;
@@ -104,26 +97,19 @@ public final class ConfigHelper {
         }
     }
 
-    public Config fromConfiguration(Configuration configuration) {
+    public Config fromConfiguration() {
         logger.trace("<< fromConfiguration()");
 
-        ConfigurationFactory factory = ConfigurationFactory.getInstance();
+        PropsFactory factory = PropsFactory.getInstance();
 
-        // Hard wired properties
-        Configuration con = factory.fromProperties();
+        // Defaults
+        Props props = factory.fromPropertyDefaults();
 
-        // Properties file
-        try {
-            con.addAll(factory.fromFile(URL));
-        } catch (IOException ex) {
-            logger.warn("-- fromConfiguration() > properties file error: {}", ex);
-        }
-
-        // Configuration
-        con.addAll(configuration);
+        // Add properties file
+        props = factory.fromUrl(props, URL);
 
         // Build config
-        Config config = Config.newInstance(con);
+        Config config = Config.newInstance(props);
 
         logger.trace(">> fromConfiguration()", config);
         return config;

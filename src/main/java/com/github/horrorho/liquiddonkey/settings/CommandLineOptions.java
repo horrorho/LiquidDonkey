@@ -45,14 +45,14 @@ import org.apache.commons.cli.Options;
 @ThreadSafe
 public final class CommandLineOptions {
 
-    public static CommandLineOptions newInstance(Configuration configuration) {
-        LinkedHashMap<Property, Option> propertyToOption = propertyToOption(configuration);
+    public static CommandLineOptions newInstance(Props props) {
+        LinkedHashMap<Property, Option> propertyToOption = propertyToOption(props);
         return new CommandLineOptions(
                 propertyToOption,
                 optToProperty(propertyToOption));
     }
 
-    static LinkedHashMap<Property, Option> propertyToOption(Configuration configuration) {
+    static LinkedHashMap<Property, Option> propertyToOption(Props props) {
         LinkedHashMap<Property, Option> options = new LinkedHashMap<>();
 
         options.put(FILE_OUTPUT_DIRECTORY,
@@ -78,7 +78,7 @@ public final class CommandLineOptions {
 
         options.put(FILTER_ITEM_TYPES,
                 Option.builder(null).longOpt("item-types")
-                .desc("Only download the specified item type/s:\n" + itemTypes(configuration))
+                .desc("Only download the specified item type/s:\n" + itemTypes(props))
                 .argName("item_type")
                 .hasArgs().build());
 
@@ -157,16 +157,16 @@ public final class CommandLineOptions {
         return options;
     }
 
-    static String itemTypes(Configuration configuration) {
-        String prefix = configuration.get(CONFIG_PREFIX_ITEM_TYPE);
+    static String itemTypes(Props props) {
+        String prefix = props.get(CONFIG_PREFIX_ITEM_TYPE);
         int substring = prefix.length();
 
         return Stream.of(Property.values())
                 .filter(property -> property.name().startsWith(prefix))
-                .filter(property -> !configuration.getList(property).isEmpty())
+                .filter(property -> !props.getList(property).isEmpty())
                 .map(property -> {
                     String type = property.name().substring(substring);
-                    String paths = configuration.getList(property).stream().collect(Collectors.joining(" "));
+                    String paths = props.getList(property).stream().collect(Collectors.joining(" "));
                     return type + "(" + paths + ")";
                 }).collect(Collectors.joining(" "));
     }

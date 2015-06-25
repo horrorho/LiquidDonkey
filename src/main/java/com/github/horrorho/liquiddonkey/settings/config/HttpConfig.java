@@ -23,8 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import com.github.horrorho.liquiddonkey.settings.Configuration;
 import com.github.horrorho.liquiddonkey.settings.Property;
+import com.github.horrorho.liquiddonkey.settings.Props;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
@@ -37,27 +37,25 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class HttpConfig {
 
- 
-    public static HttpConfig newInstance(Configuration configuration) {
-        boolean isPersistent = configuration.get(Property.ENGINE_PERSISTENT, configuration::asBoolean);
-        boolean isRelaxedSSL = configuration.get(Property.HTTP_RELAX_SSL, configuration::asBoolean);
+    public static HttpConfig newInstance(Props props) {
+        boolean isPersistent = props.get(Property.ENGINE_PERSISTENT, props::asBoolean);
+        boolean isRelaxedSSL = props.get(Property.HTTP_RELAX_SSL, props::asBoolean);
 
-        return newInstance(
-                isPersistent,
+        return newInstance(isPersistent,
                 isRelaxedSSL,
-                configuration.get(Property.HTTP_MAX_CONNECTIONS, configuration::asInteger),
+                props.get(Property.HTTP_MAX_CONNECTIONS, props::asInteger),
                 isPersistent
-                        ? configuration.get(Property.HTTP_RETRY_COUNT_PERSISTENT, configuration::asInteger)
-                        : configuration.get(Property.HTTP_RETRY_COUNT, configuration::asInteger),
+                        ? props.get(Property.HTTP_RETRY_COUNT_PERSISTENT, props::asInteger)
+                        : props.get(Property.HTTP_RETRY_COUNT, props::asInteger),
                 isPersistent
-                        ? configuration.get(Property.HTTP_RETRY_DELAY_MS_PERSISTENT, configuration::asInteger)
-                        : configuration.get(Property.HTTP_RETRY_DELAY_MS, configuration::asInteger),
+                        ? props.get(Property.HTTP_RETRY_DELAY_MS_PERSISTENT, props::asInteger)
+                        : props.get(Property.HTTP_RETRY_DELAY_MS, props::asInteger),
                 isPersistent
-                        ? configuration.get(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT_PERSISTENT, configuration::asInteger)
-                        : configuration.get(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT, configuration::asInteger),
-                configuration.get(Property.HTTP_TIMEOUT_MS, configuration::asInteger),
-                configuration.get(Property.HTTP_VALID_AFTER_INACTIVITY_MS, configuration::asInteger),
-                configuration.get(Property.HTTP_DEFAULT_USER_AGENT));
+                        ? props.get(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT_PERSISTENT, props::asInteger)
+                        : props.get(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT, props::asInteger),
+                props.get(Property.HTTP_TIMEOUT_MS, props::asInteger),
+                props.get(Property.HTTP_VALID_AFTER_INACTIVITY_MS, props::asInteger),
+                props.get(Property.HTTP_DEFAULT_USER_AGENT));
     }
 
     public static HttpConfig newInstance(

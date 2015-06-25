@@ -38,32 +38,36 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * ConfigurationFactory.
+ * PropsFactory.
  *
  * @author Ahseya
  */
 @Immutable
 @ThreadSafe
-public class ConfigurationFactory {
+public class PropsFactory {
 
-    private static final ConfigurationFactory instance = new ConfigurationFactory();
+    private static final Logger logger = LoggerFactory.getLogger(PropsFactory.class);
 
-    public static ConfigurationFactory getInstance() {
+    private static final PropsFactory instance = new PropsFactory();
+
+    public static PropsFactory getInstance() {
         return instance;
     }
 
-    ConfigurationFactory() {
+    PropsFactory() {
     }
 
-    public Configuration fromArgs(CommandLineOptions commandLineOptions, String[] args) throws ParseException {
+    public Props fromCommandLine(Props defaults, CommandLineOptions commandLineOptions, String[] args)
+            throws ParseException {
 
+        Props props = Props.newInstance(defaults);
         CommandLineParser parser = new DefaultParser();
         Options options = commandLineOptions.options();
         CommandLine cmd = parser.parse(options, args);
-
-        Configuration configuration = Configuration.newInstance();
 
         switch (cmd.getArgList().size()) {
             case 0:
@@ -71,16 +75,16 @@ public class ConfigurationFactory {
                 break;
             case 1:
                 // Authentication token
-                configuration.setProperty(Property.AUTHENTICATION_TOKEN.key(), cmd.getArgList().get(0));
+                props.put(Property.AUTHENTICATION_TOKEN, cmd.getArgList().get(0));
                 break;
             case 2:
                 // AppleId/ password pair
-                configuration.setProperty(Property.AUTHENTICATION_APPLEID.key(), cmd.getArgList().get(0));
-                configuration.setProperty(Property.AUTHENTICATION_PASSWORD.key(), cmd.getArgList().get(1));
+                props.put(Property.AUTHENTICATION_APPLEID, cmd.getArgList().get(0));
+                props.put(Property.AUTHENTICATION_PASSWORD, cmd.getArgList().get(1));
                 break;
             default:
                 throw new ParseException(
-                        "Too many non-optional arguments, expected appleid/ password or authentication_token only.");
+                        "Too many non-optional arguments, expected appleid/ password or authentication token only.");
         }
 
         Iterator<Option> it = cmd.iterator();
@@ -88,41 +92,47 @@ public class ConfigurationFactory {
         while (it.hasNext()) {
             Option option = it.next();
             String opt = commandLineOptions.opt(option);
-            String key = commandLineOptions.property(option).key();
+            Property property = commandLineOptions.property(option);
 
             if (option.hasArgs()) {
-                configuration.setProperty(
-                        key,
+                // String array
+                props.put(
+                        property,
                         joined(cmd.getOptionValues(opt)));
             } else if (option.hasArg()) {
-                configuration.setProperty(
-                        key,
+                // String value
+                props.put(
+                        property,
                         cmd.getOptionValue(opt));
             } else {
-                configuration.setProperty(
-                        key,
+                // String boolean
+                props.put(
+                        property,
                         Boolean.toString(cmd.hasOption(opt)));
             }
         }
-        return configuration;
+        return props;
     }
 
-    public Configuration fromFile(String url) throws IOException {
+    public Props fromUrl(Props defaults, String url) {
+        Properties properties = new Properties();
         try (InputStream inputStream = this.getClass().getResourceAsStream(url)) {
-            Properties properties = new Properties();
             if (inputStream != null) {
                 properties.load(inputStream);
             }
-            return Configuration.newInstance().addAll(properties);
+        } catch (IOException ex) {
+            logger.warn("-- addFromFile() > excepion: ", ex);
         }
+
+        return Props.newInstance(defaults).addAll(properties);
     }
 
-    public Configuration fromProperties() {
-        Configuration configuration = Configuration.newInstance();
+    public Props fromPropertyDefaults() {
+        Props props = Props.newInstance();
         Stream.of(Property.values())
                 .filter(property -> property.getDefaultValue() != null)
-                .forEach(property -> configuration.setProperty(property.key(), property.getDefaultValue()));
-        return configuration;
+                .forEach(property -> props.put(property, property.getDefaultValue()));
+        return props;
     }
 
     String joined(String... list) {

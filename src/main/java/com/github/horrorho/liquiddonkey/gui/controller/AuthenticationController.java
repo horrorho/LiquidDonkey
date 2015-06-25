@@ -28,9 +28,9 @@ import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.HttpFactory;
-import com.github.horrorho.liquiddonkey.printer.Printer;
-import com.github.horrorho.liquiddonkey.settings.Configuration;
-import com.github.horrorho.liquiddonkey.settings.ConfigurationFactory;
+import com.github.horrorho.liquiddonkey.printer.Printer; 
+import com.github.horrorho.liquiddonkey.settings.Props;
+import com.github.horrorho.liquiddonkey.settings.PropsFactory;
 import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import com.github.horrorho.liquiddonkey.settings.config.HttpConfig;
 import java.io.IOException;
@@ -65,7 +65,7 @@ public class AuthenticationController implements Initializable {
 
     private final static PseudoClass error = PseudoClass.getPseudoClass("error");
 
-    private final Configuration configuration = ConfigurationFactory.getInstance().fromProperties();
+    private final Props configuration = PropsFactory.getInstance().fromPropertyDefaults();
 
     void warnOnEmpty(TextField textField) {
 

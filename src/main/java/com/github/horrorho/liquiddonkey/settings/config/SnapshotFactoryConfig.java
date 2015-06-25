@@ -23,8 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import com.github.horrorho.liquiddonkey.settings.Configuration;
 import com.github.horrorho.liquiddonkey.settings.Property;
+import com.github.horrorho.liquiddonkey.settings.Props;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
@@ -37,8 +37,8 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class SnapshotFactoryConfig {
 
-    public static SnapshotFactoryConfig newInstance(Configuration configuration) {
-        return newInstance(configuration.get(Property.ENGINE_AGGRESSIVE, configuration::asBoolean));
+    public static SnapshotFactoryConfig newInstance(Props props) {
+        return newInstance(props.get(Property.ENGINE_AGGRESSIVE, props::asBoolean));
     }
 
     public static SnapshotFactoryConfig newInstance(boolean toHuntFirstSnapshot) {

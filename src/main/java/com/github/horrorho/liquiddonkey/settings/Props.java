@@ -25,12 +25,14 @@ package com.github.horrorho.liquiddonkey.settings;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -39,61 +41,88 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * CommandLine helper.
+ * Props.
+ *
+ * Lightweight properties.
  *
  * @author Ahseya
  */
 @NotThreadSafe
-public class Configuration extends Properties {
+public class Props {
 
-    private static final Logger logger = LoggerFactory.getLogger(Configuration.class);
+    private static final Logger logger = LoggerFactory.getLogger(Props.class);
 
-    public static Configuration newInstance() {
-        return new Configuration(DateTimeFormatter.ISO_DATE);
+    public static Props newInstance(Properties properties) {
+        Props props = newInstance();
+        props.addAll(properties);
+        return props;
     }
 
-    private final DateTimeFormatter dateTimeFormatter;
-
-    Configuration(DateTimeFormatter dateTimeFormatter) {
-        this.dateTimeFormatter = Objects.requireNonNull(dateTimeFormatter);
+    public static Props newInstance() {
+        return newInstance((Props) null);
     }
 
-    public Configuration addAll(Properties properties) {
-        properties.forEach((key, value) -> System.out.println(key + ":" + value));
-        properties.forEach((key, value) -> setProperty(key.toString(), value.toString()));
+    public static Props newInstance(Props defaults) {
+        return new Props(defaults);
+    }
+
+    private final Map<Property, String> map = new HashMap<>();
+    private final Props defaults;
+
+    Props(Props defaults) {
+        this.defaults = defaults;
+    }
+
+    public Props addAll(Properties properties) {
+        properties.stringPropertyNames().stream()
+                .forEach(key -> put(Property.valueOf(key), properties.getProperty(key)));
         return this;
     }
 
     public boolean contains(Property property) {
-        return containsKey(property.key());
+        return map.containsKey(property)
+                ? true
+                : defaults == null
+                        ? false
+                        : defaults.contains(property);
+    }
+
+    public Set<Property> keySet() {
+        Set<Property> set = new HashSet<>();
+
+        if (defaults != null) {
+            set.addAll(defaults.keySet());
+        }
+
+        set.addAll(map.keySet());
+
+        return set;
+    }
+
+    public String put(Property property, String value) {
+        return map.put(property, value);
+    }
+
+    public String get(Property property) {
+        return map.containsKey(property)
+                ? map.get(property)
+                : defaults == null
+                        ? null
+                        : defaults.get(property);
     }
 
     public <T> T get(Property property, Function<String, T> function) {
         return function.apply(get(property));
     }
 
-    public String get(Property property) {
-        String value = getProperty(property.key());
-        if (value == null) {
-            illegalArgumentException("missing property: " + property);
-        }
-        return value;
-    }
-
-    public String getOrDefault(Property property, String defaultValue) {
-        return containsKey(property.key())
-                ? getProperty(property.key())
-                : defaultValue;
+    public List<String> getList(Property property) {
+        return Arrays.asList(get(property).split("\\s"));
     }
 
     public <T> List<T> getList(Property property, Function<String, T> function) {
         return getList(property).stream()
                 .map(function::apply)
                 .collect(Collectors.toList());
-    }
-
-    public List<String> getList(Property property) {
-        return Arrays.asList(get(property).split("\\s"));
     }
 
     public Boolean asBoolean(String val) {
@@ -129,7 +158,7 @@ public class Configuration extends Properties {
     public Long asTimestamp(String val) {
         return parse(
                 val,
-                date -> LocalDate.parse(date, dateTimeFormatter).atStartOfDay(ZoneId.systemDefault()).toEpochSecond(),
+                date -> LocalDate.parse(date, Property.dateTimeFormatter()).atStartOfDay(ZoneId.systemDefault()).toEpochSecond(),
                 DateTimeParseException.class,
                 () -> illegalArgumentException("bad date: " + val));
     }

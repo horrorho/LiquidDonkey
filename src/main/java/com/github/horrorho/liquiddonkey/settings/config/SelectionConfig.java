@@ -23,8 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import com.github.horrorho.liquiddonkey.settings.Configuration;
 import com.github.horrorho.liquiddonkey.settings.Property;
+import com.github.horrorho.liquiddonkey.settings.Props;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -43,20 +43,15 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class SelectionConfig {
 
-    public static SelectionConfig newInstance(Configuration configuration) {
-
-        if (configuration.contains(Property.SELECTION_UDID)) {
-            System.out.println(">>> " + configuration.getList(Property.SELECTION_UDID));
-        }
-        List<String> udid = configuration.contains(Property.SELECTION_UDID)
-                ? configuration.get(Property.SELECTION_UDID).isEmpty()
+    public static SelectionConfig newInstance(Props props) {
+        List<String> udid = props.contains(Property.SELECTION_UDID)
+                ? props.get(Property.SELECTION_UDID).isEmpty()
                         ? Arrays.asList("")
-                        : configuration.getList(Property.SELECTION_UDID, configuration::asHex)
+                        : props.getList(Property.SELECTION_UDID, props::asHex)
                 : new ArrayList<>();
 
-        return newInstance(
-                new HashSet<>(udid),
-                new HashSet<>(configuration.getList(Property.SELECTION_SNAPSHOT, configuration::asInteger)));
+        return newInstance(new HashSet<>(udid),
+                new HashSet<>(props.getList(Property.SELECTION_SNAPSHOT, props::asInteger)));
     }
 
     public static SelectionConfig newInstance(Set<String> backups, Set<Integer> snapshots) {

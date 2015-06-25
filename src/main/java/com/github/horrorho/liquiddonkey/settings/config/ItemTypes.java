@@ -23,10 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import com.github.horrorho.liquiddonkey.settings.Configuration;
 import com.github.horrorho.liquiddonkey.settings.Property;
-import java.util.ArrayList;
-import java.util.Arrays;
+import com.github.horrorho.liquiddonkey.settings.Props;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -44,20 +42,20 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class ItemTypes {
 
-    public static ItemTypes newInstance(Configuration configuration) {
-        return new ItemTypes(itemTypeToPaths(configuration));
+    public static ItemTypes newInstance(Props props) {
+        return new ItemTypes(itemTypeToPaths(props));
     }
 
-    static Map<String, Set<String>> itemTypeToPaths(Configuration config) {
-        String itemTypePrefix = config.get(Property.CONFIG_PREFIX_ITEM_TYPE);
+    static Map<String, Set<String>> itemTypeToPaths(Props props) {
+        String itemTypePrefix = props.get(Property.CONFIG_PREFIX_ITEM_TYPE);
         int prefixLength = itemTypePrefix.length();
 
-        return config.entrySet().stream()
-                .filter(property -> property.getKey().toString().startsWith(itemTypePrefix))
+        return props.keySet().stream()
+                .filter(property -> property.name().startsWith(itemTypePrefix))
                 .collect(
                         Collectors.toMap(
-                                property -> property.getKey().toString().substring(prefixLength).toLowerCase(Locale.US),
-                                property -> new HashSet<>(Arrays.asList(property.getValue().toString().split("\\s")))));
+                                property -> property.name().substring(prefixLength).toLowerCase(Locale.US),
+                                property -> new HashSet<>(props.getList(property))));
     }
 
     private final Map<String, Set<String>> itemTypeToPaths;

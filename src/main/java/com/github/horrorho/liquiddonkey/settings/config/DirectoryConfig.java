@@ -23,8 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import com.github.horrorho.liquiddonkey.settings.Configuration;
 import com.github.horrorho.liquiddonkey.settings.Property;
+import com.github.horrorho.liquiddonkey.settings.Props;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import net.jcip.annotations.Immutable;
@@ -39,10 +39,10 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class DirectoryConfig {
 
-    public static DirectoryConfig newInstance(Configuration configuration) {
-        return newInstance(Paths.get(configuration.get(Property.FILE_OUTPUT_DIRECTORY)),
-                configuration.get(Property.FILE_COMBINED, configuration::asBoolean),
-                configuration.get(Property.FILE_FLAT, configuration::asBoolean));
+    public static DirectoryConfig newInstance(Props props) {
+        return newInstance(Paths.get(props.get(Property.FILE_OUTPUT_DIRECTORY)),
+                props.get(Property.FILE_COMBINED, props::asBoolean),
+                props.get(Property.FILE_FLAT, props::asBoolean));
     }
 
     public static DirectoryConfig newInstance(Path base, boolean isCombined, boolean isFlat) {

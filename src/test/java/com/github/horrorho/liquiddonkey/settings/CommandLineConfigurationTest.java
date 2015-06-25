@@ -38,16 +38,16 @@ import org.junit.runner.RunWith;
 @RunWith(JUnitParamsRunner.class)
 public class CommandLineConfigurationTest {
 
-    private final ConfigurationFactory factory = ConfigurationFactory.getInstance();
-    private final CommandLineOptions options = CommandLineOptions.newInstance(factory.fromProperties());
+    private final PropsFactory factory = PropsFactory.getInstance();
+    private final CommandLineOptions options = CommandLineOptions.newInstance(factory.fromPropertyDefaults()); // TODO can pass empty here? or create
 
     @Test
     @Parameters
     public void testConfiguration(Property property, String in, String expected) throws Exception {
         String[] args = in.split("\\s");
-        Configuration configuration = factory.fromArgs(options, args);
-        String value = configuration.contains(property)
-                ? configuration.get(property)
+        Props props = factory.fromCommandLine(null, options, args);
+        String value = props.contains(property)
+                ? props.get(property)
                 : null;
         assertThat(value, is(expected));
     }
