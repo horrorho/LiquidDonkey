@@ -57,7 +57,7 @@ public class Props<E extends Enum<E>> {
     }
 
     public static <E extends Enum<E>> Props<E> newInstance(Class<E> type) {
-        return newInstance(type, (Props) null);
+        return newInstance(type, (Props<E>) null);
     }
 
     public static <E extends Enum<E>> Props<E> newInstance(Class<E> type, Props<E> defaults) {
@@ -122,6 +122,10 @@ public class Props<E extends Enum<E>> {
                 .filter(property -> map.get(property) != null)
                 .forEach(property -> properties.setProperty(property.name(), map.get(property)));
         return properties;
+    }
+
+    public String put(E property, Object value) {
+        return map.put(property, value.toString());
     }
 
     public String put(E property, String value) {

@@ -16,7 +16,7 @@
         <URL value="@/styles/Styles.css" />
     </stylesheets>
     <children>
-        <BorderPane>
+        <BorderPane style="-fx-background-color: Silver;">
             <center>
                 <VBox alignment="CENTER" BorderPane.alignment="CENTER">
                     <children>

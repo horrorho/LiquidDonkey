@@ -4,6 +4,7 @@ import com.github.horrorho.liquiddonkey.gui.controller.AuthenticationController;
 import com.github.horrorho.liquiddonkey.gui.controller.data.Preference;
 import com.github.horrorho.liquiddonkey.settings.Parsers;
 import com.github.horrorho.liquiddonkey.settings.Property;
+import com.github.horrorho.liquiddonkey.settings.Props;
 import com.github.horrorho.liquiddonkey.settings.PropsManager;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -32,7 +33,7 @@ public class Gui extends Application {
         AuthenticationController controller = loader.<AuthenticationController>getController();
         controller.initData(Property.props(), Parsers.newInstance(Property.dateTimeFormatter()), Preference.getInstance());
         Scene scene = new Scene(root);
-        scene.getStylesheets().add("/styles/Styles.css"); // TODO is this problematic?
+        //scene.getStylesheets().add("/styles/Styles.css"); // TODO is this problematic?
         stage.setResizable(false);
         stage.setScene(scene);
         stage.show();

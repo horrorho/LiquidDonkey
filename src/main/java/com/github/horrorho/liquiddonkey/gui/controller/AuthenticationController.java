@@ -72,6 +72,7 @@ public class AuthenticationController implements Initializable {
     private static final PseudoClass error = PseudoClass.getPseudoClass("error");
 
     private Props<Property> props;
+    private Props<Property> guiProps;
     private Parsers parsers;
     private Preference preference;
 
@@ -197,7 +198,7 @@ public class AuthenticationController implements Initializable {
     void authenticate(AuthenticationConfig authenticationConfig) {
         try {
             Http http = HttpFactory.newInstance(
-                    HttpConfig.newInstance(props),
+                    HttpConfig.newInstance(guiProps),
                     Printer.instanceOf(false));
 
             toSelection(Authentication.from(http, authenticationConfig));
@@ -238,6 +239,7 @@ public class AuthenticationController implements Initializable {
         this.props = props;
         this.parsers = parsers;
         this.preference = preference;
+        guiProps = Props.newInstance(Property.class, Property.props());
 
         accordion.setExpandedPane(appleIdPasswordPane);
 
@@ -268,9 +270,10 @@ public class AuthenticationController implements Initializable {
                 : false;
         state = preference.preferences().getBoolean(property.name(), state);
 
-        checkbox.selectedProperty().addListener((observable, oldValue, newValue)
-                -> preference.preferences().putBoolean(property.name(), newValue)
-        );
+        checkbox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            preference.preferences().putBoolean(property.name(), newValue);
+            guiProps.put(property, newValue);
+        });
         checkbox.setSelected(state);
     }
 
@@ -290,9 +293,10 @@ public class AuthenticationController implements Initializable {
         value = preference.preferences().getInt(Property.ENGINE_THREAD_COUNT.name(), value);
 
         threads.getItems().addAll(0, values);
-        threads.valueProperty().addListener((observable, oldValue, newValue)
-                -> preference.preferences().putInt(Property.ENGINE_THREAD_COUNT.name(), newValue)
-        );
+        threads.valueProperty().addListener((observable, oldValue, newValue) -> {
+            preference.preferences().putInt(Property.ENGINE_THREAD_COUNT.name(), newValue);
+            guiProps.put(Property.ENGINE_THREAD_COUNT, newValue);
+        });
         setThreads(value);
     }
 
