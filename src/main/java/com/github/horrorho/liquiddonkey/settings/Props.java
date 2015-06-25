@@ -63,7 +63,7 @@ public class Props {
     }
 
     public static Props newInstance(Props defaults) {
-        return new Props(new EnumMap<>(Property.class), defaults);
+        return newInstance(new EnumMap<>(Property.class), defaults);
     }
 
     static Props newInstance(Map<Property, String> map, Props defaults) {
@@ -96,7 +96,7 @@ public class Props {
     }
 
     public Props distinct() {
-        return Props.newInstance(new EnumMap<>(map), defaults);
+        return Props.newInstance(new EnumMap<>(map), null);
     }
 
     public Props addAll(Properties properties) {
@@ -106,13 +106,19 @@ public class Props {
     }
 
     public Properties properties() {
-        Properties properties = new Properties();
-        keySet().stream().forEach(property -> properties.setProperty(property.name(), map.get(property)));
+        Properties properties = new Properties(defaults == null ? null : defaults.properties());
+        keySet().stream()
+                .filter(property -> map.get(property) != null)
+                .forEach(property -> properties.setProperty(property.name(), map.get(property)));
         return properties;
     }
 
     public String put(Property property, String value) {
         return map.put(property, value);
+    }
+
+    public String pull(Property property) {
+        return put(property, get(property));
     }
 
     public String get(Property property) {
@@ -191,5 +197,10 @@ public class Props {
 
     protected <T> T illegalArgumentException(String message) {
         throw new IllegalArgumentException(message);
+    }
+
+    @Override
+    public String toString() {
+        return "Props{" + "map=" + map + ", defaults=" + defaults + '}';
     }
 }

@@ -36,7 +36,7 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public enum Property {
 
-    // Non-null values may be expected for certain properties.
+    // Non-null values may be expected for certain prop
     APP_NAME("LiquidDonkey"),
     AUTHENTICATION_APPLEID(null),
     AUTHENTICATION_PASSWORD(null),
@@ -87,13 +87,16 @@ public enum Property {
     ITEM_TYPE_VOICEMAILS("voicemail"),
     ITEM_TYPE_NOTES("notes"),
     PROJECT_VERSION("N/A"),
+    PROPERTIES_GUI_PATH("gui.properties"),
+    PROPERTIES_JAR("/settings.properties"),
+    PROPERTIES_USER("user.properties"),
     SELECTION_SNAPSHOT("1 -1 -2"),
     SELECTION_UDID(null);
 
     public static DateTimeFormatter dateTimeFormatter() {
         return DateTimeFormatter.ISO_DATE;
     }
-   
+
     private final String defaultValue;
 
     private Property(String defaultValue) {

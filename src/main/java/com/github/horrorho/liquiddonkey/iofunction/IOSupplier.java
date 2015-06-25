@@ -26,14 +26,13 @@ package com.github.horrorho.liquiddonkey.iofunction;
 import java.io.IOException;
 
 /**
- * Represents a function that accepts two arguments and produces a result.
+ * Represents a supplier of results.
  *
  * @author ahseya
  * @param <T> the input type.
- * @param <R> the return type.
  */
 @FunctionalInterface
-public interface IOFunction<T, R> {
+public interface IOSupplier<T> {
 
-    R apply(T t) throws IOException;
+    T get() throws IOException;
 }

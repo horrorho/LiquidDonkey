@@ -26,7 +26,7 @@ package com.github.horrorho.liquiddonkey.iofunction;
 import java.io.IOException;
 
 /**
- * Represents a function that accepts one argument and produces a result but may throw an IOException.
+ * Represents a function that accepts one argument and produces a result.
  *
  * @author ahseya
  * @param <T> First input type.

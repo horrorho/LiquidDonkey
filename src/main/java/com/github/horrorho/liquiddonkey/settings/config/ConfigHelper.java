@@ -24,9 +24,11 @@
 package com.github.horrorho.liquiddonkey.settings.config;
 
 import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
-import com.github.horrorho.liquiddonkey.settings.PropsFactory;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.Props;
+import com.github.horrorho.liquiddonkey.settings.PropsFactory;
+import java.io.IOException;
+import java.util.logging.Level;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.cli.HelpFormatter;
@@ -63,7 +65,11 @@ public final class ConfigHelper {
             Props props = factory.fromPropertyDefaults();
 
             // Add properties file
-            props = factory.fromUrl(props, URL);
+            try {
+                props = factory.fromResource(props, URL);
+            } catch (IOException ex) {
+                logger.warn("-- fromArgs() > failed to load properties file: {}", ex);
+            }
 
             // Add command line args
             CommandLineOptions commandLineOptions = CommandLineOptions.newInstance(props);
@@ -106,7 +112,11 @@ public final class ConfigHelper {
         Props props = factory.fromPropertyDefaults();
 
         // Add properties file
-        props = factory.fromUrl(props, URL);
+        try {
+            props = factory.fromResource(props, URL);
+        } catch (IOException ex) {
+            logger.warn("-- fromArgs() > failed to load properties file: {}", ex);
+        }
 
         // Build config
         Config config = Config.newInstance(props);

@@ -21,10 +21,17 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey;
+package com.github.horrorho.liquiddonkey.settings;
 
-import com.github.horrorho.liquiddonkey.gui.App;
-import java.util.Arrays;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
+import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,18 +39,32 @@ import org.slf4j.LoggerFactory;
  *
  * @author Ahseya
  */
-public class MainGui {
+@NotThreadSafe
+public class PropsManager implements Closeable {
 
-    private static final Logger logger = LoggerFactory.getLogger(MainGui.class);
+    private static final Logger logger = LoggerFactory.getLogger(PropsManager.class);
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) {
-        logger.trace("<< mainGui() <  ", Arrays.asList(args));
-// TODO catch exceptions with dialog and shutdown
-        App.launch(App.class);
+    public static PropsManager newInstance(Props props, Path path) {
+        return new PropsManager(props, path);
+    }
 
-        logger.trace(">> mainGui()");
+    private final Props props;
+    private final Path path;
+
+    PropsManager(Props props, Path path) {
+        this.props = props;
+        this.path = path;
+    }
+
+    public Props props() {
+        return props;
+    }
+
+    @Override
+    public void close() throws IOException { 
+        try (OutputStream outputStream = Files.newOutputStream(path, CREATE, WRITE, TRUNCATE_EXISTING)) {
+            props.distinct().properties().store(outputStream, "auto");
+            logger.debug("-- close() > properties written to: {}", path);
+        }
     }
 }

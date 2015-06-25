@@ -26,16 +26,20 @@ package com.github.horrorho.liquiddonkey.settings;
 import com.github.horrorho.liquiddonkey.iofunction.IOSupplier;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import net.jcip.annotations.Immutable;
-import net.jcip.annotations.ThreadSafe;
+import net.jcip.annotations.NotThreadSafe;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -46,29 +50,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * PropsHelper.
+ * PropsBuilder.
  *
  * @author Ahseya
  */
-@Immutable
-@ThreadSafe
-public class PropsFactory {
+@NotThreadSafe
+public class PropsBuilder {
 
-    private static final Logger logger = LoggerFactory.getLogger(PropsFactory.class);
+    private static final Logger logger = LoggerFactory.getLogger(PropsBuilder.class);
 
-    private static final PropsFactory instance = new PropsFactory();
-
-    public static PropsFactory getInstance() {
-        return instance;
+    public static PropsBuilder fromDefaults() {
+        return new PropsBuilder(null)
+                .defaults().resource(Property.PROPERTIES_JAR).path(Property.PROPERTIES_USER);
     }
 
-    PropsFactory() {
+    private Props props;
+
+    PropsBuilder(Props props) {
+        this.props = props;
     }
 
-    public Props fromCommandLine(Props defaults, CommandLineOptions commandLineOptions, String[] args)
+    public PropsBuilder commandLine(CommandLineOptions commandLineOptions, String[] args)
             throws ParseException {
 
-        Props props = Props.newInstance(defaults);
+        props = Props.newInstance(props);
         CommandLineParser parser = new DefaultParser();
         Options options = commandLineOptions.options();
         CommandLine cmd = parser.parse(options, args);
@@ -115,34 +120,53 @@ public class PropsFactory {
                         Boolean.toString(cmd.hasOption(opt)));
             }
         }
-        return props;
+        return this;
     }
 
-    public Props fromResource(Props defaults, String url) throws IOException {
-        return fromSupplier(defaults, () -> this.getClass().getResourceAsStream(url));
+    public PropsBuilder resource(Property url) {
+        if (!props.contains(url)) {
+            logger.warn("-- resource() > missing url property: {}", url);
+            return this;
+        }
+        logger.debug("-- resource() > url: {} / {}", url, props.get(url));
+        return inputStream(() -> this.getClass().getResourceAsStream(props.get(url)));
     }
 
-    public Props fromPath(Props defaults, Path path) throws IOException {
-        return fromSupplier(defaults, () -> Files.newInputStream(path, READ));
+    public PropsBuilder path(Property path) {
+        if (!props.contains(path)) {
+            logger.warn("-- path() > missing path property: {}", path);
+            return this;
+        }
+        logger.debug("-- path() > path: {} / {}", path, props.get(path));
+        return inputStream(() -> Files.newInputStream(Paths.get(props.get(path)), READ));
     }
 
-    public Props fromSupplier(Props defaults, IOSupplier<InputStream> supplier) throws IOException {
+    public PropsBuilder inputStream(IOSupplier<InputStream> supplier) {
+        props = Props.newInstance(props);
         Properties properties = new Properties();
+
         try (InputStream inputStream = supplier.get()) {
             if (inputStream != null) {
                 properties.load(inputStream);
+            } else {
+                logger.warn("-- inputStream() > null InputStream");
             }
+        } catch (IOException ex) {
+            logger.warn("-- inputStream() > exception: {}", ex);
         }
-        Props props = Props.newInstance(defaults);
-        return props.addAll(properties);
+        return this;
     }
 
-    public Props fromPropertyDefaults() {
-        Props props = Props.newInstance();
+    public Props build() {
+        return props;
+    }
+
+    PropsBuilder defaults() {
+        props = Props.newInstance(props);
         Stream.of(Property.values())
                 .filter(property -> property.getDefaultValue() != null)
                 .forEach(property -> props.put(property, property.getDefaultValue()));
-        return props;
+        return this;
     }
 
     String joined(String... list) {

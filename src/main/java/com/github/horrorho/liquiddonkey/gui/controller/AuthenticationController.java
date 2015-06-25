@@ -26,9 +26,10 @@ package com.github.horrorho.liquiddonkey.gui.controller;
 import com.github.horrorho.liquiddonkey.cloud.Authentication;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
+import com.github.horrorho.liquiddonkey.gui.GuiProps;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.HttpFactory;
-import com.github.horrorho.liquiddonkey.printer.Printer; 
+import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.Props;
 import com.github.horrorho.liquiddonkey.settings.PropsFactory;
 import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
@@ -199,6 +200,10 @@ public class AuthenticationController implements Initializable {
         }
     }
 
+    public void initData(GuiProps properties) {
+
+    }
+
     /**
      * Initializes the controller class.
      *
@@ -206,8 +211,7 @@ public class AuthenticationController implements Initializable {
      * @param rb not used
      */
     @Override
-    public void initialize(URL url, ResourceBundle rb
-    ) {
+    public void initialize(URL url, ResourceBundle rb) {
         warnOnEmpty(appleId);
         warnOnEmpty(password);
 
