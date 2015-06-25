@@ -21,9 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.settings;
+package com.github.horrorho.liquiddonkey;
 
-import java.io.Closeable;
+import com.github.horrorho.liquiddonkey.settings.Property;
+import com.github.horrorho.liquiddonkey.settings.Props;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -32,46 +33,50 @@ import java.nio.file.Paths;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
-import java.util.Objects;
-import net.jcip.annotations.NotThreadSafe;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Properties;
+import java.util.TreeSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * PropsManager.
+ * Dump out properties files.
  *
  * @author Ahseya
- * @param <E> enum type
  */
-@NotThreadSafe
-public class PropsManager<E extends Enum<E>> implements Closeable {
+public class MainDump {
 
-    private static final Logger logger = LoggerFactory.getLogger(PropsManager.class);
-    
-    public static <E extends Enum<E>> PropsManager<E> from(E pathProperty, Props<E> defaults) {
-        return new PropsManager(
-                PropsBuilder.from(pathProperty.getDeclaringClass(), defaults).path(pathProperty).build(),
-                pathProperty);
-    }
+    private static final Logger logger = LoggerFactory.getLogger(MainDump.class);
 
-    private final Props<E> props;
-    private final E pathProperty;
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) {
+        logger.trace("<< main() < args: {}", Arrays.asList(args));
 
-    PropsManager(Props<E> props, E pathProperty) {
-        this.props = Objects.requireNonNull(props);
-        this.pathProperty = Objects.requireNonNull(pathProperty);
-    }
+        Props<Property> props = Property.defaultProps();
 
-    public Props<E> props() {
-        return props;
-    }
-
-    @Override
-    public void close() throws IOException {
-        Path path = Paths.get(props.get(pathProperty));
+        Path path = Paths.get("liquiddonkey.properties");
         try (OutputStream outputStream = Files.newOutputStream(path, CREATE, WRITE, TRUNCATE_EXISTING)) {
-            props.distinct().properties().store(outputStream, "auto");
-            logger.debug("-- close() > properties written to: {}", path);
+
+            // Ordered store
+            Properties properties = new Properties() {
+                @Override
+                public synchronized Enumeration<Object> keys() {
+                    return Collections.enumeration(new TreeSet<Object>(super.keySet()));
+                }
+            };
+
+            properties.putAll(props.distinct().properties());
+            properties.store(outputStream, "liquiddonkey");
+
+            logger.info("-- main() > properties written to: {}", path);
+        } catch (IOException ex) {
+            logger.warn("-- main() > exception: ", ex);
         }
+
+        logger.trace(">> main");
     }
 }

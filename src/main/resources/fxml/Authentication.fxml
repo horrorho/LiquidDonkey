@@ -126,7 +126,7 @@
                             <content>
                                 <BorderPane prefHeight="200.0" prefWidth="200.0">
                                     <bottom>
-                                        <Button mnemonicParsing="false" text="Defaults" BorderPane.alignment="BOTTOM_LEFT" />
+                                        <Button mnemonicParsing="false" onAction="#handleReset" text="Reset" BorderPane.alignment="BOTTOM_LEFT" />
                                     </bottom>
                                     <top>
                                         <VBox alignment="CENTER" BorderPane.alignment="CENTER">
@@ -151,9 +151,9 @@
                                             <children>
                                                 <VBox spacing="16.0" GridPane.columnIndex="1">
                                                     <children>
-                                                        <CheckBox mnemonicParsing="false" text="Persistent" />
-                                                        <CheckBox mnemonicParsing="false" text="Aggressive" />
-                                                        <CheckBox mnemonicParsing="false" text="Relax SSL" />
+                                                        <CheckBox fx:id="isPersistent" mnemonicParsing="false" text="Persistent" />
+                                                        <CheckBox fx:id="isAggressive" mnemonicParsing="false" text="Aggressive" />
+                                                        <CheckBox fx:id="toRelaxSSL" mnemonicParsing="false" text="Relax SSL" />
                                                     </children>
                                                     <padding>
                                                         <Insets top="16.0" />
@@ -161,11 +161,12 @@
                                                 </VBox>
                                                 <VBox spacing="16.0">
                                                     <children>
-                                                        <CheckBox mnemonicParsing="false" text="Combine" />
-                                                        <CheckBox mnemonicParsing="false" text="Force" />
+                                                        <CheckBox fx:id="toCombine" mnemonicParsing="false" text="Combine" />
+                                                        <CheckBox fx:id="toForce" mnemonicParsing="false" text="Force" />
                                                         <Label text="Threads">
                                                             <graphic>
-                                                                <ChoiceBox />
+                                                                <ChoiceBox fx:id="threads">                                                                    
+                                                                </ChoiceBox>
                                                             </graphic>
                                                         </Label>
                                                     </children>

@@ -109,9 +109,9 @@ public class SelectionController implements Initializable {
             }
         });
 
-        accordion.expandedPaneProperty().addListener((property, oldPane, newPane) -> {
-            if (newPane == null) {
-                accordion.setExpandedPane(oldPane == main ? filters : main);
+        accordion.expandedPaneProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null) {
+                accordion.setExpandedPane(oldValue == main ? filters : main);
             }
         });
         accordion.setExpandedPane(main);

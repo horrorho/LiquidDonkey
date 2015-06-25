@@ -66,6 +66,7 @@ public enum Property {
     FILTER_RELATIVE_PATH(null),
     FILTER_SIZE_MIN("0"),
     FILTER_SIZE_MAX(Long.toString(Long.MAX_VALUE / 1024)),
+    GUI_SELECTION_THREADS("1 2 3 4 8 10 16"),
     HTTP_DEFAULT_USER_AGENT("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0"),
     HTTP_MAX_CONNECTIONS("32"),
     HTTP_RETRY_COUNT("3"),
@@ -88,8 +89,7 @@ public enum Property {
     ITEM_TYPE_NOTES("notes"),
     PROJECT_VERSION("N/A"),
     PROPERTIES_GUI_PATH("gui.properties"),
-    PROPERTIES_JAR("/settings.properties"),
-    PROPERTIES_USER("user.properties"),
+    PROPERTIES_JAR("/liquiddonkey.properties"),
     SELECTION_SNAPSHOT("1 -1 -2"),
     SELECTION_UDID(null);
 
@@ -100,7 +100,6 @@ public enum Property {
     public static Props<Property> props() {
         return PropsBuilder.from(Property.class, defaultProps())
                 .resource(PROPERTIES_JAR)
-                .path(PROPERTIES_USER)
                 .build();
     }
 

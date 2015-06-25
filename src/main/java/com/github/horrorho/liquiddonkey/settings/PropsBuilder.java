@@ -27,6 +27,7 @@ import com.github.horrorho.liquiddonkey.iofunction.IOSupplier;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import static java.nio.file.StandardOpenOption.READ;
 import java.util.Objects;
@@ -78,7 +79,7 @@ public class PropsBuilder<E extends Enum<E>> {
             logger.warn("-- path() > missing path property: {}", pathProperty);
             return this;
         }
-        logger.debug("-- path() > path: {} / {}", pathProperty, props.get(pathProperty));
+        logger.debug("-- path() > property: {} path: {}", pathProperty, props.get(pathProperty));
         return inputStream(() -> Files.newInputStream(Paths.get(props.get(pathProperty)), READ));
     }
 
@@ -92,6 +93,8 @@ public class PropsBuilder<E extends Enum<E>> {
             } else {
                 logger.warn("-- inputStream() > null InputStream");
             }
+        } catch (NoSuchFileException ex) {
+            logger.warn("-- inputStream() > no such file: {}", ex.getFile());
         } catch (IOException ex) {
             logger.warn("-- inputStream() > exception: {}", ex);
         }
