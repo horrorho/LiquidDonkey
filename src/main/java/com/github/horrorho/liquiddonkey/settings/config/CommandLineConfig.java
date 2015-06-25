@@ -24,19 +24,12 @@
 package com.github.horrorho.liquiddonkey.settings.config;
 
 import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
+import com.github.horrorho.liquiddonkey.settings.CommandLinePropsFactory;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.Props;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,14 +54,16 @@ public final class CommandLineConfig {
     }
 
     public Config fromArgs(String[] args) {
+        return fromArgs(args, Property.props());
+    }
+
+    public Config fromArgs(String[] args, Props<Property> props) {
         logger.trace("<< fromArgs() < {}", (Object) args);
         try {
-            Props<Property> props = Property.props();
-
             // Add command line args
             CommandLineOptions commandLineOptions = CommandLineOptions.newInstance(props);
 
-            props = commandLine(props, commandLineOptions, args);
+            props = CommandLinePropsFactory.getInstance().fromCommandLine(props, commandLineOptions, args);
 
             if (props.contains(Property.COMMAND_LINE_HELP)) {
                 HelpFormatter helpFormatter = new HelpFormatter();
@@ -95,64 +90,5 @@ public final class CommandLineConfig {
             System.out.println("Try '--help' for more information.");
             return null;
         }
-    }
-
-    public Props<Property> commandLine(Props<Property> defaults, CommandLineOptions commandLineOptions, String[] args)
-            throws ParseException {
-
-        Props<Property> props = Props.newInstance(Property.class, defaults);
-        CommandLineParser parser = new DefaultParser();
-        Options options = commandLineOptions.options();
-        CommandLine cmd = parser.parse(options, args);
-
-        switch (cmd.getArgList().size()) {
-            case 0:
-                // No authentication credentials
-                break;
-            case 1:
-                // Authentication token
-                props.put(Property.AUTHENTICATION_TOKEN, cmd.getArgList().get(0));
-                break;
-            case 2:
-                // AppleId/ password pair
-                props.put(Property.AUTHENTICATION_APPLEID, cmd.getArgList().get(0));
-                props.put(Property.AUTHENTICATION_PASSWORD, cmd.getArgList().get(1));
-                break;
-            default:
-                throw new ParseException(
-                        "Too many non-optional arguments, expected appleid/ password or authentication token only.");
-        }
-
-        Iterator<Option> it = cmd.iterator();
-
-        while (it.hasNext()) {
-            Option option = it.next();
-            String opt = commandLineOptions.opt(option);
-            Property property = commandLineOptions.property(option);
-
-            if (option.hasArgs()) {
-                // String array
-                props.put(
-                        property,
-                        joined(cmd.getOptionValues(opt)));
-            } else if (option.hasArg()) {
-                // String value
-                props.put(
-                        property,
-                        cmd.getOptionValue(opt));
-            } else {
-                // String boolean
-                props.put(
-                        property,
-                        Boolean.toString(cmd.hasOption(opt)));
-            }
-        }
-        return props;
-    }
-
-    String joined(String... list) {
-        return list == null
-                ? ""
-                : Arrays.asList(list).stream().collect(Collectors.joining(" "));
     }
 }

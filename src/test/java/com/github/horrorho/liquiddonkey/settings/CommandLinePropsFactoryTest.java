@@ -23,40 +23,29 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
-import com.github.horrorho.liquiddonkey.settings.config.CommandLineConfig;
-import com.github.horrorho.liquiddonkey.settings.config.Config;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import junitparams.JUnitParamsRunner;
 import static junitparams.JUnitParamsRunner.$;
 import junitparams.Parameters;
 import static org.hamcrest.CoreMatchers.is;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.runner.RunWith;
 
 /**
+ * CommandLinePropsFactoryTest.
  *
  * @author Ahseya
  */
 @RunWith(JUnitParamsRunner.class)
 public class CommandLinePropsFactoryTest {
 
-    private final CommandLineOptions options = CommandLineOptions.newInstance(Property.props()); // TODO can pass empty here? or create
+    private final CommandLineOptions options = CommandLineOptions.newInstance(Props.newInstance(Property.class));
 
     @Test
     @Parameters
     public void testCommandLine(Property property, String in, String expected) throws Exception {
         String[] args = in.split("\\s");
-        Props<Property> props = CommandLineConfig.getInstance().commandLine(null, options, args);
+        Props<Property> props = CommandLinePropsFactory.getInstance().fromCommandLine(null, options, args);
         String value = props.contains(property)
                 ? props.get(property)
                 : null;
@@ -126,24 +115,4 @@ public class CommandLinePropsFactoryTest {
             $(Property.SELECTION_UDID, "u p --udid 1 2 3", "1 2 3")
         };
     }
-
-    public static <T> Object[] o(String in, Function<Config, T> function, T expected) {
-        return new Object[]{in, function, expected};
-    }
-
-    public static Set<String> set(Property... properties) {
-        return set(
-                Stream.of(properties)
-                .map(property -> property.getDefaultValue().split("\\s"))
-                .collect(Collectors.toList()));
-    }
-
-    public static <T> Set<T> set(T... t) {
-        return Stream.of(t).collect(Collectors.toSet());
-    }
-
-    public static Set<String> set(List<String[]> strings) {
-        return strings.stream().map(Arrays::asList).flatMap(List::stream).collect(Collectors.toSet());
-    }
-
 }

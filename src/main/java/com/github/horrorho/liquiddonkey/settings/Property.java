@@ -98,10 +98,15 @@ public enum Property {
     }
 
     public static Props<Property> props() {
-        return PropsBuilder.fromDefaults(Property.class)
-                .values(Property::getDefaultValue)
+        return PropsBuilder.fromDefaults(Property.class, defaultProps())
                 .resource(PROPERTIES_JAR)
                 .path(PROPERTIES_USER)
+                .build();
+    }
+
+    public static Props<Property> defaultProps() {
+        return PropsBuilder.fromDefaults(Property.class)
+                .values(Property::getDefaultValue)
                 .build();
     }
 

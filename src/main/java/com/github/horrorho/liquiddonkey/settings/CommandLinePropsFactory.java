@@ -26,6 +26,8 @@ package com.github.horrorho.liquiddonkey.settings;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.stream.Collectors;
+import net.jcip.annotations.Immutable;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -37,11 +39,13 @@ import org.apache.commons.cli.ParseException;
  *
  * @author Ahseya
  */
-public class CommandLinePropsFactory {
+@Immutable
+@ThreadSafe
+public final class CommandLinePropsFactory {
 
-    public CommandLinePropsFactory instance = new CommandLinePropsFactory();
+    private static final CommandLinePropsFactory instance = new CommandLinePropsFactory();
 
-    public CommandLinePropsFactory getInstance() {
+    public static CommandLinePropsFactory getInstance() {
         return instance;
     }
 
