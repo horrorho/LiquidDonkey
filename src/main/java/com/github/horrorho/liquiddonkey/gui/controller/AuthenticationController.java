@@ -40,8 +40,9 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
-import javafx.css.PseudoClass;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
@@ -69,19 +70,11 @@ import org.slf4j.LoggerFactory;
 public class AuthenticationController implements Initializable {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
-    private static final PseudoClass error = PseudoClass.getPseudoClass("error");
 
     private Props<Property> props;
     private Props<Property> guiProps;
     private Parsers parsers;
     private Preference preference;
-
-    void warnOnEmpty(TextField textField) {
-
-        textField.textProperty().addListener((observable, oldValue, newValue)
-                -> textField.pseudoClassStateChanged(error, textField.getText().isEmpty())
-        );
-    }
 
     @FXML
     private Accordion accordion;
@@ -130,6 +123,7 @@ public class AuthenticationController implements Initializable {
 
     @FXML
     private void handleAppleId(ActionEvent event) {
+        System.out.println("Hi!");
         if (!appleId.getText().isEmpty()) {
             if (password.getText().isEmpty()) {
                 password.requestFocus();
@@ -159,8 +153,6 @@ public class AuthenticationController implements Initializable {
 
     @FXML
     private void handleGoAppleIdPassword(Event event) {
-        appleId.pseudoClassStateChanged(error, appleId.getText().isEmpty());
-        password.pseudoClassStateChanged(error, password.getText().isEmpty());
 
         if (appleId.getText().isEmpty()) {
             appleId.requestFocus();
@@ -175,13 +167,17 @@ public class AuthenticationController implements Initializable {
 
     @FXML
     private void handleGoAuthToken(Event event) {
-        authToken.pseudoClassStateChanged(error, authToken.getText().isEmpty());
 
         if (authToken.getText().isEmpty()) {
             authToken.requestFocus();
         } else {
-            authenticate(AuthenticationConfig.fromAuthorizationToken(authToken.getText()));
-            // toSelection(Authentication.newInstance(null, "test@apple.com", "king lear"));
+            try {
+                authenticate(AuthenticationConfig.fromAuthorizationToken(authToken.getText()));
+                // toSelection(Authentication.newInstance(null, "test@apple.com", "king lear"));
+            } catch (IllegalArgumentException ex) {
+                bad("Authentication error.", ex);
+            }
+
         }
     }
 
@@ -213,6 +209,14 @@ public class AuthenticationController implements Initializable {
         Alert alert = new Alert(AlertType.INFORMATION);
         alert.setTitle("Error");
         alert.setHeaderText("Unable to authenticate.");
+        alert.setContentText(ex.getLocalizedMessage());
+        alert.showAndWait();
+    }
+
+    void bad(String text, Exception ex) {
+        Alert alert = new Alert(AlertType.INFORMATION);
+        alert.setTitle("Error");
+        alert.setHeaderText(text);
         alert.setContentText(ex.getLocalizedMessage());
         alert.showAndWait();
     }
@@ -249,6 +253,9 @@ public class AuthenticationController implements Initializable {
         initButton(toCombine, Property.FILE_COMBINED);
         initButton(toForce, Property.FILE_FORCE);
         initThreads();
+
+        disableButtons();
+
     }
 
     /**
@@ -259,8 +266,6 @@ public class AuthenticationController implements Initializable {
      */
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        warnOnEmpty(appleId);
-        warnOnEmpty(password);
 
     }
 
@@ -315,5 +320,25 @@ public class AuthenticationController implements Initializable {
             Collections.sort(list);
         }
         threads.setValue(value);
+    }
+
+    private void disableButtons() {
+        goAppleIdPassword.setDisable(true);
+        goAuthToken.setDisable(true);
+        appleId.textProperty().addListener(this::disableGoAppleIdPassword);
+        password.textProperty().addListener(this::disableGoAppleIdPassword);
+        authToken.textProperty().addListener(this::disableGoAuthToken);
+    }
+
+    private void disableGoAppleIdPassword(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+        goAppleIdPassword.setDisable(appleId.getText().isEmpty() || password.getText().isEmpty());
+    }
+
+    private void disableGoAuthToken(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+        goAuthToken.setDisable(authToken.getText().isEmpty());
+    }
+
+    void disable(TextField textField, ChangeListener<String> listener) {
+        textField.textProperty().addListener(listener);
     }
 }
