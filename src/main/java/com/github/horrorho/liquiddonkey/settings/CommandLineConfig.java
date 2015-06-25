@@ -21,12 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.settings.config;
+package com.github.horrorho.liquiddonkey.settings;
 
 import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
 import com.github.horrorho.liquiddonkey.settings.CommandLinePropsFactory;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.Props;
+import com.github.horrorho.liquiddonkey.settings.config.Config;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.cli.HelpFormatter;

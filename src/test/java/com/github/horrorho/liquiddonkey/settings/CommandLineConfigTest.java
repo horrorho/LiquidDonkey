@@ -21,11 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.settings.config;
+package com.github.horrorho.liquiddonkey.settings;
 
+import com.github.horrorho.liquiddonkey.settings.CommandLineConfig;
 import com.github.horrorho.liquiddonkey.settings.CommandLineOptions;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.Props;
+import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
+import com.github.horrorho.liquiddonkey.settings.config.Config;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
