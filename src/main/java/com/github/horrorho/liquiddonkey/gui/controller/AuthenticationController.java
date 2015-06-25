@@ -78,10 +78,13 @@ public class AuthenticationController implements Initializable {
     private Accordion accordion;
 
     @FXML
-    private TitledPane authentication;
+    private TitledPane appleIdPasswordPane;
 
     @FXML
-    private TitledPane advanced;
+    private TitledPane authTokenPane;
+
+    @FXML
+    private TitledPane advancedPane;
 
     @FXML
     private TextField appleId;
@@ -208,12 +211,7 @@ public class AuthenticationController implements Initializable {
         warnOnEmpty(appleId);
         warnOnEmpty(password);
 
-        accordion.expandedPaneProperty().addListener((property, oldPane, newPane) -> {
-            if (newPane == null) {
-                accordion.setExpandedPane(oldPane == authentication ? advanced : authentication);
-            }
-        });
-        accordion.setExpandedPane(authentication);
+        accordion.setExpandedPane(appleIdPasswordPane);
 
     }
 }
