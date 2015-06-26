@@ -78,46 +78,32 @@ public class AuthenticationController implements Initializable {
 
     @FXML
     private Accordion accordion;
-
     @FXML
     private TitledPane appleIdPasswordPane;
-
     @FXML
     private TitledPane authTokenPane;
-
     @FXML
     private TitledPane advancedPane;
-
     @FXML
     private TextField appleId;
-
     @FXML
     private TextField password;
-
     @FXML
     private TextField authToken;
-
     @FXML
     private Button goAppleIdPassword;
-
     @FXML
     private Button goAuthToken;
-
     @FXML
     private CheckBox isPersistent;
-
     @FXML
     private CheckBox isAggressive;
-
     @FXML
     private CheckBox toRelaxSSL;
-
     @FXML
     private CheckBox toCombine;
-
     @FXML
     private CheckBox toForce;
-
     @FXML
     private ChoiceBox<Integer> threads;
 
@@ -201,16 +187,8 @@ public class AuthenticationController implements Initializable {
 
         } catch (AuthenticationException ex) {
             logger.warn("-- authenticate() > exception: ", ex);
-            badAuthentication(ex);
+            bad("Authentication error.", ex);
         }
-    }
-
-    void badAuthentication(AuthenticationException ex) {
-        Alert alert = new Alert(AlertType.INFORMATION);
-        alert.setTitle("Error");
-        alert.setHeaderText("Unable to authenticate.");
-        alert.setContentText(ex.getLocalizedMessage());
-        alert.showAndWait();
     }
 
     void bad(String text, Exception ex) {
