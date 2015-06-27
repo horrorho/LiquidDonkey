@@ -3,10 +3,10 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * Permission is hereby granted, free of charge, to any person obtaining a copyOf
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * to use, copyOf, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
@@ -21,23 +21,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.settings;
+package com.github.horrorho.liquiddonkey.settings.props;
 
-import net.jcip.annotations.ThreadSafe;
-import org.slf4j.Marker;
-import org.slf4j.MarkerFactory;
+import java.util.Set;
 
 /**
+ * BackingStore.
  *
  * @author Ahseya
+ * @param <E> Enum type
  */
-@ThreadSafe
-public final class Markers {
+public interface BackingStore<E extends Enum<E>> {
 
-    public static final Marker CLIENT = MarkerFactory.getMarker("CLIENT");
-    public static final Marker GUI = MarkerFactory.getMarker("GUI");
-    public static final Marker HTTP = MarkerFactory.getMarker("HTTP");
-    public static final Marker LIST = MarkerFactory.getMarker("LIST");
-    public static final Marker PROPS = MarkerFactory.getMarker("PROPS");
+    boolean containsKey(E key);
 
+    String get(E key);
+
+    Set<E> keySet();
+
+    String put(E key, String value);
+
+    String remove(E key);
+
+    BackingStore<E> copyOf();
 }

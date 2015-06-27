@@ -21,31 +21,53 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.gui.controller.data;
+package com.github.horrorho.liquiddonkey.settings.props;
 
-import java.util.Objects;
-import java.util.prefs.Preferences;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
 
 /**
+ * MapBackingStore.
  *
  * @author Ahseya
+ * @param <E> Enum type
  */
-public class Preference {
+public class MapBackingStore<E extends Enum<E>> implements BackingStore<E> {
 
-    private static final Preference instance = new Preference(Preferences.userNodeForPackage(Preference.class));
+    private final Map<E, String> map;
 
-    public static Preference getInstance() {
-        return instance;
+    MapBackingStore(Map<E, String> map) {
+        this.map = map;
     }
 
-    private final Preferences preferences;
-
-    Preference(Preferences preferences) {
-        this.preferences = Objects.requireNonNull(preferences);
+    @Override
+    public boolean containsKey(E key) {
+        return map.containsKey(key);
     }
 
-    public Preferences preferences() {
-        return preferences;
+    @Override
+    public String get(E key) {
+        return map.get(key);
     }
 
+    @Override
+    public Set<E> keySet() {
+        return map.keySet();
+    }
+
+    @Override
+    public String put(E key, String value) {
+        return map.put(key, value);
+    }
+
+    @Override
+    public String remove(E key) {
+        return map.remove(key);
+    }
+
+    @Override
+    public BackingStore<E> copyOf() {
+        return new MapBackingStore<>(new HashMap<>(map));
+    }
 }

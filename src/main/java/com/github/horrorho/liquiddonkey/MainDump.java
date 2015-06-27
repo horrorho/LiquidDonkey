@@ -23,8 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey;
 
-import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.Props;
+import com.github.horrorho.liquiddonkey.settings.Property; 
+import com.github.horrorho.liquiddonkey.settings.props.Props;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;

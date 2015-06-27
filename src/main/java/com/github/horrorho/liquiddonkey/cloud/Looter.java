@@ -60,7 +60,7 @@ public class Looter implements Closeable {
     public static Looter newInstance(Config config, Printer printer) {
         return new Looter(
                 config,
-                HttpFactory.newInstance(config.http(), printer),
+                HttpFactory.from(config.http()).newInstance(printer),
                 printer
         );
     }

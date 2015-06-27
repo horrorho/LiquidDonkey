@@ -30,6 +30,7 @@ import com.github.horrorho.liquiddonkey.settings.config.HttpConfig;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
 import javax.net.ssl.SSLContext;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -55,7 +56,17 @@ import org.apache.http.ssl.SSLContextBuilder;
 @ThreadSafe
 public final class HttpFactory {
 
-    public static Http newInstance(HttpConfig config, Printer printer) {
+    public static HttpFactory from(HttpConfig config) {
+        return new HttpFactory(config);
+    }
+
+    private final HttpConfig config;
+
+    HttpFactory(HttpConfig config) {
+        this.config = Objects.requireNonNull(config);
+    }
+
+    public Http newInstance(Printer printer) {
 
         PoolingHttpClientConnectionManager connectionManager = config.isRelaxedSSL()
                 ? new PoolingHttpClientConnectionManager(relaxedSocketFactoryRegistry())
@@ -92,7 +103,7 @@ public final class HttpFactory {
         return new Http(client, config.socketTimeoutRetryCount());
     }
 
-    static Registry<ConnectionSocketFactory> relaxedSocketFactoryRegistry() {
+    Registry<ConnectionSocketFactory> relaxedSocketFactoryRegistry() {
         return RegistryBuilder.<ConnectionSocketFactory>create()
                 .register(
                         "http",
@@ -105,7 +116,7 @@ public final class HttpFactory {
                 .build();
     }
 
-    static SSLContext relaxedSSLContext() {
+    SSLContext relaxedSSLContext() {
         try {
             return new SSLContextBuilder().loadTrustMaterial(null, (chain, authType) -> true).build();
         } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException ex) {

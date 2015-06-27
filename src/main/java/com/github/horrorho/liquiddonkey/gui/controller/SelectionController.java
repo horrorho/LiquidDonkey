@@ -25,23 +25,36 @@ package com.github.horrorho.liquiddonkey.gui.controller;
  */
 import com.github.horrorho.liquiddonkey.cloud.Account;
 import com.github.horrorho.liquiddonkey.cloud.Authentication;
+import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.gui.controller.data.BackupProperties;
 import com.github.horrorho.liquiddonkey.printer.Printer;
+import static com.github.horrorho.liquiddonkey.settings.Markers.GUI;
+import com.github.horrorho.liquiddonkey.settings.Property;
+import com.github.horrorho.liquiddonkey.settings.props.Parsers;
+import com.github.horrorho.liquiddonkey.settings.props.Props;
+import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
+import java.util.concurrent.ExecutorService;
 import javafx.beans.property.BooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Accordion;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TitledPane;
 import javafx.scene.text.Text;
+import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * FXML Controller class
@@ -50,8 +63,14 @@ import javafx.scene.text.Text;
  */
 public class SelectionController implements Initializable {
 
+    private static final Logger logger = LoggerFactory.getLogger(SelectionController.class);
+
     private final ObservableList<BackupProperties> backups = FXCollections.observableArrayList();
     private Authentication authentication;
+    private Stage stage;
+    private ExecutorService executorService;
+    private Props<Property> props;
+    private Parsers parsers;
 
     @FXML
     private Accordion accordion;
@@ -90,6 +109,23 @@ public class SelectionController implements Initializable {
                 .noneMatch(BooleanProperty::get));
     }
 
+    void toAuthentication(Authentication authentication) {
+        try {
+            logger.trace(GUI, "<< toAuthentication()");
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Authentication.fxml"));
+            Parent root = loader.load();
+            AuthenticationController controller = loader.<AuthenticationController>getController();
+            controller.init(stage, executorService, props, parsers);
+            Scene scene = new Scene(root);
+            stage.setScene(scene);
+            stage.show();
+        } catch (IOException ex) {
+            throw new FatalException("Bad fxml resource", ex);
+        } finally {
+            logger.trace(GUI, ">> toAuthentication()");
+        }
+    }
+
     /**
      * Initializes the controller class.
      *
@@ -121,13 +157,19 @@ public class SelectionController implements Initializable {
 
     }
 
-    public void initData(Authentication authentication) {
+    public void init(
+            Authentication authentication,
+            Stage stage,
+            ExecutorService executorService,
+            Props<Property> props,
+            Parsers parsers) {
+
         this.authentication = authentication;
-        
+
         Account account = Account.newInstance(authentication.client(), Printer.instanceOf(false));
         account.backups().stream()
                 .map(BackupProperties::newInstance).forEach(backups::add);
-        
+
         downloadButtonEnabledHandler();
         checkAll.setSelected(false);
 

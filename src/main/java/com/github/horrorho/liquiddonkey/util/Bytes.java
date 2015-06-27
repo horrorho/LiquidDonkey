@@ -42,7 +42,7 @@ public final class Bytes {
 
     private static final String[] units = new String[]{"kB", "MB", "GB", "TB", "PB", "EB"};
 
-    public static int integerOrFail(ByteString byteString) throws BadDataException {
+    public static int integer32(ByteString byteString) throws BadDataException {
         if (byteString == null) {
             throw new BadDataException("Integer. Null ByteString");
         }

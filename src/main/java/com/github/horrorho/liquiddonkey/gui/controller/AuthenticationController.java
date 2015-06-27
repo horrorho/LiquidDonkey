@@ -24,25 +24,28 @@
 package com.github.horrorho.liquiddonkey.gui.controller;
 
 import com.github.horrorho.liquiddonkey.cloud.Authentication;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
-import com.github.horrorho.liquiddonkey.gui.controller.data.Preference;
-import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.HttpFactory;
 import com.github.horrorho.liquiddonkey.printer.Printer;
-import com.github.horrorho.liquiddonkey.settings.Parsers;
+import static com.github.horrorho.liquiddonkey.settings.Markers.GUI;
+import com.github.horrorho.liquiddonkey.settings.props.Parsers;
 import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.Props;
 import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import com.github.horrorho.liquiddonkey.settings.config.HttpConfig;
+import com.github.horrorho.liquiddonkey.settings.props.Props;
+import com.github.horrorho.liquiddonkey.settings.props.PropsBuilder;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.fxml.FXML;
@@ -59,6 +62,7 @@ import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,10 +75,15 @@ public class AuthenticationController implements Initializable {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationController.class);
 
+    private final SimpleObjectProperty<Task<?>> httpTask = new SimpleObjectProperty<>();
+    private final long debounceMs = 2500;
+    private final String go = "Go";
+    private final String cancel = "Cancel";
+
+    private ExecutorService executorService;
     private Props<Property> props;
-    private Props<Property> guiProps;
     private Parsers parsers;
-    private Preference preference;
+    private Stage stage;
 
     @FXML
     private Accordion accordion;
@@ -109,62 +118,17 @@ public class AuthenticationController implements Initializable {
 
     @FXML
     private void handleAppleId(ActionEvent event) {
-        System.out.println("Hi!");
-        if (!appleId.getText().isEmpty()) {
-            if (password.getText().isEmpty()) {
-                password.requestFocus();
-            } else {
-                goAppleIdPassword.requestFocus();
-            }
-        }
+        password.requestFocus();
     }
 
     @FXML
     private void handlePassword(ActionEvent event) {
-        if (!password.getText().isEmpty()) {
-            if (appleId.getText().isEmpty()) {
-                appleId.requestFocus();
-            } else {
-                goAppleIdPassword.requestFocus();
-            }
-        }
+        goAppleIdPassword.requestFocus();
     }
 
     @FXML
     private void handleAuthToken(ActionEvent event) {
-        if (!authToken.getText().isEmpty()) {
-            goAuthToken.requestFocus();
-        }
-    }
-
-    @FXML
-    private void handleGoAppleIdPassword(Event event) {
-
-        if (appleId.getText().isEmpty()) {
-            appleId.requestFocus();
-        } else if (password.getText().isEmpty()) {
-            password.requestFocus();
-        } else {
-            //authenticate(AuthenticationConfig.fromAppleIdPassword(appleId.getText(), password.getText()));
-            toSelection(Authentication.newInstance(null, "test@apple.com", "jon snow"));
-        }
-
-    }
-
-    @FXML
-    private void handleGoAuthToken(Event event) {
-
-        if (authToken.getText().isEmpty()) {
-            authToken.requestFocus();
-        } else {
-            try {
-                authenticate(AuthenticationConfig.fromAuthorizationToken(authToken.getText()));
-                // toSelection(Authentication.newInstance(null, "test@apple.com", "king lear"));
-            } catch (IllegalArgumentException ex) {
-                bad("Authentication error.", ex);
-            }
-
-        }
+        goAuthToken.requestFocus();
     }
 
     @FXML
@@ -177,51 +141,102 @@ public class AuthenticationController implements Initializable {
         resetThreads();
     }
 
-    void authenticate(AuthenticationConfig authenticationConfig) {
-        try {
-            Http http = HttpFactory.newInstance(
-                    HttpConfig.newInstance(guiProps),
-                    Printer.instanceOf(false));
-
-            toSelection(Authentication.from(http, authenticationConfig));
-
-        } catch (AuthenticationException ex) {
-            logger.warn("-- authenticate() > exception: ", ex);
-            bad("Authentication error.", ex);
+    @FXML
+    private void handleGoAppleIdPassword(Event event) {
+        if (httpTask.get() == null) {
+            authenticate(AuthenticationConfig.fromAppleIdPassword(appleId.getText(), password.getText()));
+        } else {
+            cancel();
         }
     }
 
-    void bad(String text, Exception ex) {
+    @FXML
+    private void handleGoAuthToken(Event event) {
+        if (httpTask.get() == null) {
+            try {
+                authenticate(AuthenticationConfig.fromAuthorizationToken(authToken.getText()));
+                // toSelection(Authentication.newInstance(null, "test@apple.com", "king lear"));
+            } catch (IllegalArgumentException ex) {
+                bad("Authentication error.", ex);
+            }
+        } else {
+            cancel();
+        }
+    }
+
+    void authenticate(AuthenticationConfig authenticationConfig) {
+        logger.debug(GUI, "<< authenticate()");
+        HttpTaskFactory<Authentication> httpTaskFactory = HttpTaskFactory.<Authentication>from(
+                HttpFactory.from(HttpConfig.newInstance(props)),
+                Printer.instanceOf(false));
+
+        httpTask.setValue(httpTaskFactory.newInstance(
+                http -> Authentication.from(http, authenticationConfig),
+                t -> {
+                    debounceGoButtons();
+                    httpTask.setValue(null);
+                    switch (t.getState()) {
+                        case FAILED:
+                            bad("Authentication error.", t.getException());
+                            break;
+                        case SUCCEEDED: {
+                            try {
+                                toSelection(t.get());
+                            } catch (InterruptedException | ExecutionException ex) {
+                                logger.warn("-- authenticate() > exception: ", ex);
+                            }
+                        }
+                    }
+                }));
+
+        executorService.submit(httpTask.getValue());
+        debounceGoButtons();
+        logger.debug(GUI, ">> authenticate()");
+    }
+
+    void cancel() {
+        logger.trace("<< cancel()");
+        httpTask.getValue().cancel();
+        logger.trace(">> cancel()");
+    }
+
+    void bad(String text, Throwable throwable) {
         Alert alert = new Alert(AlertType.INFORMATION);
         alert.setTitle("Error");
         alert.setHeaderText(text);
-        alert.setContentText(ex.getLocalizedMessage());
+        alert.setContentText(throwable.getLocalizedMessage());
         alert.showAndWait();
     }
 
     void toSelection(Authentication authentication) {
-        Stage stage = (Stage) goAppleIdPassword.getScene().getWindow();
-        Parent root;
-
         try {
+            logger.trace(GUI, "<< toSelection()");
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Selection.fxml"));
-            root = loader.load();
+            Parent root = loader.load();
             SelectionController controller = loader.<SelectionController>getController();
-            controller.initData(authentication);
+            controller.init(authentication, stage, executorService, props, parsers);
             Scene scene = new Scene(root);
             stage.setScene(scene);
             stage.show();
-
         } catch (IOException ex) {
             throw new FatalException("Bad fxml resource", ex);
+        } finally {
+            logger.trace(GUI, ">> toSelection()");
         }
     }
 
-    public void initData(Props<Property> props, Parsers parsers, Preference preference) {
+    public void init(
+            Stage stage,
+            ExecutorService executorService,
+            Props<Property> props,
+            Parsers parsers) {
+
+        this.stage = stage;
+        this.executorService = executorService;
         this.props = props;
         this.parsers = parsers;
-        this.preference = preference;
-        guiProps = Props.newInstance(Property.class, Property.props());
+
+        httpTask.setValue(null);
 
         accordion.setExpandedPane(appleIdPasswordPane);
 
@@ -233,7 +248,11 @@ public class AuthenticationController implements Initializable {
         initThreads();
 
         disableButtons();
-
+        stage.setOnCloseRequest((WindowEvent windowEvent) -> {
+            if (httpTask.get() != null) {
+                httpTask.get().cancel();
+            }
+        });
     }
 
     /**
@@ -244,25 +263,23 @@ public class AuthenticationController implements Initializable {
      */
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-
     }
 
     void initButton(CheckBox checkbox, Property property) {
         boolean state = props.contains(property)
                 ? props.get(property, parsers::asBoolean)
                 : false;
-        state = preference.preferences().getBoolean(property.name(), state);
 
         checkbox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            preference.preferences().putBoolean(property.name(), newValue);
-            guiProps.put(property, newValue);
+            props.put(property, newValue);
         });
+
         checkbox.setSelected(state);
     }
 
     void resetButton(CheckBox checkbox, Property property) {
-        boolean state = props.contains(property)
-                ? props.get(property, parsers::asBoolean)
+        boolean state = props.parent().contains(property)
+                ? props.parent().get(property, parsers::asBoolean)
                 : false;
         checkbox.setSelected(state);
     }
@@ -273,12 +290,10 @@ public class AuthenticationController implements Initializable {
         int value = props.contains(Property.ENGINE_THREAD_COUNT)
                 ? props.get(Property.ENGINE_THREAD_COUNT, parsers::asInteger)
                 : 2;
-        value = preference.preferences().getInt(Property.ENGINE_THREAD_COUNT.name(), value);
 
         threads.getItems().addAll(0, values);
         threads.valueProperty().addListener((observable, oldValue, newValue) -> {
-            preference.preferences().putInt(Property.ENGINE_THREAD_COUNT.name(), newValue);
-            guiProps.put(Property.ENGINE_THREAD_COUNT, newValue);
+            props.put(Property.ENGINE_THREAD_COUNT, newValue);
         });
         setThreads(value);
     }
@@ -303,17 +318,24 @@ public class AuthenticationController implements Initializable {
     private void disableButtons() {
         goAppleIdPassword.setDisable(true);
         goAuthToken.setDisable(true);
-        appleId.textProperty().addListener(this::disableGoAppleIdPassword);
-        password.textProperty().addListener(this::disableGoAppleIdPassword);
-        authToken.textProperty().addListener(this::disableGoAuthToken);
+        httpTask.addListener(this::morphGoAppleIdPassword);
+        httpTask.addListener(this::morphGoAuthToken);
+        appleId.textProperty().addListener(this::morphGoAppleIdPassword);
+        password.textProperty().addListener(this::morphGoAppleIdPassword);
+        authToken.textProperty().addListener(this::morphGoAuthToken);
     }
 
-    private void disableGoAppleIdPassword(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-        goAppleIdPassword.setDisable(appleId.getText().isEmpty() || password.getText().isEmpty());
+    private <T> void debounceGoButtons() {
+        executorService.submit(Debouncer.newInstance(debounceMs, goAppleIdPassword, goAuthToken));
     }
 
-    private void disableGoAuthToken(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-        goAuthToken.setDisable(authToken.getText().isEmpty());
+    private <T> void morphGoAppleIdPassword(ObservableValue<? extends T> observable, T oldValue, T newValue) {
+        goAppleIdPassword.setDisable(httpTask.get() != null || appleId.getText().isEmpty() || password.getText().isEmpty());
+        goAppleIdPassword.setText(httpTask.get() == null ? go : cancel);
+    }
+
+    private <T> void morphGoAuthToken(ObservableValue<? extends T> observable, T oldValue, T newValue) {
+        goAuthToken.setDisable(httpTask.get() != null || authToken.getText().isEmpty());
     }
 
     void disable(TextField textField, ChangeListener<String> listener) {

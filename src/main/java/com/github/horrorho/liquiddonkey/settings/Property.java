@@ -23,6 +23,9 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
+import com.github.horrorho.liquiddonkey.settings.props.Parsers;
+import com.github.horrorho.liquiddonkey.settings.props.Props;
+import com.github.horrorho.liquiddonkey.settings.props.PropsBuilder;
 import java.time.format.DateTimeFormatter;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -98,14 +101,16 @@ public enum Property {
     }
 
     public static Props<Property> props() {
-        return PropsBuilder.from(Property.class, defaultProps())
-                .resource(PROPERTIES_JAR)
+        Props defaultProps = defaultProps();
+        return PropsBuilder.from(Property.class)
+                .parent(defaultProps)
+                .load(defaultProps.get(PROPERTIES_JAR))
                 .build();
     }
 
     public static Props<Property> defaultProps() {
         return PropsBuilder.from(Property.class)
-                .values(Property::getDefaultValue)
+                .computeAbsent(key -> key.getDefaultValue())
                 .build();
     }
 

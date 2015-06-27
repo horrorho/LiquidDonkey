@@ -23,8 +23,11 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
+import com.github.horrorho.liquiddonkey.settings.commandline.CommandLineConfig;
+import com.github.horrorho.liquiddonkey.settings.commandline.CommandLineOptions;
 import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
+import com.github.horrorho.liquiddonkey.settings.props.Props;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;

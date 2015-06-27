@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import net.jcip.annotations.NotThreadSafe;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ResponseHandler;
@@ -48,6 +49,7 @@ import org.slf4j.LoggerFactory;
  * @author ahseya
  * @param <T> Return type.
  */
+@NotThreadSafe
 public class HttpExecutor<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpExecutor.class);
@@ -58,7 +60,7 @@ public class HttpExecutor<T> {
     private final List<Header> headers = new ArrayList<>();
     private final List<NameValuePair> parameters = new ArrayList<>();
 
-    public HttpExecutor(
+    HttpExecutor(
             IOBiFunction<HttpUriRequest, ResponseHandler<T>, T> http,
             String uri,
             ResponseHandler<T> handler) {

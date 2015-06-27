@@ -1,13 +1,14 @@
 package com.github.horrorho.liquiddonkey.gui;
 
 import com.github.horrorho.liquiddonkey.gui.controller.AuthenticationController;
-import com.github.horrorho.liquiddonkey.gui.controller.data.Preference;
-import com.github.horrorho.liquiddonkey.settings.Parsers;
+import com.github.horrorho.liquiddonkey.settings.props.Parsers;
 import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.Props;
-import com.github.horrorho.liquiddonkey.settings.PropsManager;
-import java.time.format.DateTimeFormatter;
+import com.github.horrorho.liquiddonkey.settings.props.Props;
+import com.github.horrorho.liquiddonkey.settings.props.PropsBuilder;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import javafx.application.Application;
 import static javafx.application.Application.launch;
 import javafx.fxml.FXMLLoader;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 public class Gui extends Application {
 
     private static final Logger logger = LoggerFactory.getLogger(Gui.class);
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
 
     Stage stage;
 
@@ -31,9 +33,19 @@ public class Gui extends Application {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Authentication.fxml"));
         Parent root = loader.load();
         AuthenticationController controller = loader.<AuthenticationController>getController();
-        controller.initData(Property.props(), Parsers.newInstance(Property.dateTimeFormatter()), Preference.getInstance());
+
+        Props<Property> props = PropsBuilder.from(Property.class)
+                .persistent(Gui.class)
+                .parent(Property.props())
+                .build();
+
+        controller.init(
+                stage,
+                executorService,
+                props,
+                Parsers.newInstance(Property.dateTimeFormatter()));
+
         Scene scene = new Scene(root);
-        //scene.getStylesheets().add("/styles/Styles.css"); // TODO is this problematic?
         stage.setResizable(false);
         stage.setScene(scene);
         stage.show();
@@ -43,6 +55,8 @@ public class Gui extends Application {
     @Override
     public void stop() throws Exception {
         logger.trace("<< stop()");
+        executorService.shutdownNow();
+        executorService.awaitTermination(5, TimeUnit.SECONDS);
         logger.trace(">> stop()");
     }
 

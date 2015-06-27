@@ -21,8 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.settings;
+package com.github.horrorho.liquiddonkey.settings.commandline;
 
+import com.github.horrorho.liquiddonkey.settings.Property;
+import com.github.horrorho.liquiddonkey.settings.props.Props;
+import com.github.horrorho.liquiddonkey.settings.props.PropsBuilder;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.stream.Collectors;
@@ -54,12 +57,12 @@ public final class CommandLinePropsFactory {
     }
 
     public Props<Property> fromCommandLine(
-            Props<Property> defaults,
+            Props<Property> parent,
             CommandLineOptions commandLineOptions,
             String[] args)
             throws ParseException {
 
-        Props<Property> props = Props.newInstance(Property.class, defaults);
+        Props<Property> props = PropsBuilder.from(Property.class).parent(parent).build();
         CommandLineParser parser = new DefaultParser();
         Options options = commandLineOptions.options();
         CommandLine cmd = parser.parse(options, args);

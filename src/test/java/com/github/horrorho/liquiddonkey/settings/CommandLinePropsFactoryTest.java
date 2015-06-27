@@ -23,6 +23,10 @@
  */
 package com.github.horrorho.liquiddonkey.settings;
 
+import com.github.horrorho.liquiddonkey.settings.commandline.CommandLineOptions;
+import com.github.horrorho.liquiddonkey.settings.commandline.CommandLinePropsFactory;
+import com.github.horrorho.liquiddonkey.settings.props.Props;
+import com.github.horrorho.liquiddonkey.settings.props.PropsBuilder;
 import junitparams.JUnitParamsRunner;
 import static junitparams.JUnitParamsRunner.$;
 import junitparams.Parameters;
@@ -39,7 +43,7 @@ import org.junit.runner.RunWith;
 @RunWith(JUnitParamsRunner.class)
 public class CommandLinePropsFactoryTest {
 
-    private final CommandLineOptions options = CommandLineOptions.newInstance(Props.newInstance(Property.class));
+    private final CommandLineOptions options = CommandLineOptions.newInstance(PropsBuilder.from(Property.class).build());
 
     @Test
     @Parameters

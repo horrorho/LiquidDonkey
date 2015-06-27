@@ -3,10 +3,10 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * Permission is hereby granted, free of charge, to any person obtaining a copyOf
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * to use, copyOf, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.settings;
+package com.github.horrorho.liquiddonkey.settings.props;
 
 import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,7 +33,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,57 +50,39 @@ public class Props<E extends Enum<E>> {
 
     private static final Logger logger = LoggerFactory.getLogger(Props.class);
 
-    public static <E extends Enum<E>> Props<E> newInstance(Class<E> type, Properties properties) {
-        Props<E> props = newInstance(type);
-        return props.addAll(properties);
-    }
-
-    public static <E extends Enum<E>> Props<E> newInstance(Class<E> type) {
-        return newInstance(type, (Props<E>) null);
-    }
-
-    public static <E extends Enum<E>> Props<E> newInstance(Class<E> type, Props<E> defaults) {
-        return newInstance(type, new EnumMap<>(type), defaults);
-    }
-
-    static <E extends Enum<E>> Props<E> newInstance(Class<E> type, EnumMap<E, String> map, Props<E> defaults) {
-        Map<String, E> stringToEnum = Stream.of(type.getEnumConstants())
-                .collect(Collectors.toMap(Enum::name, Function.identity()));
-
-        return new Props(type, map, stringToEnum, defaults);
-    }
-
-    private final Class<E> type;
-    private final EnumMap<E, String> map;
     private final Map<String, E> stringToEnum;
-    private final Props<E> defaults;
+    private final Props<E> parent;
+    private final BackingStore<E> store;
 
-    Props(Class<E> type, EnumMap<E, String> map, Map<String, E> stringToEnum, Props<E> defaults) {
-        this.type = Objects.requireNonNull(type);
-        this.map = Objects.requireNonNull(map);
+    Props(BackingStore<E> store, Map<String, E> stringToEnum, Props<E> parent) {
+        this.store = Objects.requireNonNull(store);
         this.stringToEnum = Objects.requireNonNull(stringToEnum);
-        this.defaults = defaults;
+        this.parent = parent;
     }
 
     public boolean contains(E property) {
-        return map.containsKey(property)
+        return store.containsKey(property)
                 ? true
-                : defaults == null
+                : parent == null
                         ? false
-                        : defaults.contains(property);
+                        : parent.contains(property);
+    }
+
+    public boolean containsDistinct(E property) {
+        return store.containsKey(property);
     }
 
     public Set<E> keySet() {
-        Set<E> set = defaults == null
-                ? EnumSet.noneOf(type)
-                : defaults.keySet();
+        Set<E> set = parent == null
+                ? new HashSet()
+                : parent.keySet();
 
-        set.addAll(map.keySet());
+        set.addAll(store.keySet());
         return set;
     }
 
     public Props<E> distinct() {
-        return Props.newInstance(type, new EnumMap<>(map), null);
+        return new Props(store.copyOf(), new HashMap<>(stringToEnum), null);
     }
 
     public Props<E> addAll(Properties properties) {
@@ -117,31 +98,37 @@ public class Props<E extends Enum<E>> {
     }
 
     public Properties properties() {
-        Properties properties = new Properties(defaults == null ? null : defaults.properties());
+        Properties properties = new Properties(parent == null ? null : parent.properties());
         keySet().stream()
-                .filter(property -> map.get(property) != null)
-                .forEach(property -> properties.setProperty(property.name(), map.get(property)));
+                .filter(property -> get(property) != null)
+                .forEach(property -> properties.setProperty(property.name(), get(property)));
         return properties;
     }
 
+    public Props<E> parent() {
+        return parent;
+    }
+
     public String put(E property, Object value) {
-        return map.put(property, value.toString());
+        return put(property, value.toString());
     }
 
     public String put(E property, String value) {
-        return map.put(property, value);
+        return store.put(property, value);
     }
 
     public String pull(E property) {
-        return put(property, get(property));
+        return containsDistinct(property)
+                ? get(property)
+                : put(property, get(property));
     }
 
     public String get(E property) {
-        return map.containsKey(property)
-                ? map.get(property)
-                : defaults == null
+        return store.containsKey(property)
+                ? store.get(property)
+                : parent == null
                         ? null
-                        : defaults.get(property);
+                        : parent.get(property);
     }
 
     public <T> T get(E property, Function<String, T> function) {
@@ -158,12 +145,12 @@ public class Props<E extends Enum<E>> {
                 .collect(Collectors.toList());
     }
 
-    public Class<E> type() {
-        return type;
+    public String remove(E property) {
+        return store.remove(property);
     }
 
     @Override
     public String toString() {
-        return "Props{" + "type=" + type + ", map=" + map + ", defaults=" + defaults + '}';
+        return "Props{" + "stringToEnum=" + stringToEnum + ", parent=" + parent + ", store=" + store + '}';
     }
 }

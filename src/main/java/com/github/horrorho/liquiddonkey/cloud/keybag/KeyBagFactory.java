@@ -29,7 +29,7 @@ import com.github.horrorho.liquiddonkey.crypto.PBKDF2;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.tagvalue.TagValue;
 import static com.github.horrorho.liquiddonkey.util.Bytes.hex;
-import static com.github.horrorho.liquiddonkey.util.Bytes.integerOrFail;
+import static com.github.horrorho.liquiddonkey.util.Bytes.integer32;
 import com.google.protobuf.ByteString;
 import java.util.HashMap;
 import java.util.Map;
@@ -74,10 +74,10 @@ public class KeyBagFactory {
     KeyBag unlock(ICloud.MBSKeySet keySet) throws BadDataException {
         parse(keySet);
 
-        iterations = integerOrFail(attribute("ITER"));
+        iterations = integer32(attribute("ITER"));
         salt = attribute("SALT");
         uuid = attribute("UUID");
-        type = KeyBagType.from(integerOrFail(attribute("TYPE")));
+        type = KeyBagType.from(integer32(attribute("TYPE")));
 
         unlock(keySet.getKey(0).getKeyData());
 
@@ -103,7 +103,7 @@ public class KeyBagFactory {
 
     void sort(Map<String, ByteString> block) throws BadDataException {
         if (block.containsKey("CLAS")) {
-            classKeys.put(integerOrFail(block.get("CLAS")) & 0xF, new HashMap<>(block));
+            classKeys.put(integer32(block.get("CLAS")) & 0xF, new HashMap<>(block));
         } else {
             attributes.putAll(block);
         }
@@ -131,7 +131,7 @@ public class KeyBagFactory {
                 continue;
             }
 
-            int wrap = integerOrFail(keys.get("WRAP"));
+            int wrap = integer32(keys.get("WRAP"));
             if ((wrap & WRAP_DEVICE) == 0 && (wrap & WRAP_PASSCODE) != 0) {
                 byte[] wrappedKey = keys.get("WPKY").toByteArray();
                 try {
