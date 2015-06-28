@@ -27,6 +27,7 @@ import com.github.horrorho.liquiddonkey.cloud.store.MemoryStore;
 import com.github.horrorho.liquiddonkey.cloud.store.ChunkListStore;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.http.Http;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -76,13 +77,13 @@ public class ChunkListDownloader {
      * @return the downloaded chunks, not null
      * @throws IOException
      */
-    public ChunkListStore download(ChunkServer.FileChecksumStorageHostChunkLists group) throws IOException {
+    public ChunkListStore download(Http http, ChunkServer.FileChecksumStorageHostChunkLists group) throws IOException {
         logger.trace("<< download() < group count : {}", group.getStorageHostChunkListCount());
 
         // TODO memory or disk based depending on size
         MemoryStore.Builder builder = MemoryStore.builder();
         for (ChunkServer.StorageHostChunkList chunkList : group.getStorageHostChunkListList()) {
-            builder.add(ChunkListDownloader.this.download(chunkList));
+            builder.add(ChunkListDownloader.this.download(http, chunkList));
         }
         ChunkListStore storage = builder.build();
 
@@ -90,19 +91,21 @@ public class ChunkListDownloader {
         return storage;
     }
 
-    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList) throws IOException {
+    List<byte[]> download(Http http, ChunkServer.StorageHostChunkList chunkList) throws IOException {
+        // Recursive.
         return chunkList.getChunkInfoCount() == 0
                 ? new ArrayList<>()
-                : download(chunkList, 0);
+                : download(http, chunkList, 0);
     }
 
-    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList, int attempt) throws IOException {
+    List<byte[]> download(Http http, ChunkServer.StorageHostChunkList chunkList, int attempt) throws IOException {
+        // Recursive.
         List<byte[]> decrypted = attempt++ == attempts
                 ? new ArrayList<>()
-                : decrypter.decrypt(chunkList, client.chunks(chunkList));
+                : decrypter.decrypt(chunkList, client.chunks(http, chunkList));
 
         return decrypted == null
-                ? download(chunkList, attempt)
+                ? download(http, chunkList, attempt)
                 : decrypted;
     }
 }

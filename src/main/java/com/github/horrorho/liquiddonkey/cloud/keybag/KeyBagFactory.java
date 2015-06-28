@@ -23,14 +23,18 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.keybag;
 
+import com.github.horrorho.liquiddonkey.cloud.Backup;
+import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.crypto.AESWrap;
 import com.github.horrorho.liquiddonkey.crypto.PBKDF2;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.tagvalue.TagValue;
 import static com.github.horrorho.liquiddonkey.util.Bytes.hex;
 import static com.github.horrorho.liquiddonkey.util.Bytes.integer32;
 import com.google.protobuf.ByteString;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.bouncycastle.crypto.InvalidCipherTextException;
@@ -44,22 +48,14 @@ import org.slf4j.LoggerFactory;
  */
 public class KeyBagFactory {
 
+    public static KeyBagFactory newInstance() {
+        return new KeyBagFactory();
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(KeyBagFactory.class);
 
     private static final int WRAP_DEVICE = 1;
     private static final int WRAP_PASSCODE = 2;
-
-    /**
-     * Returns a new unlocked KeyBag instance.
-     *
-     * @param keySet the key set, not null
-     * @return a new unlocked KeyBag instance, not null
-     * @throws BadDataException if the KeyBag cannot be unlocked or a data handling error occurred
-     * @throws NullPointerException if the keySet argument is null
-     */
-    public static KeyBag from(ICloud.MBSKeySet keySet) throws BadDataException {
-        return new KeyBagFactory().unlock(keySet);
-    }
 
     private final Map<Integer, Map<String, ByteString>> classKeys = new HashMap<>();
     private final Map<String, ByteString> attributes = new HashMap<>();
@@ -69,6 +65,31 @@ public class KeyBagFactory {
     private int iterations;
 
     KeyBagFactory() {
+    }
+
+    /**
+     * Returns a new unlocked KeyBag instance.
+     *
+     * @param http not null
+     * @param client not null
+     * @param backup not null
+     * @return a new unlocked KeyBag instance, not null
+     * @throws BadDataException if the KeyBag cannot be unlocked or a data handling error occurred
+     * @throws java.io.IOException
+     */
+    public KeyBag from(Http http, Client client, Backup backup) throws BadDataException, IOException {
+        return new KeyBagFactory().unlock(client.getKeys(http, backup.udid()));
+    }
+
+    /**
+     * Returns a new unlocked KeyBag instance.
+     *
+     * @param keySet the key set, not null
+     * @return a new unlocked KeyBag instance, not null
+     * @throws BadDataException if the KeyBag cannot be unlocked or a data handling error occurred
+     */
+    public KeyBag from(ICloud.MBSKeySet keySet) throws BadDataException {
+        return new KeyBagFactory().unlock(keySet);
     }
 
     KeyBag unlock(ICloud.MBSKeySet keySet) throws BadDataException {

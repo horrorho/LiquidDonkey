@@ -107,9 +107,8 @@ public final class Backup {
 
         } catch (HttpResponseException ex) {
             logger.warn("-- backup() > exception ", ex);
-
-            int code = ex.getStatusCode();
-            if (code == 401) {
+ 
+            if (ex.getStatusCode() == 401) {
                 throw new AuthenticationException(ex);
             }
 

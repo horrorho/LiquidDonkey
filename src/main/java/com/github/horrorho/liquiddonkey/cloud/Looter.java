@@ -91,7 +91,7 @@ public class Looter implements Closeable {
 
         KeyBag keybag;
         try {
-            keybag = KeyBagFactory.from(client.getKeys(backup.udid()));
+            keybag = KeyBagFactory.newInstance().from(http, client, backup);
         } catch (IOException ex) {
             throw new FatalException(ex);
         } catch (BadDataException ex) {
@@ -101,7 +101,7 @@ public class Looter implements Closeable {
 
         Tally tally = Tally.newInstance();
         backup.snapshots().stream()
-                .map(factory::of)
+                .map(id -> factory.of(http, id))
                 .filter(Objects::nonNull)
                 .forEach(snapshot -> downloader.execute(client, backup, keybag, snapshot, tally));
 

@@ -31,11 +31,11 @@ import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagTools;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.pipe.ArgumentExceptionPair;
-import com.github.horrorho.liquiddonkey.pipe.Piper;
+import com.github.horrorho.liquiddonkey.http.Http;
+import com.github.horrorho.liquiddonkey.cloud.pipe.ArgumentExceptionPair;
+import com.github.horrorho.liquiddonkey.cloud.pipe.Piper;
 import com.github.horrorho.liquiddonkey.settings.config.DirectoryConfig;
 import com.github.horrorho.liquiddonkey.settings.config.DonkeyFactoryConfig;
-import com.github.horrorho.liquiddonkey.util.CallableFunction;
 import com.google.protobuf.ByteString;
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -123,8 +124,7 @@ public final class DonkeyFactory {
      * @param signatureToFileMap the required files, not null
      * @return a new instance, not null
      */
-    public
-            CallableFunction<Iterator<Map<ByteString, Set<ICloud.MBSFile>>>, List<ArgumentExceptionPair<Map<ByteString, Set<ICloud.MBSFile>>>>>
+    public BiFunction<Http, Iterator<Map<ByteString, Set<ICloud.MBSFile>>>, List<ArgumentExceptionPair<Map<ByteString, Set<ICloud.MBSFile>>>>>
             from(
                     Client client,
                     Backup backup,
@@ -160,7 +160,8 @@ public final class DonkeyFactory {
                         printer,
                         toSetLastModifiedTime);
 
-                BatchDownloader downloader = BatchDownloader.newInstance(client,
+                BatchDownloader downloader = BatchDownloader.newInstance(
+                        client,
                         backup.udid(),
                         snapshot,
                         writer,
@@ -168,10 +169,9 @@ public final class DonkeyFactory {
                                 client,
                                 isAggressive));
 
-                Piper<Map<ByteString, Set<ICloud.MBSFile>>> pipe
-                        = Piper.<Map<ByteString, Set<ICloud.MBSFile>>>newInstance(downloader, isAggressive);
+                Piper<Http, Map<ByteString, Set<ICloud.MBSFile>>> pipe = Piper.newInstance(downloader, isAggressive);
 
                 logger.trace(">> newInstance()");
-                return CallableFunction.newInstance(batcher, pipe);
+                return (http, iterator) -> pipe.apply(http, iterator);
             }
 }

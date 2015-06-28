@@ -28,8 +28,8 @@ import com.github.horrorho.liquiddonkey.cloud.file.LocalFileWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
 import com.github.horrorho.liquiddonkey.cloud.store.ChunkListStore;
+import com.github.horrorho.liquiddonkey.http.Http;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -38,7 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * @author ahseya
  */
 @NotThreadSafe
-public final class BatchDownloader implements Consumer<Map<ByteString, Set<MBSFile>>> {
+public final class BatchDownloader implements BiConsumer<Http, Map<ByteString, Set<ICloud.MBSFile>>> {
 
     /**
      * Returns a new instance.
@@ -95,7 +95,7 @@ public final class BatchDownloader implements Consumer<Map<ByteString, Set<MBSFi
     }
 
     @Override
-    public void accept(Map<ByteString, Set<ICloud.MBSFile>> signatures) {
+    public void accept(Http http, Map<ByteString, Set<ICloud.MBSFile>> signatures) {
         logger.trace("<< accept() < {}", signatures.size());
 
         if (signatures.isEmpty()) {
@@ -109,9 +109,9 @@ public final class BatchDownloader implements Consumer<Map<ByteString, Set<MBSFi
                     .flatMap(Set::stream)
                     .collect(Collectors.toList());
 
-            FileGroups fileGroups = client.getFileGroups(backupUdid, snapshot, download);
+            FileGroups fileGroups = client.getFileGroups(http, backupUdid, snapshot, download);
 
-            downloadFileGroups(fileGroups, signatures);
+            downloadFileGroups(http, fileGroups, signatures);
 
         } catch (IOException ex) {
             logger.trace(">> accept() > exception: ", ex);
@@ -122,12 +122,13 @@ public final class BatchDownloader implements Consumer<Map<ByteString, Set<MBSFi
     }
 
     private void downloadFileGroups(
+            Http http,
             ChunkServer.FileGroups fileGroups,
             Map<ByteString, Set<ICloud.MBSFile>> signatureToFileSet
     ) throws IOException {
 
         for (ChunkServer.FileChecksumStorageHostChunkLists group : fileGroups.getFileGroupsList()) {
-            ChunkListStore store = chunkListDownloader.download(group);
+            ChunkListStore store = chunkListDownloader.download(http, group);
 
             group.getFileChecksumChunkReferencesList().stream().forEach((fileChecksumChunkReference) -> {
                 // Files with identical signatures/ hash.
@@ -143,7 +144,7 @@ public final class BatchDownloader implements Consumer<Map<ByteString, Set<MBSFi
 
     void write(
             int snapshot,
-            Collection<MBSFile> files,
+            Collection<ICloud.MBSFile> files,
             ChunkListStore storage,
             List<ChunkServer.ChunkReference> chunkReferences) {
 
@@ -152,7 +153,7 @@ public final class BatchDownloader implements Consumer<Map<ByteString, Set<MBSFi
 
     void write(
             int snapshot,
-            MBSFile file,
+            ICloud.MBSFile file,
             ChunkListStore storage,
             List<ChunkServer.ChunkReference> chunkReferences) {
 

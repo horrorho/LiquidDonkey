@@ -21,15 +21,16 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.pipe;
+package com.github.horrorho.liquiddonkey.cloud.pipe;
 
+import com.github.horrorho.liquiddonkey.http.Http;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,38 +40,39 @@ import org.slf4j.LoggerFactory;
  * pairs.
  *
  * @author Ahseya
- * @param <T> the input type
+ * @param <T> input type
+ * @param <U> input type
  */
-public class Piper<T> implements Function<Iterator<T>, List<ArgumentExceptionPair<T>>> {
+public class Piper<T, U> implements BiFunction<T, Iterator<U>, List<ArgumentExceptionPair<U>>> {
 
     private static final Logger logger = LoggerFactory.getLogger(Piper.class);
 
-    public static <T> Piper<T> newInstance(Consumer<T> consumer, boolean isAggressive) {
+    public static <T, U> Piper<T, U> newInstance(BiConsumer<T, U> consumer, boolean isAggressive) {
         return new Piper<>(consumer, isAggressive);
     }
 
-    private final Consumer<T> consumer;
+    private final BiConsumer<T, U> consumer;
     private final boolean isAggressive;
 
-    Piper(Consumer<T> consumer, boolean isAggressive) {
+    Piper(BiConsumer<T, U> consumer, boolean isAggressive) {
         this.consumer = Objects.requireNonNull(consumer);
         this.isAggressive = isAggressive;
     }
 
     @Override
-    public List<ArgumentExceptionPair<T>> apply(Iterator<T> iterator) {
+    public List<ArgumentExceptionPair<U>> apply(T t, Iterator<U> iterator) {
         logger.trace("<< apply()");
 
-        List<ArgumentExceptionPair<T>> failed = new ArrayList<>();
+        List<ArgumentExceptionPair<U>> failed = new ArrayList<>();
 
         while (iterator.hasNext()) {
-            T t = iterator.next();
+            U u = iterator.next();
 
             try {
-                consumer.accept(t);
+                consumer.accept(t, u);
             } catch (UncheckedIOException ex) {
                 logger.warn("-- apply() > exception: ", ex);
-                failed.add(ArgumentExceptionPair.newInstance(t, ex));
+                failed.add(ArgumentExceptionPair.newInstance(u, ex));
 
                 if (!isAggressive) {
                     break;
@@ -78,9 +80,8 @@ public class Piper<T> implements Function<Iterator<T>, List<ArgumentExceptionPai
 
                 Throwable cause = ex.getCause();
                 if (cause instanceof HttpResponseException) {
-                    int code = ((HttpResponseException) cause).getStatusCode();
                     // Unauthorized
-                    if (code == 401) {
+                    if (((HttpResponseException) cause).getStatusCode() == 401) {
                         break;
                     }
                 }

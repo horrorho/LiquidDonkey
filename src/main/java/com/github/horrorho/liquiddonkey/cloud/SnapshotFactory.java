@@ -25,7 +25,9 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
+import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.settings.config.SnapshotFactoryConfig;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -103,10 +105,10 @@ public final class SnapshotFactory {
         Collections.sort(this.snapshots);
     }
 
-    public Snapshot of(int id) {
+    public Snapshot of(Http http, int id) {
         try {
             logger.trace("<< id() < id: {}", id);
-            Snapshot snapshot = snapshot(id);
+            Snapshot snapshot = snapshot(http, id);
             logger.trace(">> id() > snapshot: {}", snapshot);
             return snapshot;
         } catch (IOException ex) {
@@ -114,7 +116,7 @@ public final class SnapshotFactory {
         }
     }
 
-    Snapshot snapshot(int id) throws IOException {
+    Snapshot snapshot(Http http, int id) throws IOException {
         if (!snapshots.contains(id)) {
             logger.warn("-- of() > bad id: {}", id);
         }
@@ -128,32 +130,34 @@ public final class SnapshotFactory {
                 ? snapshots.get(1)
                 : id + 1;
 
-        List<ICloud.MBSFile> files = files(id, to);
+        List<ICloud.MBSFile> files = files(http, id, to);
 
         return files == null
                 ? null
                 : Snapshot.newInstance(id, files, fileFilter);
     }
 
-    List<ICloud.MBSFile> files(int from, int to) throws IOException {
+    List<ICloud.MBSFile> files(Http http, int from, int to) throws IOException {
         int snapshot = from;
         List<ICloud.MBSFile> files = null;
 
         while (snapshot < to && files == null) {
-            files = files(snapshot++);
+            files = files(http, snapshot++);
         }
         return files;
     }
 
-    List<ICloud.MBSFile> files(int snapshot) throws IOException {
+    List<ICloud.MBSFile> files(Http http, int snapshot) throws IOException {
         try {
-            return client.listFiles(udid, snapshot);
+            return client.listFiles(http, udid, snapshot);
         } catch (HttpResponseException ex) {
-            if (ex.getStatusCode() == 404) {
-                logger.trace("-- files() > snapshot not found: {}", snapshot);
-                return null;
+            
+            if (ex.getStatusCode() == 401) {
+                throw new AuthenticationException(ex);
             }
-            throw ex;
+
+            logger.trace("-- files() > snapshot not found: {}", snapshot);
+            return null;
         }
     }
 }
