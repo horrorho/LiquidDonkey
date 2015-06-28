@@ -23,16 +23,19 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.client.Client;
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.exception.FatalException;
+import com.dd.plist.NSDictionary;
+import com.dd.plist.PropertyListFormatException;
+import com.github.horrorho.liquiddonkey.cloud.client.Headers;
+import com.github.horrorho.liquiddonkey.cloud.client.Tokens;
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.printer.Printer;
+import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
+import com.github.horrorho.liquiddonkey.settings.config.ClientConfig;
+import com.github.horrorho.liquiddonkey.util.PropertyLists;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
+import org.apache.http.client.ResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,52 +45,117 @@ import org.slf4j.LoggerFactory;
  * @author Ahseya
  */
 public final class Account {
-    /**
-     * Returns a new instance.
-     *
-     * @param http not null
-     * @param client not null
-     * @param printer not null
-     * @return a new instance, not null
-     * @throws FatalException
-     */
-    public static Account newInstance(Http http, Client client, Printer printer) {
+
+    public static Account from(Http http, Authentication authentication, ClientConfig config) throws IOException {
         try {
-            ICloud.MBSAccount account = client.account(http);
+            logger.trace("<< from() < http: {} authentication: {}", http, authentication);
 
-            List<Backup> backups = account.getBackupUDIDList().stream()
-                    .map(udid -> Backup.newInstance(http, client, udid, printer))
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+            Tokens tokens = Tokens.getInstance();
+            String dsPrsID = authentication.dsPrsID();
+            String mmeAuthToken = authentication.mmeAuthToken();
 
-            return newInstance(account, backups);
-        } catch (IOException ex) {
-            throw new FatalException("Account.", ex);
+            String auth = tokens.basic(dsPrsID, mmeAuthToken);
+            logger.trace("-- from() >  authentication token: {}", auth);
+
+            NSDictionary settings = (NSDictionary) PropertyLists.parse(
+                    http.executor("https://setup.icloud.com/setup/get_account_settings", byteArrayResponseHandler)
+                    .headers(Headers.mmeClientInfo, Headers.authorization(auth))
+                    .get());
+            logger.trace("-- from() >  account settings: {}", settings.toASCIIPropertyList());
+
+            String fullName = PropertyLists.stringValueOrDefault("Unknown", settings, "appleAccountInfo", "fullName");
+            String appleId = PropertyLists.stringValueOrDefault("Unknown", settings, "appleAccountInfo", "appleId");
+            String newDsPrsID = PropertyLists.stringValue(settings, "appleAccountInfo", "dsPrsID");
+            String newMmeAuthToken = PropertyLists.stringValue(settings, "tokens", "mmeAuthToken");
+            String mobileBackupUrl
+                    = PropertyLists.stringValue(settings, "com.apple.mobileme", "com.apple.Dataclass.Backup", "url");
+            String contentUrl
+                    = PropertyLists.stringValue(settings, "com.apple.mobileme", "com.apple.Dataclass.Content", "url");
+
+            if (!dsPrsID.equals(newDsPrsID)) {
+                logger.warn("-- from() > dsPrsID overwritten {} > {}", dsPrsID, newDsPrsID);
+                dsPrsID = newDsPrsID;
+            }
+
+            if (!mmeAuthToken.equals(newMmeAuthToken)) {
+                logger.warn("-- from() > mmeAuthToken overwritten {} > {}", mmeAuthToken, newMmeAuthToken);
+                mmeAuthToken = newMmeAuthToken;
+            }
+
+            Account account = newInstance(
+                    Authentication.newInstance(dsPrsID, mmeAuthToken),
+                    fullName,
+                    appleId,
+                    contentUrl,
+                    mobileBackupUrl);
+
+            logger.trace(">> from() > account: {}", account);
+            return account;
+
+        } catch (BadDataException | PropertyListFormatException ex) {
+            throw new AuthenticationException(ex);
         }
     }
 
-    public static Account newInstance(ICloud.MBSAccount mbsAccount, List<Backup> backups) {
-        return new Account(mbsAccount, backups);
+    public static Account newInstance(
+            Authentication authentication,
+            String fullName,
+            String appleId,
+            String contentUrl,
+            String mobileBackupUrl) {
+
+        return new Account(
+                authentication,
+                appleId,
+                fullName,
+                contentUrl,
+                mobileBackupUrl);
     }
 
-    private final ICloud.MBSAccount mbsAccount;
-    private final List<Backup> backups;
+    private static final Logger logger = LoggerFactory.getLogger(Account.class);
 
-    Account(ICloud.MBSAccount mbsAccount, List<Backup> backups) {
-        this.mbsAccount = Objects.requireNonNull(mbsAccount);
-        this.backups = Objects.requireNonNull(backups);
+    // Thread safe.
+    private static final ResponseHandler<byte[]> byteArrayResponseHandler = ResponseHandlerFactory.toByteArray();
+
+    private final Authentication authentication;
+    private final String fullName;
+    private final String appleId;
+    private final String contentUrl;
+    private final String mobileBackupUrl;
+
+    Account(
+            Authentication authentication,
+            String fullName,
+            String appleId,
+            String contentUrl,
+            String mobileBackupUrl) {
+
+        this.authentication = authentication;
+        this.fullName = Objects.requireNonNull(fullName);
+        this.appleId = Objects.requireNonNull(appleId);
+        this.contentUrl = Objects.requireNonNull(contentUrl);
+        this.mobileBackupUrl = Objects.requireNonNull(mobileBackupUrl);
     }
 
-    public ICloud.MBSAccount mbsAccount() {
-        return mbsAccount;
+    public Authentication authentication() {
+        return authentication;
     }
 
-    public List<Backup> backups() {
-        return new ArrayList<>(backups);
+    public String appleId() {
+        return appleId;
+    }
+
+    public String contentUrl() {
+        return contentUrl;
+    }
+
+    public String mobileBackupUrl() {
+        return mobileBackupUrl;
     }
 
     @Override
     public String toString() {
-        return "Account{" + "mbsAccount=" + mbsAccount + ", backups=" + backups + '}';
+        return "Account{" + "authentication=" + authentication + ", fullName=" + fullName + ", appleId=" + appleId
+                + ", contentUrl=" + contentUrl + ", mobileBackupUrl=" + mobileBackupUrl + '}';
     }
 }

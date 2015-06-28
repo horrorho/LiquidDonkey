@@ -23,18 +23,15 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.client.Tokens;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
-import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import com.github.horrorho.liquiddonkey.util.PropertyLists;
 import com.dd.plist.NSDictionary;
 import com.dd.plist.PropertyListFormatException;
 import com.github.horrorho.liquiddonkey.cloud.client.Headers;
-import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig.AuthenticationConfigAppleIdPassword;
-import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig.AuthenticationConfigAuthorizationToken;
-import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig.AuthenticationConfigNull;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -60,207 +57,66 @@ public final class Authentication {
     // Thread safe.
     private static final ResponseHandler<byte[]> byteArrayResponseHandler = ResponseHandlerFactory.toByteArray();
 
-    public static Authentication from(Http http, AuthenticationConfig config) {
-
+    public static Authentication authenticate(Http http, String id, String password) throws IOException {
         try {
-            return doAuthentication(http, config);
+            logger.trace("<< authenticate() < id: {} password: {}", id, password);
 
-        } catch (HttpResponseException ex) {
-            logger.warn("-- authenticate() >  HttpResponseException", ex);
-            if (ex.getStatusCode() == 401) {
-                throw new AuthenticationException("Bad details or not an iCloud account.", ex);
-            }
-            if (ex.getStatusCode() == 409) {
-                throw new AuthenticationException("Two-step authentication or not an iCloud account.", ex);
-            }
-            throw new AuthenticationException(ex);
-        } catch (IOException | BadDataException ex) {
-            throw new AuthenticationException(ex);
-        }
-    }
-
-    static Authentication doAuthentication(Http http, AuthenticationConfig config)
-            throws IOException, BadDataException {
-
-        if (config instanceof AuthenticationConfigNull) {
-            throw new IllegalArgumentException("No appleid/ password or authentication token suppled.");
-        }
-
-        if (config instanceof AuthenticationConfigAppleIdPassword) {
-            return doAuthentication(http, (AuthenticationConfigAppleIdPassword) config);
-
-        }
-
-        if (config instanceof AuthenticationConfigAuthorizationToken) {
-            return doAuthentication(http, (AuthenticationConfigAuthorizationToken) config);
-        }
-
-        throw new IllegalArgumentException("Unknown configuration class: "
-                + (config == null ? null : config.getClass()));
-    }
-
-    static Authentication doAuthentication(Http http, AuthenticationConfigAppleIdPassword config)
-            throws IOException, BadDataException {
-
-        return phaseOne(http, config.id(), config.password());
-    }
-
-    static Authentication doAuthentication(Http http, AuthenticationConfigAuthorizationToken config)
-            throws IOException, BadDataException {
-
-        return phaseTwo(http, config.dsPrsId(), config.mmeAuthToken());
-    }
-
-    static Authentication phaseOne(Http http, String id, String password) throws IOException, BadDataException {
-        try {
-            logger.trace("<< phaseOne() < id: {} password: {}", id, password);
-
-            String authBasic = authorization("Basic", id, password);
-            logger.trace("-- phaseOne() > authentication basic token: {}", authBasic);
+            String authBasic = Tokens.getInstance().basic(id, password);
+            logger.trace("-- authenticate() > authentication basic token: {}", authBasic);
 
             NSDictionary response = (NSDictionary) PropertyLists.parse(
                     http.executor("https://setup.icloud.com/setup/authenticate/$APPLE_ID$", byteArrayResponseHandler)
                     .headers(Headers.mmeClientInfo, Headers.authorization(authBasic))
                     .get());
-            logger.trace("-- phaseOne() >  response: {}", response.toASCIIPropertyList());
+            logger.trace("-- authenticate() >  response: {}", response.toASCIIPropertyList());
 
             String dsPrsID = PropertyLists.stringValue(response, "appleAccountInfo", "dsPrsID");
-            logger.trace("-- phaseOne() >  dsPrsID: {}", dsPrsID);
+            logger.trace("-- authenticate() >  dsPrsID: {}", dsPrsID);
+
             String mmeAuthToken = PropertyLists.stringValue(response, "tokens", "mmeAuthToken");
-            logger.trace("-- phaseOne() >   mmeAuthToken: {}", mmeAuthToken);
+            logger.trace("-- authenticate() >   mmeAuthToken: {}", mmeAuthToken);
 
-            logger.trace(">> phaseOne() >> phaseTwo. dsPrsID: {} mmeAuthToken: {}", dsPrsID, mmeAuthToken);
-            return phaseTwo(http, dsPrsID, mmeAuthToken);
-            
-        } catch (PropertyListFormatException ex) {
-            throw new BadDataException("Unexpected authentication data.", ex);
-        }
-    }
+            Authentication authentication = newInstance(dsPrsID, mmeAuthToken);
+            logger.trace(">> authenticate() > authentication: {}", authentication);
 
-    static Authentication phaseTwo(Http http, String dsPrsID, String mmeAuthToken) throws IOException, BadDataException {
-        try {
-            logger.trace("<< phaseTwo() < dsPrsID: {} mmeAuthToken: {}", dsPrsID, mmeAuthToken);
-
-            String auth = authorization("Basic", dsPrsID, mmeAuthToken);
-            logger.trace("-- phaseTwo() >  authentication token: {}", auth);
-
-            NSDictionary settings = (NSDictionary) PropertyLists.parse(
-                    http.executor("https://setup.icloud.com/setup/get_account_settings", byteArrayResponseHandler)
-                    .headers(Headers.mmeClientInfo, Headers.authorization(auth))
-                    .get());
-            logger.trace("-- phaseTwo() >  account settings: {}", settings.toASCIIPropertyList());
-
-            String fullName = PropertyLists.stringValueOrDefault("Unknown", settings, "appleAccountInfo", "fullName");
-            String appleId = PropertyLists.stringValueOrDefault("Unknown", settings, "appleAccountInfo", "appleId");
-            String newDsPrsID = PropertyLists.stringValue(settings, "appleAccountInfo", "dsPrsID");
-            String newMmeAuthToken = PropertyLists.stringValue(settings, "tokens", "mmeAuthToken");
-            String mobileBackupUrl
-                    = PropertyLists.stringValue(settings, "com.apple.mobileme", "com.apple.Dataclass.Backup", "url");
-            String contentUrl
-                    = PropertyLists.stringValue(settings, "com.apple.mobileme", "com.apple.Dataclass.Content", "url");
-
-            if (!dsPrsID.equals(newDsPrsID)) {
-                logger.warn("-- phaseTwo() > dsPrsID overwritten {} > {}", dsPrsID, newDsPrsID);
-                dsPrsID = newDsPrsID;
-            }
-
-            if (!mmeAuthToken.equals(newMmeAuthToken)) {
-                logger.warn("-- phaseTwo() > mmeAuthToken overwritten {} > {}", mmeAuthToken, newMmeAuthToken);
-                mmeAuthToken = newMmeAuthToken;
-            }
-
-            String authMme = authorization("X-MobileMe-AuthToken", dsPrsID, mmeAuthToken);
-            logger.trace("-- phaseTwo() >  authentication x-MobileMetoken token: {}", authMme);
-
-            Authentication authentication
-                    = newInstance(appleId, fullName, dsPrsID, authMme, contentUrl, mobileBackupUrl);
-
-            logger.trace(">> phaseTwo() > {}", authentication);
             return authentication;
-            
-        } catch (PropertyListFormatException ex) {
-            throw new BadDataException("Unexpected authentication data.", ex);
+
+        } catch (BadDataException | PropertyListFormatException ex) {
+            throw new AuthenticationException("Unexpected server response", ex);
+        } catch (HttpResponseException ex) {
+            logger.warn("-- authenticate() >  exception: ", ex);
+            if (ex.getStatusCode() == 401) {
+                throw new AuthenticationException("Bad appleId/ password or not an iCloud account", ex);
+            }
+            if (ex.getStatusCode() == 409) {
+                throw new AuthenticationException("Two-step authentication or not an iCloud account", ex);
+            }
+            throw new AuthenticationException(ex);
         }
     }
 
-    static String authorization(String type, String left, String right) {
-        return type + " " + Base64.getEncoder().encodeToString((left + ":" + right).getBytes(StandardCharsets.UTF_8));
+    public static Authentication newInstance(String dsPrsID, String mmeAuthToken) {
+        return new Authentication(dsPrsID, mmeAuthToken);
     }
 
-    public static Authentication newInstance(
-            String appleId,
-            String fullName,
-            String dsPrsID,
-            String authMme,
-            String contentUrl,
-            String mobileBackupUrl) {
-
-        return new Authentication(
-                appleId,
-                fullName,
-                dsPrsID,
-                authMme,
-                contentUrl,
-                mobileBackupUrl);
-    }
-
-    private final String appleId;
-    private final String fullName;
     private final String dsPrsID;
-    private final String authMme;
-    private final String contentUrl;
-    private final String mobileBackupUrl;
+    private final String mmeAuthToken;
 
-    Authentication(
-            String appleId,
-            String fullName,
-            String dsPrsID,
-            String authMme,
-            String contentUrl,
-            String mobileBackupUrl) {
-
-        this.appleId = Objects.requireNonNull(appleId);
-        this.fullName = Objects.requireNonNull(fullName);
+    Authentication(String dsPrsID, String mmeAuthToken) {
         this.dsPrsID = Objects.requireNonNull(dsPrsID);
-        this.authMme = Objects.requireNonNull(authMme);
-        this.contentUrl = Objects.requireNonNull(contentUrl);
-        this.mobileBackupUrl = Objects.requireNonNull(mobileBackupUrl);
-
-        logger.trace("** Authentication() < appleId:", appleId);
-        logger.trace("** Authentication() < fullName:", fullName);
-        logger.trace("** Authentication() <  dsPrsID", dsPrsID);
-        logger.trace("** Authentication() <  authMme", authMme);
-        logger.trace("** Authentication() <  contentUrl", contentUrl);
-        logger.trace("** Authentication() <  mobileBackupUrl", mobileBackupUrl);
+        this.mmeAuthToken = Objects.requireNonNull(mmeAuthToken);
     }
 
-    public String appleId() {
-        return appleId;
-    }
-
-    public String authMme() {
-        return authMme;
-    }
-
-    public String contentUrl() {
-        return contentUrl;
+    public String mmeAuthToken() {
+        return mmeAuthToken;
     }
 
     public String dsPrsID() {
         return dsPrsID;
     }
 
-    public String fullName() {
-        return fullName;
-    }
-
-    public String mobileBackupUrl() {
-        return mobileBackupUrl;
-    }
-
     @Override
     public String toString() {
-        return "Authentication{" + "appleId=" + appleId + ", fullName=" + fullName + ", dsPrsID=" + dsPrsID
-                + ", authMme=" + authMme + ", contentUrl=" + contentUrl + ", mobileBackupUrl=" + mobileBackupUrl + '}';
+        return "Authentication{" + "dsPrsID=" + dsPrsID + ", mmeAuthToken=" + mmeAuthToken + '}';
     }
 }

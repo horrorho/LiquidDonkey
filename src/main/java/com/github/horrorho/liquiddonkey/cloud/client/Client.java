@@ -23,6 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.client;
 
+import com.github.horrorho.liquiddonkey.cloud.Account;
+import com.github.horrorho.liquiddonkey.cloud.Authentication;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.HostInfo;
@@ -39,7 +41,6 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ProtoBufArray;
 import static com.github.horrorho.liquiddonkey.settings.Markers.CLIENT;
 import static com.github.horrorho.liquiddonkey.http.NameValuePairs.parameter;
 import static com.github.horrorho.liquiddonkey.util.Bytes.hex;
-import com.github.horrorho.liquiddonkey.cloud.Authentication;
 import com.github.horrorho.liquiddonkey.settings.config.ClientConfig;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -66,16 +67,19 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Client {
 
-    public static Client newInstance(
-            Authentication authentication,
-            ClientConfig config) {
+    public static Client from(Http http, Account account, ClientConfig config) throws IOException {
 
-        return new Client(
-                Headers.mobileBackupHeaders(authentication.authMme()),
+        Authentication authentication = account.authentication();
+
+        String authMme = Tokens.getInstance()
+                .mobilemeAuthToken(authentication.dsPrsID(), authentication.mmeAuthToken());
+
+        return newInstance(
+                Headers.mobileBackupHeaders(authMme),
                 Headers.contentHeaders(authentication.dsPrsID()),
                 authentication.dsPrsID(),
-                authentication.contentUrl(),
-                authentication.mobileBackupUrl(),
+                account.contentUrl(),
+                account.mobileBackupUrl(),
                 config.listLimit());
     }
 
@@ -87,13 +91,17 @@ public final class Client {
             String mobileBackupUrl,
             int listFilesLimit) {
 
-        return new Client(
+        logger.trace("<< newInstance()");
+        Client client = new Client(
                 new ArrayList<>(mobileBackupHeaders),
                 new ArrayList<>(contentHeaders),
                 dsPrsID,
                 contentUrl,
                 mobileBackupUrl,
                 listFilesLimit);
+
+        logger.trace(">> newInstance() > ", client);
+        return client;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Client.class);
@@ -101,7 +109,6 @@ public final class Client {
     // Thread safe.
     private static final ResponseHandler<byte[]> byteArrayResponseHandler = ResponseHandlerFactory.toByteArray();
 
-    // Thread safe.
     private static final ResponseHandler<List<MBSFile>> mbsFileListHandler
             = ResponseHandlerFactory.of(inputStream -> ProtoBufArray.decode(inputStream, MBSFile.PARSER));
     private static final ResponseHandler<List<MBSFileAuthToken>> mbsFileAuthTokenListHandler
@@ -136,13 +143,6 @@ public final class Client {
         this.contentUrl = Objects.requireNonNull(contentUrl);
         this.mobileBackupUrl = Objects.requireNonNull(mobileBackupUrl);
         this.listFilesLimit = listFilesLimit;
-
-        logger.trace("** Client() < mobileBackupHeaders: {}", mobileBackupHeaders);
-        logger.trace("** Client() < contentHeaders: {}", contentHeaders);
-        logger.trace("** Client() < dsPrsID: {}", dsPrsID);
-        logger.trace("** Client() < contentUrl: {}", contentUrl);
-        logger.trace("** Client() < mobileBackupUrl: {}", mobileBackupUrl);
-        logger.trace("** Client() < listFilesLimit: {}", listFilesLimit);
     }
 
     private <T> T mobileBackupGet(Http http, ResponseHandler<T> handler, String path, NameValuePair... parameters)
@@ -331,5 +331,12 @@ public final class Client {
 
     String hostPath(String host, String... parts) {
         return host + "://" + path(parts);
+    }
+
+    @Override
+    public String toString() {
+        return "Client{" + "mobileBackupHeaders=" + mobileBackupHeaders + ", contentHeaders=" + contentHeaders
+                + ", dsPrsID=" + dsPrsID + ", contentUrl=" + contentUrl + ", mobileBackupUrl=" + mobileBackupUrl
+                + ", listFilesLimit=" + listFilesLimit + '}';
     }
 }
