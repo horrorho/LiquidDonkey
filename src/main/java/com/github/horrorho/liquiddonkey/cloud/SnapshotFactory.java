@@ -38,6 +38,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Predicate;
+import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
@@ -48,67 +49,56 @@ import org.slf4j.LoggerFactory;
  *
  * @author Ahseya
  */
+@Immutable
 @ThreadSafe
 public final class SnapshotFactory {
 
     private static final Logger logger = LoggerFactory.getLogger(SnapshotFactory.class);
 
     public static SnapshotFactory newInstance(
-            Client client,
             Backup backup,
             Collection<Integer> snapshots,
-            Predicate<ICloud.MBSFile> fileFilter,
             SnapshotFactoryConfig config) {
 
         return new SnapshotFactory(
-                client,
                 backup.udid(),
                 backup.snapshots(),
                 SnapshotFilter.newInstance(backup, snapshots),
-                fileFilter,
                 config.toHuntFirstSnapshot());
     }
 
     static SnapshotFactory newInstance(
-            Client client,
             ByteString udid,
             Collection<Integer> snapshots,
             Predicate<Integer> snapshotFilter,
-            Predicate<ICloud.MBSFile> fileFilter,
             boolean hunt) {
 
-        return new SnapshotFactory(client, udid, snapshots, snapshotFilter, fileFilter, hunt);
+        return new SnapshotFactory(udid, snapshots, snapshotFilter, hunt);
     }
 
-    private final Client client;
     private final ByteString udid;
     private final List<Integer> snapshots;
     private final Predicate<Integer> snapshotFilter;
-    private final Predicate<ICloud.MBSFile> fileFilter;
     private final boolean hunt;
 
     SnapshotFactory(
-            Client client,
             ByteString udid,
             Collection<Integer> snapshots,
             Predicate<Integer> snapshotFilter,
-            Predicate<ICloud.MBSFile> fileFilter,
             boolean hunt) {
 
-        this.client = Objects.requireNonNull(client);
         this.udid = Objects.requireNonNull(udid);
         this.snapshots = new ArrayList<>(new HashSet<>(snapshots));
         this.snapshotFilter = Objects.requireNonNull(snapshotFilter);
-        this.fileFilter = Objects.requireNonNull(fileFilter);
         this.hunt = hunt;
 
         Collections.sort(this.snapshots);
     }
 
-    public Snapshot of(Http http, int id) {
+    public Snapshot of(Http http, Client client, int id) {
         try {
             logger.trace("<< id() < id: {}", id);
-            Snapshot snapshot = snapshot(http, id);
+            Snapshot snapshot = snapshot(http, client, id);
             logger.trace(">> id() > snapshot: {}", snapshot);
             return snapshot;
         } catch (IOException ex) {
@@ -116,9 +106,10 @@ public final class SnapshotFactory {
         }
     }
 
-    Snapshot snapshot(Http http, int id) throws IOException {
+    Snapshot snapshot(Http http, Client client, int id) throws IOException {
         if (!snapshots.contains(id)) {
             logger.warn("-- of() > bad id: {}", id);
+            return null;
         }
 
         if (!snapshotFilter.test(id)) {
@@ -130,28 +121,28 @@ public final class SnapshotFactory {
                 ? snapshots.get(1)
                 : id + 1;
 
-        List<ICloud.MBSFile> files = files(http, id, to);
+        List<ICloud.MBSFile> files = files(http, client, id, to);
 
         return files == null
                 ? null
-                : Snapshot.newInstance(id, files, fileFilter);
+                : Snapshot.newInstance(id, files);
     }
 
-    List<ICloud.MBSFile> files(Http http, int from, int to) throws IOException {
+    List<ICloud.MBSFile> files(Http http, Client client, int from, int to) throws IOException {
         int snapshot = from;
         List<ICloud.MBSFile> files = null;
 
         while (snapshot < to && files == null) {
-            files = files(http, snapshot++);
+            files = files(http, client, snapshot++);
         }
         return files;
     }
 
-    List<ICloud.MBSFile> files(Http http, int snapshot) throws IOException {
+    List<ICloud.MBSFile> files(Http http, Client client, int snapshot) throws IOException {
         try {
             return client.listFiles(http, udid, snapshot);
         } catch (HttpResponseException ex) {
-            
+
             if (ex.getStatusCode() == 401) {
                 throw new AuthenticationException(ex);
             }
@@ -161,3 +152,4 @@ public final class SnapshotFactory {
         }
     }
 }
+// TODO set ordering

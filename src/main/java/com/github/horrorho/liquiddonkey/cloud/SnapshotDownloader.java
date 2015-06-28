@@ -95,6 +95,13 @@ public final class SnapshotDownloader {
         this.retryCount = retryCount;
     }
 
+    
+    public void moo(Http http, Client client, Backup backup, KeyB) {
+        
+        
+        
+    }
+    
     public Map<ByteString, Set<ICloud.MBSFile>> execute(
             Client client,
             Backup backup,

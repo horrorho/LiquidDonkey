@@ -42,8 +42,6 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class SnapshotFilter implements Predicate<Integer> {
 
-    private static final Logger logger = LoggerFactory.getLogger(SnapshotFilter.class);
-
     public static SnapshotFilter newInstance(Backup backup, Collection<Integer> requested) {
         return newInstance(backup.snapshots(), requested);
     }
@@ -60,13 +58,16 @@ public final class SnapshotFilter implements Predicate<Integer> {
     private final Set<Integer> ids;
 
     SnapshotFilter(Set<Integer> ids) {
-        logger.trace("** SnapshotFilter() < {}", ids);
         this.ids = Objects.requireNonNull(ids);
-        logger.trace("** SnapshotFilter()");
     }
 
     @Override
     public boolean test(Integer id) {
         return ids.contains(id);
+    }
+
+    @Override
+    public String toString() {
+        return "SnapshotFilter{" + "ids=" + ids + '}';
     }
 }

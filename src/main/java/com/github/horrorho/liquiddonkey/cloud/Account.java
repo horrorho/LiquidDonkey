@@ -35,6 +35,7 @@ import com.github.horrorho.liquiddonkey.settings.config.ClientConfig;
 import com.github.horrorho.liquiddonkey.util.PropertyLists;
 import java.io.IOException;
 import java.util.Objects;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,12 +74,12 @@ public final class Account {
                     = PropertyLists.stringValue(settings, "com.apple.mobileme", "com.apple.Dataclass.Content", "url");
 
             if (!dsPrsID.equals(newDsPrsID)) {
-                logger.warn("-- from() > dsPrsID overwritten {} > {}", dsPrsID, newDsPrsID);
+                logger.debug("-- from() > dsPrsID overwritten {} > {}", dsPrsID, newDsPrsID);
                 dsPrsID = newDsPrsID;
             }
 
             if (!mmeAuthToken.equals(newMmeAuthToken)) {
-                logger.warn("-- from() > mmeAuthToken overwritten {} > {}", mmeAuthToken, newMmeAuthToken);
+                logger.debug("-- from() > mmeAuthToken overwritten {} > {}", mmeAuthToken, newMmeAuthToken);
                 mmeAuthToken = newMmeAuthToken;
             }
 
@@ -94,7 +95,14 @@ public final class Account {
 
         } catch (BadDataException | PropertyListFormatException ex) {
             throw new AuthenticationException(ex);
+        } catch (HttpResponseException ex) {
+            logger.warn("-- authenticate() >  exception: ", ex);
+            if (ex.getStatusCode() == 401) {
+                throw new AuthenticationException("Bad authorization token.", ex);
+            }
+            throw new AuthenticationException(ex);
         }
+        // TODO wrap authentication here
     }
 
     public static Account newInstance(
