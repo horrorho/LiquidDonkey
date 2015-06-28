@@ -42,9 +42,6 @@ import org.slf4j.LoggerFactory;
  * @author Ahseya
  */
 public final class Account {
-
-    private static final Logger logger = LoggerFactory.getLogger(Account.class);
-
     /**
      * Returns a new instance.
      *

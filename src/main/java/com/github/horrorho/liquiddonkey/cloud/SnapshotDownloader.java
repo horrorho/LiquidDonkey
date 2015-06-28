@@ -95,16 +95,6 @@ public final class SnapshotDownloader {
         this.retryCount = retryCount;
     }
 
-    /**
-     * Concurrently download the specified backup/ snapshot/ files.
-     *
-     * @param client not null
-     * @param backup not null
-     * @param keyBag not null
-     * @param snapshot not null
-     * @param tally not null
-     * @return the list of any failed signatures, not null
-     */
     public Map<ByteString, Set<ICloud.MBSFile>> execute(
             Client client,
             Backup backup,

@@ -43,8 +43,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.BiFunction;
 import java.util.function.Predicate;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -124,8 +124,9 @@ public final class DonkeyFactory {
      * @param signatureToFileMap the required files, not null
      * @return a new instance, not null
      */
-    public BiFunction<Http, Iterator<Map<ByteString, Set<ICloud.MBSFile>>>, List<ArgumentExceptionPair<Map<ByteString, Set<ICloud.MBSFile>>>>>
+    public Callable<Iterator<Map<ByteString, Set<ICloud.MBSFile>>>, List<ArgumentExceptionPair<Map<ByteString, Set<ICloud.MBSFile>>>>>
             from(
+                    Http http,
                     Client client,
                     Backup backup,
                     KeyBag keyBag,
