@@ -25,6 +25,7 @@ package com.github.horrorho.liquiddonkey.gui.controller;
  */
 import com.github.horrorho.liquiddonkey.cloud.Account;
 import com.github.horrorho.liquiddonkey.cloud.Authentication;
+import com.github.horrorho.liquiddonkey.cloud.Backup;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.gui.controller.data.BackupProperties;
 import com.github.horrorho.liquiddonkey.printer.Printer;
@@ -34,6 +35,7 @@ import com.github.horrorho.liquiddonkey.settings.props.Parsers;
 import com.github.horrorho.liquiddonkey.settings.props.Props;
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import javafx.beans.property.BooleanProperty;
@@ -82,7 +84,9 @@ public class SelectionController implements Initializable {
     private TitledPane filters;
 
     @FXML
-    private Button downloadButton;
+    private Button back;
+    @FXML
+    private Button download;
 
     @FXML
     private CheckBox checkAll;
@@ -97,25 +101,29 @@ public class SelectionController implements Initializable {
     }
 
     @FXML
-    private void handleDownloadButtonAction(ActionEvent event) {
+    private void handleBack(ActionEvent event) {
+        toAuthentication();
+    }
+
+    @FXML
+    private void handleDownload(ActionEvent event) {
 
         backups.stream().forEach(System.out::println);
     }
 
     private void downloadButtonEnabledHandler() {
-        downloadButton.setDisable(
+        download.setDisable(
                 backups.stream()
                 .map(BackupProperties::checkedProperty)
                 .noneMatch(BooleanProperty::get));
     }
 
-    void toAuthentication(Authentication authentication) {
+    void toAuthentication() {
         try {
             logger.trace(GUI, "<< toAuthentication()");
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Authentication.fxml"));
             Parent root = loader.load();
             AuthenticationController controller = loader.<AuthenticationController>getController();
-            controller.init(stage, executorService, props, parsers);
             Scene scene = new Scene(root);
             stage.setScene(scene);
             stage.show();
@@ -134,7 +142,7 @@ public class SelectionController implements Initializable {
      */
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-
+        logger.trace("<< initialize()");
         backups.addListener((ListChangeListener.Change<? extends BackupProperties> c) -> {
             while (c.next()) {
                 if (c.wasAdded()) {
@@ -154,25 +162,31 @@ public class SelectionController implements Initializable {
 
         tableView.setPlaceholder(new Text("No backups."));
         tableView.setItems(backups);
-
+        logger.trace(">> initialize()");
     }
 
     public void init(
             Authentication authentication,
+            List<Backup> backups,
             Stage stage,
             ExecutorService executorService,
             Props<Property> props,
             Parsers parsers) {
 
+        logger.trace("<< init()");
         this.authentication = authentication;
+        this.stage = stage;
+        this.executorService = executorService;
+        this.props = props;
+        this.parsers = parsers;
 
         Account account = Account.newInstance(authentication.client(), Printer.instanceOf(false));
-        account.backups().stream()
-                .map(BackupProperties::newInstance).forEach(backups::add);
+        backups.stream().map(BackupProperties::newInstance).forEach(this.backups::add);
 
         downloadButtonEnabledHandler();
         checkAll.setSelected(false);
 
         main.setText(authentication.fullName() + " - " + authentication.appleId());
+        logger.trace(">> init()");
     }
 }

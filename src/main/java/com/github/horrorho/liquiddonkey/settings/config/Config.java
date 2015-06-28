@@ -41,84 +41,86 @@ public final class Config {
     public static Config newInstance(Props<Property> props) {
         return newInstance(
                 AuthenticationConfig.newInstance(props),
-                SnapshotFactoryConfig.newInstance(props),
+                ClientConfig.newInstance(props),
                 DirectoryConfig.newInstance(props),
-                SnapshotDownloaderConfig.newInstance(props),
                 DonkeyFactoryConfig.newInstance(props),
                 FileFilterConfig.newInstance(props),
                 HttpConfig.newInstance(props),
                 PrintConfig.newInstance(props),
-                SelectionConfig.newInstance(props));
+                SelectionConfig.newInstance(props),
+                SnapshotDownloaderConfig.newInstance(props),
+                SnapshotFactoryConfig.newInstance(props));
     }
 
     public static Config newInstance(
             AuthenticationConfig authentication,
-            SnapshotFactoryConfig backupDownloaderFactory,
+            ClientConfig clientConfig,
             DirectoryConfig directory,
-            SnapshotDownloaderConfig donkeyExecutor,
             DonkeyFactoryConfig donkeyFactory,
-            FileFilterConfig filterFilter,
+            FileFilterConfig fileFilter,
             HttpConfig http,
             PrintConfig printer,
-            SelectionConfig selection) {
+            SelectionConfig selection,
+            SnapshotDownloaderConfig snapshotDownloader,
+            SnapshotFactoryConfig snapshotFactory) {
 
-        return new Config(authentication,
-                backupDownloaderFactory,
+        return new Config(
+                authentication,
+                clientConfig,
                 directory,
-                donkeyExecutor,
                 donkeyFactory,
-                filterFilter,
+                fileFilter,
                 http,
                 printer,
-                selection);
+                selection,
+                snapshotDownloader,
+                snapshotFactory);
     }
 
     private final AuthenticationConfig authentication;
-    private final SnapshotFactoryConfig backupDownloaderFactory;
+    private final ClientConfig clientConfig;
     private final DirectoryConfig directory;
-    private final SnapshotDownloaderConfig donkeyExecutor;
     private final DonkeyFactoryConfig donkeyFactory;
     private final FileFilterConfig fileFilter;
     private final HttpConfig http;
     private final PrintConfig printer;
     private final SelectionConfig selection;
+    private final SnapshotDownloaderConfig snapshotDownloader;
+    private final SnapshotFactoryConfig snapshotFactory;
 
-    private Config(
-            AuthenticationConfig authentication,
-            SnapshotFactoryConfig backupDownloaderFactory,
+    private Config(AuthenticationConfig authentication,
+            ClientConfig clientConfig,
             DirectoryConfig directory,
-            SnapshotDownloaderConfig donkeyExecutor,
             DonkeyFactoryConfig donkeyFactory,
-            FileFilterConfig filterFilter,
+            FileFilterConfig fileFilter,
             HttpConfig http,
             PrintConfig printer,
-            SelectionConfig selection) {
+            SelectionConfig selection,
+            SnapshotDownloaderConfig snapshotDownloader,
+            SnapshotFactoryConfig snapshotFactory) {
 
-        this.authentication = Objects.requireNonNull(authentication);
-        this.backupDownloaderFactory = Objects.requireNonNull(backupDownloaderFactory);
-        this.directory = Objects.requireNonNull(directory);
-        this.donkeyExecutor = Objects.requireNonNull(donkeyExecutor);
-        this.donkeyFactory = Objects.requireNonNull(donkeyFactory);
-        this.fileFilter = Objects.requireNonNull(filterFilter);
-        this.http = Objects.requireNonNull(http);
-        this.printer = Objects.requireNonNull(printer);
-        this.selection = Objects.requireNonNull(selection);
+        this.authentication = authentication;
+        this.clientConfig = clientConfig;
+        this.directory = directory;
+        this.donkeyFactory = donkeyFactory;
+        this.fileFilter = fileFilter;
+        this.http = http;
+        this.printer = printer;
+        this.selection = selection;
+        this.snapshotDownloader = snapshotDownloader;
+        this.snapshotFactory = snapshotFactory;
     }
 
     public AuthenticationConfig authentication() {
         return authentication;
     }
 
-    public SnapshotFactoryConfig snapshotFactory() {
-        return backupDownloaderFactory;
+    public ClientConfig clientConfig() {
+        return clientConfig;
     }
 
     public DirectoryConfig directory() {
         return directory;
-    }
-
-    public SnapshotDownloaderConfig donkeyExecutor() {
-        return donkeyExecutor;
     }
 
     public DonkeyFactoryConfig donkeyFactory() {
@@ -141,11 +143,19 @@ public final class Config {
         return selection;
     }
 
+    public SnapshotDownloaderConfig snapshotDownloader() {
+        return snapshotDownloader;
+    }
+
+    public SnapshotFactoryConfig snapshotFactory() {
+        return snapshotFactory;
+    }
+
     @Override
     public String toString() {
-        return "Config{" + "authentication=" + authentication + ", backupDownloaderFactory=" + backupDownloaderFactory
-                + ", directory=" + directory + ", donkeyExecutor=" + donkeyExecutor + ", donkeyFactory=" + donkeyFactory
-                + ", filterFilter=" + fileFilter + ", http=" + http + ", printer=" + printer + ", selection="
-                + selection + '}';
+        return "Config{" + "authentication=" + authentication + ", clientConfig=" + clientConfig
+                + ", directory=" + directory + ", donkeyFactory=" + donkeyFactory + ", fileFilter=" + fileFilter
+                + ", http=" + http + ", printer=" + printer + ", selection=" + selection + ", donkeyExecutor="
+                + snapshotDownloader + ", backupDownloaderFactory=" + snapshotFactory + '}';
     }
 }

@@ -26,11 +26,10 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
-import com.github.horrorho.liquiddonkey.util.Bytes;
-import com.github.horrorho.liquiddonkey.printer.Level;
+import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.printer.Printer;
-import com.google.protobuf.ByteString;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -48,60 +47,50 @@ public final class Account {
 
     /**
      * Returns a new instance.
-     * <p>
-     * Thread safe if the supplied Client is thread safe.
      *
+     * @param http not null
      * @param client not null
      * @param printer not null
      * @return a new instance, not null
-     * @throws FatalException if an IOException occurs
+     * @throws FatalException
      */
-    public static Account newInstance(Client client, Printer printer) {
+    public static Account newInstance(Http http, Client client, Printer printer) {
         try {
-            return newInstance(client, printer, client.account());
+            ICloud.MBSAccount account = client.account(http);
+
+            List<Backup> backups = account.getBackupUDIDList().stream()
+                    .map(udid -> Backup.newInstance(http, client, udid, printer))
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            return newInstance(account, backups);
         } catch (IOException ex) {
             throw new FatalException("Account.", ex);
         }
     }
 
-    static Account newInstance(Client client, Printer printer, ICloud.MBSAccount mbsAccount) {
-        return new Account(client, printer, mbsAccount);
+    public static Account newInstance(ICloud.MBSAccount mbsAccount, List<Backup> backups) {
+        return new Account(mbsAccount, backups);
     }
 
     private final ICloud.MBSAccount mbsAccount;
-    private final Client client;
-    private final Printer printer;
+    private final List<Backup> backups;
 
-    Account(Client client, Printer printer, ICloud.MBSAccount mbsAccount) {
-        this.client = Objects.requireNonNull(client);
-        this.printer = Objects.requireNonNull(printer);
+    Account(ICloud.MBSAccount mbsAccount, List<Backup> backups) {
         this.mbsAccount = Objects.requireNonNull(mbsAccount);
+        this.backups = Objects.requireNonNull(backups);
     }
 
-    /**
-     * Returns a list of backups.
-     * <p>
-     * Queries the {@link Client} on each invocation, results of previous calls are not cached.
-     *
-     * @return a list of backups, may be null
-     */
+    public ICloud.MBSAccount mbsAccount() {
+        return mbsAccount;
+    }
+
     public List<Backup> backups() {
-        return mbsAccount.getBackupUDIDList().stream()
-                .map(this::backup)
-                .filter(Objects::nonNull)
-                .map(Backup::newInstance)
-                .collect(Collectors.toList());
+        return new ArrayList<>(backups);
     }
 
-    ICloud.MBSBackup backup(ByteString udid) {
-        try {
-            ICloud.MBSBackup backup = client.backup(udid);
-            logger.debug("<< backup() < mbsBackup: {}", backup);
-            return backup;
-        } catch (IOException ex) {
-            logger.warn("-- backup() > ", ex);
-            printer.println(Level.WARN, "Unable to retrieve backup information: " + Bytes.hex(udid), ex);
-            return null;
-        }
+    @Override
+    public String toString() {
+        return "Account{" + "mbsAccount=" + mbsAccount + ", backups=" + backups + '}';
     }
 }

@@ -74,19 +74,20 @@ public class Looter implements Closeable {
     public void loot() {
         printer.println(Level.VV, "Authenticating.");
         Authentication authentication = Authentication.from(http, config.authentication());
+        Client client = Client.newInstance(authentication, config.clientConfig());
         UnaryOperator<List<Backup>> backupSelector = BackupSelector.newInstance(config.selection().udids(), printer);
-        Account account = Account.newInstance(authentication.client(), printer);
+        Account account = Account.newInstance(http, client, printer);
 
         backupSelector.apply(account.backups()).stream()
-                .forEach(backup -> backup(authentication.client(), backup));
+                .forEach(backup -> backup(http, client, backup));
     }
 
-    void backup(Client client, Backup backup) {
+    void backup(Http http, Client client, Backup backup) {
 
         FileFilter fileFilter = FileFilter.getInstance(config.fileFilter());
         SnapshotFactory factory = SnapshotFactory.newInstance(client, backup, config.selection().snapshots(), fileFilter, config.snapshotFactory());
         DonkeyFactory donkeyFactory = DonkeyFactory.newInstance(config.donkeyFactory(), config.directory(), printer);
-        SnapshotDownloader downloader = SnapshotDownloader.newInstance(donkeyFactory, config.donkeyExecutor());
+        SnapshotDownloader downloader = SnapshotDownloader.newInstance(donkeyFactory, config.snapshotDownloader());
 
         KeyBag keybag;
         try {

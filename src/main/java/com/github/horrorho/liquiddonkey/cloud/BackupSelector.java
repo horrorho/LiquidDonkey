@@ -51,8 +51,8 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
     /**
      * Returns a new instance.
      * <p>
-     * The backup UDIDs will be fully or partially matched against the supplied UDIDs, case-insensitive. If the supplied
-     * UDIDs list is empty, the user will be prompted for a selection.
+ The newInstance UDIDs will be fully or partially matched against the supplied UDIDs, case-insensitive. If the supplied
+ UDIDs list is empty, the user will be prompted for a selection.
      *
      * @param commandLineUdids the command line UDID/s, not null
      * @param printer the Printer, not null

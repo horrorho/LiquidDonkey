@@ -37,20 +37,19 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSKeySet;
 import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ProtoBufArray;
 import static com.github.horrorho.liquiddonkey.settings.Markers.CLIENT;
-import com.github.horrorho.liquiddonkey.util.PropertyLists;
 import static com.github.horrorho.liquiddonkey.http.NameValuePairs.parameter;
 import static com.github.horrorho.liquiddonkey.util.Bytes.hex;
-import com.dd.plist.NSDictionary;
-import com.dd.plist.PropertyListFormatException;
+import com.github.horrorho.liquiddonkey.cloud.Authentication;
+import com.github.horrorho.liquiddonkey.settings.config.ClientConfig;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
@@ -59,11 +58,43 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Client.
  *
  * @author ahseya
  */
+@Immutable
 @ThreadSafe
 public final class Client {
+
+    public static Client newInstance(
+            Authentication authentication,
+            ClientConfig config) {
+
+        return new Client(
+                Headers.mobileBackupHeaders(authentication.authMme()),
+                Headers.contentHeaders(authentication.dsPrsID()),
+                authentication.dsPrsID(),
+                authentication.contentUrl(),
+                authentication.mobileBackupUrl(),
+                config.listLimit());
+    }
+
+    public static Client newInstance(
+            List<Header> mobileBackupHeaders,
+            List<Header> contentHeaders,
+            String dsPrsID,
+            String contentUrl,
+            String mobileBackupUrl,
+            int listFilesLimit) {
+
+        return new Client(
+                new ArrayList<>(mobileBackupHeaders),
+                new ArrayList<>(contentHeaders),
+                dsPrsID,
+                contentUrl,
+                mobileBackupUrl,
+                listFilesLimit);
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(Client.class);
 
@@ -86,45 +117,35 @@ public final class Client {
 
     private final List<Header> mobileBackupHeaders;
     private final List<Header> contentHeaders;
-    private final Http http;
     private final String dsPrsID;
     private final String contentUrl;
     private final String mobileBackupUrl;
     private final int listFilesLimit;
 
-    public Client(
-            Http http,
-            NSDictionary settings,
+    Client(
+            List<Header> mobileBackupHeaders,
+            List<Header> contentHeaders,
             String dsPrsID,
-            String authMme,
-            int listFilesLimit
-    ) throws PropertyListFormatException {
+            String contentUrl,
+            String mobileBackupUrl,
+            int listFilesLimit) {
 
-        Objects.requireNonNull(http);
-        Objects.requireNonNull(settings);
-        Objects.requireNonNull(dsPrsID);
-        Objects.requireNonNull(authMme);
-
-        this.http = http;
-        this.dsPrsID = dsPrsID;
+        this.mobileBackupHeaders = Objects.requireNonNull(mobileBackupHeaders);
+        this.contentHeaders = Objects.requireNonNull(contentHeaders);
+        this.dsPrsID = Objects.requireNonNull(dsPrsID);
+        this.contentUrl = Objects.requireNonNull(contentUrl);
+        this.mobileBackupUrl = Objects.requireNonNull(mobileBackupUrl);
         this.listFilesLimit = listFilesLimit;
 
-        mobileBackupUrl
-                = PropertyLists.stringValue(settings, "com.apple.mobileme", "com.apple.Dataclass.Backup", "url");
-        contentUrl = PropertyLists.stringValue(settings, "com.apple.mobileme", "com.apple.Dataclass.Content", "url");
-        mobileBackupHeaders = Collections.unmodifiableList(Headers.mobileBackupHeaders(authMme));
-        contentHeaders = Collections.unmodifiableList(Headers.contentHeaders(dsPrsID));
-
-        logger.trace("** Client() < Mobile backup url: {}", mobileBackupUrl);
-        logger.trace("** Client() < Content url: {}", contentUrl);
-        logger.trace("** Client() < Backup Headers: {}", mobileBackupHeaders);
-        logger.trace("** Client() < Content Headers: {}", mobileBackupHeaders);
+        logger.trace("** Client() < mobileBackupHeaders: {}", mobileBackupHeaders);
+        logger.trace("** Client() < contentHeaders: {}", contentHeaders);
         logger.trace("** Client() < dsPrsID: {}", dsPrsID);
+        logger.trace("** Client() < contentUrl: {}", contentUrl);
+        logger.trace("** Client() < mobileBackupUrl: {}", mobileBackupUrl);
         logger.trace("** Client() < listFilesLimit: {}", listFilesLimit);
-
     }
 
-    private <T> T mobileBackupGet(ResponseHandler<T> handler, String path, NameValuePair... parameters)
+    private <T> T mobileBackupGet(Http http, ResponseHandler<T> handler, String path, NameValuePair... parameters)
             throws IOException {
 
         return http.executor(path(mobileBackupUrl, path), handler)
@@ -133,34 +154,51 @@ public final class Client {
                 .get();
     }
 
-    private <T> T mobileBackupPost(ResponseHandler<T> handler, String path, byte[] postData) throws IOException {
+    private <T> T mobileBackupPost(Http http, ResponseHandler<T> handler, String path, byte[] postData)
+            throws IOException {
+
         return http.executor(path(mobileBackupUrl, path), handler)
                 .headers(mobileBackupHeaders)
                 .post(postData);
     }
 
-    public MBSAccount account() throws IOException {
+    public MBSAccount account(Http http) throws IOException {
         logger.trace("<< account()");
-        MBSAccount account = mobileBackupGet(mbsaAccountResponseHandler, path("mbs", dsPrsID));
+        MBSAccount account
+                = mobileBackupGet(
+                        http,
+                        mbsaAccountResponseHandler,
+                        path("mbs", dsPrsID));
+
         logger.trace(">> account() > {}", account);
         return account;
     }
 
-    public MBSBackup backup(ByteString backupUDID) throws IOException {
+    public MBSBackup backup(Http http, ByteString backupUDID) throws IOException {
         logger.trace("<< backup() < {}", hex(backupUDID));
-        MBSBackup backup = mobileBackupGet(mbsaBackupResponseHandler, path("mbs", dsPrsID, hex(backupUDID)));
+        MBSBackup backup
+                = mobileBackupGet(
+                        http,
+                        mbsaBackupResponseHandler,
+                        path("mbs", dsPrsID, hex(backupUDID)));
+
         logger.trace(">> backup() > {}", backup);
         return backup;
     }
 
-    public MBSKeySet getKeys(ByteString backupUDID) throws IOException {
+    public MBSKeySet getKeys(Http http, ByteString backupUDID) throws IOException {
         logger.trace("<< getKeys() < {}", hex(backupUDID));
-        MBSKeySet keys = mobileBackupGet(mbsaKeySetResponseHandler, path("mbs", dsPrsID, hex(backupUDID), "getKeys"));
+        MBSKeySet keys
+                = mobileBackupGet(
+                        http,
+                        mbsaKeySetResponseHandler,
+                        path("mbs", dsPrsID, hex(backupUDID), "getKeys"));
+
         logger.trace(CLIENT, ">> getKeys() > {}", keys);
         return keys;
     }
 
-    public List<MBSFile> listFiles(ByteString backupUDID, Integer snapshotId) throws IOException {
+    public List<MBSFile> listFiles(Http http, ByteString backupUDID, Integer snapshotId) throws IOException {
         logger.trace("<< listFiles() < backupUDID: {} snapshotId: {}", hex(backupUDID), snapshotId);
 
         List<MBSFile> files = new ArrayList<>();
@@ -168,7 +206,9 @@ public final class Client {
         int offset = 0;
         List<MBSFile> data;
         do {
-            data = mobileBackupGet(mbsFileListHandler,
+            data = mobileBackupGet(
+                    http,
+                    mbsFileListHandler,
                     path("mbs", dsPrsID, hex(backupUDID), snapshotId.toString(), "listFiles"),
                     parameter("offset", offset), limitParameter);
 
@@ -181,13 +221,17 @@ public final class Client {
         return files;
     }
 
-    public FileGroups getFileGroups(ByteString backupUdid, Integer snapshot, List<MBSFile> files) throws IOException {
+    public FileGroups getFileGroups(Http http, ByteString backupUdid, Integer snapshot, List<MBSFile> files)
+            throws IOException {
+
         logger.trace("<< getFilesGroups() < backupUdid: {} snapshot: {} files: {}",
                 hex(backupUdid), snapshot, files.size());
 
         FileGroups fileGroups = authorizeGet(
+                http,
                 files,
                 getFiles(
+                        http,
                         backupUdid,
                         snapshot,
                         files));
@@ -197,7 +241,9 @@ public final class Client {
         return fileGroups;
     }
 
-    List<MBSFileAuthToken> getFiles(ByteString backupUdid, Integer snapshot, List<MBSFile> files) throws IOException {
+    List<MBSFileAuthToken> getFiles(Http http, ByteString backupUdid, Integer snapshot, List<MBSFile> files)
+            throws IOException {
+
         logger.trace("<< getFiles() < backupUdid: {} snapshot: {} files: {}",
                 hex(backupUdid), snapshot, files.size());
 
@@ -210,14 +256,16 @@ public final class Client {
                     .collect(Collectors.toList());
 
             String uri = path("mbs", dsPrsID, hex(backupUdid), snapshot.toString(), "getFiles");
-            tokens = mobileBackupPost(mbsFileAuthTokenListHandler, uri, ProtoBufArray.encode(post));
+            tokens = mobileBackupPost(http, mbsFileAuthTokenListHandler, uri, ProtoBufArray.encode(post));
         }
         logger.trace(">> getFiles() > count: {}", tokens.size());
         logger.trace(CLIENT, ">> getFiles() > {}", tokens);
         return tokens;
     }
 
-    FileGroups authorizeGet(List<ICloud.MBSFile> files, List<MBSFileAuthToken> fileIdAuthTokens) throws IOException {
+    FileGroups authorizeGet(Http http, List<ICloud.MBSFile> files, List<MBSFileAuthToken> fileIdAuthTokens)
+            throws IOException {
+
         logger.trace("<< authorizeGet() < tokens: {} files: {}", fileIdAuthTokens.size(), files.size());
 
         MBSFileAuthTokens tokens = fileIdToSignatureAuthTokens(files, fileIdAuthTokens);
@@ -260,7 +308,7 @@ public final class Client {
         return builder.build();
     }
 
-    public byte[] chunks(StorageHostChunkList chunks) throws IOException {
+    public byte[] chunks(Http http, StorageHostChunkList chunks) throws IOException {
         logger.trace("<< chunks() < chunks count: {}", chunks.getChunkInfoCount());
 
         HostInfo hostInfo = chunks.getHostInfo();

@@ -84,14 +84,14 @@
                            <right>
                               <VBox alignment="BOTTOM_RIGHT" spacing="16.0" BorderPane.alignment="BOTTOM_RIGHT">
                                  <children>
-                                    <Button fx:id="downloadButton" mnemonicParsing="false" text="Download" />
+                                    <Button fx:id="download" mnemonicParsing="false" onAction="#handleDownload" text="Download" />
                                  </children>
                               </VBox>
                            </right>
                            <left>
                               <VBox alignment="BOTTOM_LEFT" BorderPane.alignment="CENTER">
                                  <children>
-                                    <Button mnemonicParsing="false" text="Back" />
+                                    <Button fx:id="back" mnemonicParsing="false" onAction="#handleBack" text="Back" />
                                  </children>
                               </VBox>
                            </left>

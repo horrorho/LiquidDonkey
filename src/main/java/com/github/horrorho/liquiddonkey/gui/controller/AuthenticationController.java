@@ -23,8 +23,11 @@
  */
 package com.github.horrorho.liquiddonkey.gui.controller;
 
+import com.github.horrorho.liquiddonkey.cloud.Account;
 import com.github.horrorho.liquiddonkey.cloud.Authentication;
+import com.github.horrorho.liquiddonkey.cloud.Backup;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
+import com.github.horrorho.liquiddonkey.gui.controller.data.BackupProperties;
 import com.github.horrorho.liquiddonkey.http.HttpFactory;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import static com.github.horrorho.liquiddonkey.settings.Markers.GUI;
@@ -33,7 +36,6 @@ import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import com.github.horrorho.liquiddonkey.settings.config.HttpConfig;
 import com.github.horrorho.liquiddonkey.settings.props.Props;
-import com.github.horrorho.liquiddonkey.settings.props.PropsBuilder;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
@@ -41,6 +43,7 @@ import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -62,7 +65,6 @@ import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TitledPane;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,6 +118,44 @@ public class AuthenticationController implements Initializable {
     @FXML
     private ChoiceBox<Integer> threads;
 
+    public void init(
+            Stage stage,
+            ExecutorService executorService,
+            Props<Property> props,
+            Parsers parsers) {
+
+        this.stage = stage;
+        this.executorService = executorService;
+        this.props = props;
+        this.parsers = parsers;
+
+        httpTask.setValue(null);
+
+        initButton(isPersistent, Property.ENGINE_PERSISTENT);
+        initButton(isAggressive, Property.ENGINE_AGGRESSIVE);
+        initButton(toRelaxSSL, Property.HTTP_RELAX_SSL);
+        initButton(toCombine, Property.FILE_COMBINED);
+        initButton(toForce, Property.FILE_FORCE);
+        initThreads();
+        disableButtons();
+
+        stage.setOnCloseRequest(windowEvent -> {
+            if (httpTask.get() != null) {
+                httpTask.get().cancel();
+            }
+        });
+
+        if (props.contains(Property.AUTHENTICATION_TOKEN)) {
+            authToken.setText(props.get(Property.AUTHENTICATION_TOKEN));
+        }
+    }
+
+    @Override
+    public void initialize(URL url, ResourceBundle rb) {
+        accordion.setExpandedPane(appleIdPasswordPane);
+
+    }
+
     @FXML
     private void handleAppleId(ActionEvent event) {
         password.requestFocus();
@@ -165,7 +205,7 @@ public class AuthenticationController implements Initializable {
     }
 
     void authenticate(AuthenticationConfig authenticationConfig) {
-        logger.debug(GUI, "<< authenticate()");
+        logger.trace(GUI, "<< authenticate()");
         HttpTaskFactory<Authentication> httpTaskFactory = HttpTaskFactory.<Authentication>from(
                 HttpFactory.from(HttpConfig.newInstance(props)),
                 Printer.instanceOf(false));
@@ -174,10 +214,14 @@ public class AuthenticationController implements Initializable {
                 http -> Authentication.from(http, authenticationConfig),
                 t -> {
                     debounceGoButtons();
-                    httpTask.setValue(null);
                     switch (t.getState()) {
+                        case CANCELLED:
+                            logger.debug("-- authentication() > cancelled");
+                            httpTask.setValue(null);
+                            break;
                         case FAILED:
                             bad("Authentication error.", t.getException());
+                            httpTask.setValue(null);
                             break;
                         case SUCCEEDED: {
                             try {
@@ -191,8 +235,38 @@ public class AuthenticationController implements Initializable {
 
         executorService.submit(httpTask.getValue());
         debounceGoButtons();
-        logger.debug(GUI, ">> authenticate()");
+        logger.trace(GUI, ">> authenticate()");
     }
+
+//    void backups(Authentication authentication) {
+//        logger.trace(GUI, "<< authentication()");
+//        HttpTaskFactory<List<Backup>> httpTaskFactory = HttpTaskFactory.<List<Backup>>from(
+//                HttpFactory.from(HttpConfig.newInstance(props)),
+//                Printer.instanceOf(false));
+//
+//        httpTask.setValue(httpTaskFactory.newInstance(
+//                http -> Authentication.from(http, authenticationConfig),
+//                t -> {
+//                    debounceGoButtons();
+//                    httpTask.setValue(null);
+//                    switch (t.getState()) {
+//                        case FAILED:
+//                            bad("Authentication error.", t.getException());
+//                            break;
+//                        case SUCCEEDED: {
+//                            try {
+//                                toSelection(t.get());
+//                            } catch (InterruptedException | ExecutionException ex) {
+//                                logger.warn("-- authenticate() > exception: ", ex);
+//                            }
+//                        }
+//                    }
+//                }));
+//        executorService.submit(httpTask.getValue());
+//
+//        logger.trace(GUI, ">> authentication()");
+//
+//    }
 
     void cancel() {
         logger.trace("<< cancel()");
@@ -214,7 +288,7 @@ public class AuthenticationController implements Initializable {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Selection.fxml"));
             Parent root = loader.load();
             SelectionController controller = loader.<SelectionController>getController();
-            controller.init(authentication, stage, executorService, props, parsers);
+            controller.init(authentication, null, stage, executorService, props, parsers);
             Scene scene = new Scene(root);
             stage.setScene(scene);
             stage.show();
@@ -223,46 +297,6 @@ public class AuthenticationController implements Initializable {
         } finally {
             logger.trace(GUI, ">> toSelection()");
         }
-    }
-
-    public void init(
-            Stage stage,
-            ExecutorService executorService,
-            Props<Property> props,
-            Parsers parsers) {
-
-        this.stage = stage;
-        this.executorService = executorService;
-        this.props = props;
-        this.parsers = parsers;
-
-        httpTask.setValue(null);
-
-        accordion.setExpandedPane(appleIdPasswordPane);
-
-        initButton(isPersistent, Property.ENGINE_PERSISTENT);
-        initButton(isAggressive, Property.ENGINE_AGGRESSIVE);
-        initButton(toRelaxSSL, Property.HTTP_RELAX_SSL);
-        initButton(toCombine, Property.FILE_COMBINED);
-        initButton(toForce, Property.FILE_FORCE);
-        initThreads();
-
-        disableButtons();
-        stage.setOnCloseRequest((WindowEvent windowEvent) -> {
-            if (httpTask.get() != null) {
-                httpTask.get().cancel();
-            }
-        });
-    }
-
-    /**
-     * Initializes the controller class.
-     *
-     * @param url not used
-     * @param rb not used
-     */
-    @Override
-    public void initialize(URL url, ResourceBundle rb) {
     }
 
     void initButton(CheckBox checkbox, Property property) {

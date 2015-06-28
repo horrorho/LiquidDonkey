@@ -26,7 +26,9 @@ package com.github.horrorho.liquiddonkey.settings;
 import com.github.horrorho.liquiddonkey.settings.props.Parsers;
 import com.github.horrorho.liquiddonkey.settings.props.Props;
 import com.github.horrorho.liquiddonkey.settings.props.PropsBuilder;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
@@ -44,6 +46,7 @@ public enum Property {
     AUTHENTICATION_APPLEID(null),
     AUTHENTICATION_PASSWORD(null),
     AUTHENTICATION_TOKEN(null),
+    CLIENT_LIST_LIMIT("4096"),
     COMMAND_LINE_HELP(null),
     COMMAND_LINE_VERSION(null),
     CONFIG_PREFIX_ITEM_TYPE("ITEM_TYPE_"),
@@ -96,8 +99,12 @@ public enum Property {
     SELECTION_SNAPSHOT("1 -1 -2"),
     SELECTION_UDID(null);
 
-    public static DateTimeFormatter dateTimeFormatter() {
+    public static DateTimeFormatter commandLineInputDateTimeFormatter() {
         return DateTimeFormatter.ISO_DATE;
+    }
+
+    public static DateTimeFormatter outputDateTimeFormatter() {
+        return DateTimeFormatter.RFC_1123_DATE_TIME;
     }
 
     public static Props<Property> props() {
@@ -118,7 +125,7 @@ public enum Property {
         return parsers;
     }
 
-    private static final Parsers parsers = Parsers.newInstance(dateTimeFormatter());
+    private static final Parsers parsers = Parsers.newInstance(commandLineInputDateTimeFormatter());
 
     private final String defaultValue;
 

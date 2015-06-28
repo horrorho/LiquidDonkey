@@ -43,7 +43,7 @@ public class Gui extends Application {
                 stage,
                 executorService,
                 props,
-                Parsers.newInstance(Property.dateTimeFormatter()));
+                Parsers.newInstance(Property.commandLineInputDateTimeFormatter()));
 
         Scene scene = new Scene(root);
         stage.setResizable(false);

@@ -23,9 +23,17 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
+import com.github.horrorho.liquiddonkey.exception.FatalException;
+import com.github.horrorho.liquiddonkey.http.Http;
+import com.github.horrorho.liquiddonkey.printer.Level;
+import com.github.horrorho.liquiddonkey.printer.Printer;
+import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
@@ -39,6 +47,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,26 +62,70 @@ public final class Backup {
 
     private static final String NA = "N/A";
     private static final String INDENT = "\t";
-    private static final DateTimeFormatter defaultDateTimeFormatter
-            = DateTimeFormatter.RFC_1123_DATE_TIME.withLocale(Locale.getDefault()).withZone(ZoneId.systemDefault());
 
     /**
      * Returns a new instance.
      *
-     * @param backup the underlying backup, not null
-     * @return a new instance, not null
+     * @param http not null
+     * @param client not null
+     * @param udid not null
+     * @param printer not null
+     * @return a new instance, may be null
+     * @throws FatalException
      */
-    public static Backup newInstance(ICloud.MBSBackup backup) {
-        return newInstance(backup, defaultDateTimeFormatter);
+    public static Backup newInstance(Http http, Client client, ByteString udid, Printer printer) {
+        return newInstance(
+                http,
+                client,
+                udid,
+                printer,
+                Property.outputDateTimeFormatter().withLocale(Locale.getDefault()).withZone(ZoneId.systemDefault()));
     }
 
     /**
      * Returns a new instance.
      *
-     * @param backup the underlying backup, not null
+     * @param http not null
+     * @param client not null
+     * @param udid not null
+     * @param printer not null
      * @param dateTimeFormatter not null
-     * @return a new instance, not null
+     * @return a new instance, may be null
+     * @throws FatalException
      */
+    public static Backup newInstance(
+            Http http,
+            Client client,
+            ByteString udid,
+            Printer printer,
+            DateTimeFormatter dateTimeFormatter) {
+
+        try {
+            ICloud.MBSBackup backup = client.backup(http, udid);
+            logger.debug("<< backup() < mbsBackup: {}", backup);
+            return Backup.newInstance(backup, dateTimeFormatter);
+
+        } catch (HttpResponseException ex) {
+            logger.warn("-- backup() > exception ", ex);
+
+            int code = ex.getStatusCode();
+            if (code == 401) {
+                throw new AuthenticationException(ex);
+            }
+
+            printer.println(Level.WARN, "Unable to retrieve backup information: " + Bytes.hex(udid), ex);
+            return null;
+        } catch (IOException ex) {
+            throw new FatalException("IOError", ex);
+        }
+    }
+
+    public static Backup newInstance(ICloud.MBSBackup backup) {
+        return Backup.newInstance(
+                backup,
+                Property.outputDateTimeFormatter().withLocale(Locale.getDefault()).withZone(ZoneId.systemDefault()));
+    }
+
     public static Backup newInstance(ICloud.MBSBackup backup, DateTimeFormatter dateTimeFormatter) {
 
         String size = Bytes.humanize(backup.getQuotaUsed());
