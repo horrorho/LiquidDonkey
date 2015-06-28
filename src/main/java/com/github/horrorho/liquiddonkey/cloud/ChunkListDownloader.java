@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.file.ChunkDecrypter;
 import com.github.horrorho.liquiddonkey.cloud.store.MemoryStore;
 import com.github.horrorho.liquiddonkey.cloud.store.ChunkListStore;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
