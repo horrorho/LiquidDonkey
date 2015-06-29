@@ -155,13 +155,12 @@ public final class Donkey implements Callable<Map<ByteString, Set<ICloud.MBSFile
                 .collect(Collectors.toList());
 
         FileGroups fileGroups = client.getFileGroups(http, backupUdid, snapshot, files);
-        downloadFileGroups(http, fileGroups, signatures);
+        downloadFileGroups(fileGroups, signatures);
 
         logger.trace(">> download()");
     }
 
     private void downloadFileGroups(
-            Http http,
             ChunkServer.FileGroups fileGroups,
             Map<ByteString, Set<ICloud.MBSFile>> signatureToFileSet
     ) throws IOException {
@@ -190,7 +189,7 @@ public final class Donkey implements Callable<Map<ByteString, Set<ICloud.MBSFile
         // TODO memory or disk based depending on size
         MemoryStore.Builder builder = MemoryStore.builder();
         for (ChunkServer.StorageHostChunkList chunkList : group.getStorageHostChunkListList()) {
-            builder.add(download(http, chunkList));
+            builder.add(download(chunkList));
         }
         ChunkListStore storage = builder.build();
 
@@ -198,21 +197,21 @@ public final class Donkey implements Callable<Map<ByteString, Set<ICloud.MBSFile
         return storage;
     }
 
-    List<byte[]> download(Http http, ChunkServer.StorageHostChunkList chunkList) throws IOException {
+    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList) throws IOException {
         // Recursive.
         return chunkList.getChunkInfoCount() == 0
                 ? new ArrayList<>()
-                : download(http, chunkList, 0);
+                : download(chunkList, 0);
     }
 
-    List<byte[]> download(Http http, ChunkServer.StorageHostChunkList chunkList, int attempt) throws IOException {
+    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList, int attempt) throws IOException {
         // Recursive.
         List<byte[]> decrypted = attempt++ == attempts
                 ? new ArrayList<>()
                 : decrypter.decrypt(chunkList, client.chunks(http, chunkList));
 
         return decrypted == null
-                ? download(http, chunkList, attempt)
+                ? download(chunkList, attempt)
                 : decrypted;
     }
 

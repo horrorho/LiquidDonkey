@@ -26,18 +26,10 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
-import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.settings.config.SnapshotFactoryConfig;
-import com.google.protobuf.ByteString;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
+import java.io.UncheckedIOException;
 import java.util.List;
-import java.util.Objects;
-import java.util.function.Predicate;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpResponseException;
@@ -57,67 +49,54 @@ public final class SnapshotFactory {
 
     public static SnapshotFactory newInstance(
             Backup backup,
-            Collection<Integer> snapshots,
-            SnapshotFactoryConfig config) {
+            boolean toHunt) {
 
-        return new SnapshotFactory(
-                backup.udid(),
+        return newInstance(
+                backup,
                 backup.snapshots(),
-                SnapshotFilter.newInstance(backup, snapshots),
-                config.toHuntFirstSnapshot());
+                backup.snapshots().stream().mapToInt(Integer::intValue).max().orElse(0), toHunt);
     }
 
-    static SnapshotFactory newInstance(
-            ByteString udid,
-            Collection<Integer> snapshots,
-            Predicate<Integer> snapshotFilter,
-            boolean hunt) {
-
-        return new SnapshotFactory(udid, snapshots, snapshotFilter, hunt);
+    static SnapshotFactory newInstance(Backup backup, List<Integer> snapshots, int latest, boolean toHunt) {
+        return new SnapshotFactory(backup, snapshots, latest, toHunt);
     }
 
-    private final ByteString udid;
+    private final Backup backup;
     private final List<Integer> snapshots;
-    private final Predicate<Integer> snapshotFilter;
-    private final boolean hunt;
+    private final int latest;
+    private final boolean toHunt;
 
-    SnapshotFactory(
-            ByteString udid,
-            Collection<Integer> snapshots,
-            Predicate<Integer> snapshotFilter,
-            boolean hunt) {
-
-        this.udid = Objects.requireNonNull(udid);
-        this.snapshots = new ArrayList<>(new HashSet<>(snapshots));
-        this.snapshotFilter = Objects.requireNonNull(snapshotFilter);
-        this.hunt = hunt;
-
-        Collections.sort(this.snapshots);
+    SnapshotFactory(Backup backup, List<Integer> snapshots, int latest, boolean toHunt) {
+        this.backup = backup;
+        this.snapshots = snapshots;
+        this.latest = latest;
+        this.toHunt = toHunt;
     }
 
-    public Snapshot of(Http http, Client client, int id) {
+    public Snapshot of(Http http, Client client, int request) {
         try {
-            logger.trace("<< id() < id: {}", id);
+            logger.trace("<< of() < id: {}", request);
+
+            int id = request < 0 ? latest + request + 1 : request;
+            logger.debug("-- of() > id: {}", id);
+
             Snapshot snapshot = snapshot(http, client, id);
-            logger.trace(">> id() > snapshot: {}", snapshot);
+
+            logger.trace(">> of() > snapshot: {}", snapshot);
             return snapshot;
         } catch (IOException ex) {
-            throw new FatalException(ex);
+            //TODO how do we handle this?
+            throw new UncheckedIOException(ex);
         }
     }
 
     Snapshot snapshot(Http http, Client client, int id) throws IOException {
         if (!snapshots.contains(id)) {
-            logger.warn("-- of() > bad id: {}", id);
+            logger.warn("-- snapshots() > no snapshot: {}", id);
             return null;
         }
 
-        if (!snapshotFilter.test(id)) {
-            logger.debug("-- of() > filtered: {}", id);
-            return null;
-        }
-
-        int to = hunt && id == 1 && snapshots.size() > 1
+        int to = toHunt && id == 1 && snapshots.size() > 1
                 ? snapshots.get(1)
                 : id + 1;
 
@@ -125,7 +104,7 @@ public final class SnapshotFactory {
 
         return files == null
                 ? null
-                : Snapshot.newInstance(id, files);
+                : Snapshot.newInstance(id, backup, files);
     }
 
     List<ICloud.MBSFile> files(Http http, Client client, int from, int to) throws IOException {
@@ -140,7 +119,7 @@ public final class SnapshotFactory {
 
     List<ICloud.MBSFile> files(Http http, Client client, int snapshot) throws IOException {
         try {
-            return client.listFiles(http, udid, snapshot);
+            return client.listFiles(http, backup.udid(), snapshot);
         } catch (HttpResponseException ex) {
 
             if (ex.getStatusCode() == 401) {
