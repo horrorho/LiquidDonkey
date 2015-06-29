@@ -27,23 +27,14 @@ import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.Directory;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileWriter;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
-import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagTools;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.cloud.pipe.ArgumentExceptionPair;
-import com.github.horrorho.liquiddonkey.cloud.pipe.Piper;
-import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
+import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.google.protobuf.ByteString;
-import java.nio.file.Path;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 import net.jcip.annotations.Immutable;
@@ -62,84 +53,61 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class DonkeyFactory {
 
-
- 
-    public static DonkeyFactory newInstance(EngineConfig config, Printer printer) {
-
-        return new DonkeyFactory(
-                printer,
-                directoryConfig.base(),
-                config.batchSizeBytes(),
-                directoryConfig.isFlat(),
-                directoryConfig.isCombined(),
-                config.isAggressive(),
-                config.toForceOverwrite(),
-                config.toSetLastModifiedTime());
+    public static DonkeyFactory newInstance(EngineConfig engineConfig, FileConfig fileConfig, Printer printer) {
+        return new DonkeyFactory(engineConfig, fileConfig, printer);
     }
+
     private static final Logger logger = LoggerFactory.getLogger(DonkeyFactory.class);
 
-    private final DonkeyFactory config;
-    private final Printer pr
+    private final EngineConfig engineConfig;
+    private final FileConfig fileConfig;
+    private final Printer printer;
 
+    DonkeyFactory(EngineConfig engineConfig, FileConfig fileConfig, Printer printer) {
+        this.engineConfig = engineConfig;
+        this.fileConfig = fileConfig;
+        this.printer = printer;
+    }
 
-    /**
-     * Returns a new instance.
-     *
-     * @param client not null
-     * @param backup not null
-     * @param keyBag not null
-     * @param snapshot the required snapshot
-     * @param signatureToFileMap the required files, not null
-     * @return a new instance, not null
-     */
     public Donkey from(
-                    Http http,
-                    Client client,
-                    Backup backup,
-                    KeyBag keyBag,
-                    int snapshot,
-                    ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileMap) {
+            Http http,
+            Client client,
+            Snapshot snapshot,
+            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileMap) {
 
-                logger.trace("<< newInstance()");
+        logger.trace("<< from()");
 
-                Directory directory = Directory.newInstance(
-                        backupFolder.resolve(backup.udidString()),
-                        isFlat,
-                        isCombined);
+        Backup backup = snapshot.backup();
 
-                Predicate<ICloud.MBSFile> localFileFilter = toForceOverwrite
-                        ? (file) -> false
-                        : LocalFileFilter.newInstance(
-                                directory,
-                                snapshot,
-                                toSetLastModifiedTime);
+        Directory directory = Directory.newInstance(backup.udid(), fileConfig);
 
-                Bundler<ByteString, Set<ICloud.MBSFile>> batcher
-                        = Bundler.<ByteString, Set<ICloud.MBSFile>>newInstance(
-                                signatureToFileMap,
-                                files -> files.stream().mapToLong(ICloud.MBSFile::getSize).findAny().orElse(0),
-                                files -> !files.stream().allMatch(localFileFilter),
-                                batchSizeBytes);
-
-                LocalFileWriter writer = LocalFileWriter.newInstance(
-                        KeyBagTools.newInstance(
-                                keyBag),
+        Predicate<ICloud.MBSFile> localFileFilter = engineConfig.toForceOverwrite()
+                ? (file) -> false
+                : LocalFileFilter.newInstance(
                         directory,
-                        printer,
-                        toSetLastModifiedTime);
+                        snapshot.id(),
+                        engineConfig.toSetLastModifiedTimestamp());
 
-                BatchDownloader downloader = BatchDownloader.newInstance(
-                        client,
-                        backup.udid(),
-                        snapshot,
-                        writer,
-                        ChunkListDownloader.newInstance(
-                                client,
-                                isAggressive));
+        Bundler bundler = Bundler.wrap(signatureToFileMap, localFileFilter, engineConfig.batchSizeMinimumBytes());
 
-                Piper<Http, Map<ByteString, Set<ICloud.MBSFile>>> pipe = Piper.newInstance(downloader, isAggressive);
+        LocalFileWriter writer = LocalFileWriter.newInstance(
+                KeyBagTools.newInstance(backup.keybag()),
+                directory,
+                printer,
+                engineConfig.toSetLastModifiedTimestamp());
 
-                logger.trace(">> newInstance()");
-                return (http, iterator) -> pipe.apply(http, iterator);
-            }
+        Donkey donkey = Donkey.newInstance(
+                http,
+                client,
+                backup.udid(),
+                snapshot.id(),
+                bundler,
+                ChunkDecrypter.newInstance(),
+                writer,
+                engineConfig.isAggressive(),
+                engineConfig.chunkListDownloadRetry());
+
+        logger.trace(">> from()");
+        return donkey;
+    }
 }

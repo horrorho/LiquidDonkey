@@ -24,8 +24,11 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
+import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
+import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagFactory;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.printer.Level;
@@ -62,6 +65,8 @@ public final class Backup {
 
     private static final String NA = "N/A";
     private static final String INDENT = "\t";
+    private static final DateTimeFormatter defaultDateTimeFormatter
+            = Property.outputDateTimeFormatter().withLocale(Locale.getDefault()).withZone(ZoneId.systemDefault());
 
     /**
      * Returns a new instance.
@@ -74,12 +79,7 @@ public final class Backup {
      * @throws FatalException
      */
     public static Backup newInstance(Http http, Client client, ByteString udid, Printer printer) {
-        return newInstance(
-                http,
-                client,
-                udid,
-                printer,
-                Property.outputDateTimeFormatter().withLocale(Locale.getDefault()).withZone(ZoneId.systemDefault()));
+        return newInstance(http, client, udid, printer, defaultDateTimeFormatter);
     }
 
     /**
@@ -102,12 +102,12 @@ public final class Backup {
 
         try {
             ICloud.MBSBackup backup = client.backup(http, udid);
-            logger.debug("<< backup() < mbsBackup: {}", backup);
-            return Backup.newInstance(backup, dateTimeFormatter);
+            KeyBag keyBag = KeyBagFactory.newInstance().from(client.getKeys(http, udid));
+            return Backup.newInstance(backup, keyBag, dateTimeFormatter);
 
         } catch (HttpResponseException ex) {
             logger.warn("-- backup() > exception ", ex);
- 
+
             if (ex.getStatusCode() == 401) {
                 throw new AuthenticationException(ex);
             }
@@ -116,16 +116,16 @@ public final class Backup {
             return null;
         } catch (IOException ex) {
             throw new FatalException("IOError", ex);
+        } catch (BadDataException ex) {
+            throw new FatalException("KeyBag error", ex);
         }
     }
 
-    public static Backup newInstance(ICloud.MBSBackup backup) {
-        return Backup.newInstance(
-                backup,
-                Property.outputDateTimeFormatter().withLocale(Locale.getDefault()).withZone(ZoneId.systemDefault()));
+    public static Backup newInstance(ICloud.MBSBackup backup, KeyBag keyBag) {
+        return Backup.newInstance(backup, keyBag, defaultDateTimeFormatter);
     }
 
-    public static Backup newInstance(ICloud.MBSBackup backup, DateTimeFormatter dateTimeFormatter) {
+    public static Backup newInstance(ICloud.MBSBackup backup, KeyBag keyBag, DateTimeFormatter dateTimeFormatter) {
 
         String size = Bytes.humanize(backup.getQuotaUsed());
 
@@ -172,6 +172,7 @@ public final class Backup {
                 productVerson,
                 Bytes.hex(backup.getBackupUDID()),
                 dateTimeFormatter,
+                keyBag,
                 lastModified);
     }
 
@@ -186,6 +187,7 @@ public final class Backup {
             String productVerson,
             String udid,
             DateTimeFormatter dateTimeFormatter,
+            KeyBag keyBag,
             long lastModified) {
 
         return new Backup(
@@ -199,6 +201,7 @@ public final class Backup {
                 productVerson,
                 udid,
                 dateTimeFormatter,
+                keyBag,
                 lastModified);
     }
 
@@ -245,6 +248,7 @@ public final class Backup {
     private final String productVerson;
     private final String udid;
     private final DateTimeFormatter dateTimeFormatter;
+    private final KeyBag keyBag;
     private final long lastModified;
 
     Backup(
@@ -258,6 +262,7 @@ public final class Backup {
             String productVerson,
             String udid,
             DateTimeFormatter dateTimeFormatter,
+            KeyBag keyBag,
             long lastModified) {
 
         this.backup = Objects.requireNonNull(backup);
@@ -270,6 +275,7 @@ public final class Backup {
         this.productVerson = productVerson;
         this.udid = udid;
         this.dateTimeFormatter = Objects.requireNonNull(dateTimeFormatter);
+        this.keyBag = Objects.requireNonNull(keyBag);
         this.lastModified = lastModified;
     }
 
@@ -339,11 +345,16 @@ public final class Backup {
         return productVerson;
     }
 
+    public KeyBag keybag() {
+        return keyBag;
+    }
+
     @Override
     public String toString() {
-        return "Backup{" + "backup=" + backup + ", snapshots=" + snapshots + ", size=" + size + ", hardwareModel="
-                + hardwareModel + ", marketingName=" + marketingName + ", serialNumber=" + serialNumber
-                + ", deviceName=" + deviceName + ", lastModified=" + lastModified + ", productVerson="
-                + productVerson + ", udid=" + udid + '}';
+        return "Backup{" + "backup=" + backup + ", snapshots=" + snapshots + ", size=" + size
+                + ", hardwareModel=" + hardwareModel + ", marketingName=" + marketingName + ", serialNumber="
+                + serialNumber + ", deviceName=" + deviceName + ", productVerson=" + productVerson + ", udid="
+                + udid + ", dateTimeFormatter=" + dateTimeFormatter + ", keyBag=" + keyBag + ", lastModified="
+                + lastModified + '}';
     }
 }

@@ -54,7 +54,7 @@ import org.slf4j.LoggerFactory;
  */
 @NotThreadSafe
 public final class Donkey implements Callable<Map<ByteString, Set<ICloud.MBSFile>>> {
- 
+
     public static Donkey newInstance(
             Http http,
             Client client,
@@ -90,7 +90,8 @@ public final class Donkey implements Callable<Map<ByteString, Set<ICloud.MBSFile
     private final boolean isAggressive;
     private final int attempts;
 
-    Donkey(Http http,
+    Donkey(
+            Http http,
             Client client,
             ByteString backupUdid,
             int snapshot,

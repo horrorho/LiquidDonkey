@@ -70,20 +70,6 @@ public class KeyBagFactory {
     /**
      * Returns a new unlocked KeyBag instance.
      *
-     * @param http not null
-     * @param client not null
-     * @param backup not null
-     * @return a new unlocked KeyBag instance, not null
-     * @throws BadDataException if the KeyBag cannot be unlocked or a data handling error occurred
-     * @throws java.io.IOException
-     */
-    public KeyBag from(Http http, Client client, Backup backup) throws BadDataException, IOException {
-        return new KeyBagFactory().unlock(client.getKeys(http, backup.udid()));
-    }
-
-    /**
-     * Returns a new unlocked KeyBag instance.
-     *
      * @param keySet the key set, not null
      * @return a new unlocked KeyBag instance, not null
      * @throws BadDataException if the KeyBag cannot be unlocked or a data handling error occurred
