@@ -85,7 +85,7 @@ public class Looter implements Closeable {
     void backup(Http http, Client client, Backup backup) {
 
         FileFilter fileFilter = FileFilter.getInstance(config.fileFilter());
-        SnapshotFactory factory = SnapshotFactory.newInstance(client, backup, config.selection().snapshots(), fileFilter, config.snapshotFactory());
+        Snapshots factory = Snapshots.newInstance(client, backup, config.selection().snapshots(), fileFilter, config.snapshotFactory());
         DonkeyFactory donkeyFactory = DonkeyFactory.newInstance(config.donkeyFactory(), config.file(), printer);
         SnapshotDownloader downloader = SnapshotDownloader.newInstance(donkeyFactory, config.snapshotDownloader());
 

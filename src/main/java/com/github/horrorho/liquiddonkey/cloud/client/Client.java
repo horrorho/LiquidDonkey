@@ -23,8 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.client;
 
-import com.github.horrorho.liquiddonkey.cloud.Account;
-import com.github.horrorho.liquiddonkey.cloud.Authentication;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.HostInfo;
@@ -67,19 +65,22 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Client {
 
-    public static Client from(Http http, Account account, ClientConfig config) throws IOException {
-
-        Authentication authentication = account.authentication();
+    public static Client from(
+            String dsPrsID,
+            String mmeAuthToken,
+            String contentUrl,
+            String mobileBackupUrl,
+            ClientConfig config) {
 
         String authMme = Tokens.getInstance()
-                .mobilemeAuthToken(authentication.dsPrsID(), authentication.mmeAuthToken());
+                .mobilemeAuthToken(dsPrsID, mmeAuthToken);
 
         return newInstance(
                 Headers.mobileBackupHeaders(authMme),
-                Headers.contentHeaders(authentication.dsPrsID()),
-                authentication.dsPrsID(),
-                account.contentUrl(),
-                account.mobileBackupUrl(),
+                Headers.contentHeaders(dsPrsID),
+                dsPrsID,
+                contentUrl,
+                mobileBackupUrl,
                 config.listLimit());
     }
 

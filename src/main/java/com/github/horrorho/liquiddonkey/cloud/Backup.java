@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagFactory;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
@@ -72,21 +71,21 @@ public final class Backup {
      * Returns a new instance.
      *
      * @param http not null
-     * @param client not null
+     * @param account not null
      * @param udid not null
      * @param printer not null
      * @return a new instance, may be null
      * @throws FatalException
      */
-    public static Backup newInstance(Http http, Client client, ByteString udid, Printer printer) {
-        return newInstance(http, client, udid, printer, defaultDateTimeFormatter);
+    public static Backup newInstance(Http http, Account account, ByteString udid, Printer printer) {
+        return newInstance(http, account, udid, printer, defaultDateTimeFormatter);
     }
 
     /**
      * Returns a new instance.
      *
      * @param http not null
-     * @param client not null
+     * @param account not null
      * @param udid not null
      * @param printer not null
      * @param dateTimeFormatter not null
@@ -95,15 +94,15 @@ public final class Backup {
      */
     public static Backup newInstance(
             Http http,
-            Client client,
+            Account account,
             ByteString udid,
             Printer printer,
             DateTimeFormatter dateTimeFormatter) {
 
         try {
-            ICloud.MBSBackup backup = client.backup(http, udid);
-            KeyBag keyBag = KeyBagFactory.newInstance().from(client.getKeys(http, udid));
-            return Backup.newInstance(backup, keyBag, dateTimeFormatter);
+            ICloud.MBSBackup backup = account.client().backup(http, udid);
+            KeyBag keyBag = KeyBagFactory.newInstance().from(account.client().getKeys(http, udid));
+            return Backup.newInstance(account, backup, keyBag, dateTimeFormatter);
 
         } catch (HttpResponseException ex) {
             logger.warn("-- backup() > exception ", ex);
@@ -121,11 +120,15 @@ public final class Backup {
         }
     }
 
-    public static Backup newInstance(ICloud.MBSBackup backup, KeyBag keyBag) {
-        return Backup.newInstance(backup, keyBag, defaultDateTimeFormatter);
+    public static Backup newInstance(Account account, ICloud.MBSBackup backup, KeyBag keyBag) {
+        return Backup.newInstance(account, backup, keyBag, defaultDateTimeFormatter);
     }
 
-    public static Backup newInstance(ICloud.MBSBackup backup, KeyBag keyBag, DateTimeFormatter dateTimeFormatter) {
+    public static Backup newInstance(
+            Account account,
+            ICloud.MBSBackup backup,
+            KeyBag keyBag,
+            DateTimeFormatter dateTimeFormatter) {
 
         String size = Bytes.humanize(backup.getQuotaUsed());
 
@@ -162,6 +165,7 @@ public final class Backup {
         }
 
         return new Backup(
+                account,
                 backup,
                 availableSnapshots(latestSnapshot(backup)),
                 size,
@@ -177,6 +181,7 @@ public final class Backup {
     }
 
     public static Backup newInstance(
+            Account account,
             ICloud.MBSBackup backup,
             List<Integer> snapshots,
             String size,
@@ -191,6 +196,7 @@ public final class Backup {
             long lastModified) {
 
         return new Backup(
+                account,
                 backup,
                 snapshots,
                 size,
@@ -237,9 +243,9 @@ public final class Backup {
         return logger;
     }
 
+    private final Account account;
     private final ICloud.MBSBackup backup;
     private final List<Integer> snapshots;
-
     private final String size;
     private final String hardwareModel;
     private final String marketingName;
@@ -252,6 +258,7 @@ public final class Backup {
     private final long lastModified;
 
     Backup(
+            Account account,
             ICloud.MBSBackup backup,
             List<Integer> snapshots,
             String size,
@@ -265,6 +272,7 @@ public final class Backup {
             KeyBag keyBag,
             long lastModified) {
 
+        this.account = Objects.requireNonNull(account);
         this.backup = Objects.requireNonNull(backup);
         this.snapshots = new ArrayList<>(snapshots);
         this.size = size;
@@ -349,12 +357,16 @@ public final class Backup {
         return keyBag;
     }
 
+    public Account account() {
+        return account;
+    }
+
     @Override
     public String toString() {
-        return "Backup{" + "backup=" + backup + ", snapshots=" + snapshots + ", size=" + size
-                + ", hardwareModel=" + hardwareModel + ", marketingName=" + marketingName + ", serialNumber="
-                + serialNumber + ", deviceName=" + deviceName + ", productVerson=" + productVerson + ", udid="
-                + udid + ", dateTimeFormatter=" + dateTimeFormatter + ", keyBag=" + keyBag + ", lastModified="
-                + lastModified + '}';
+        return "Backup{" + "account=" + account + ", backup=" + backup + ", snapshots=" + snapshots + ", size="
+                + size + ", hardwareModel=" + hardwareModel + ", marketingName=" + marketingName + ", serialNumber="
+                + serialNumber + ", deviceName=" + deviceName + ", productVerson=" + productVerson + ", udid=" + udid
+                + ", dateTimeFormatter=" + dateTimeFormatter + ", keyBag=" + keyBag + ", lastModified=" + lastModified
+                + '}';
     }
 }

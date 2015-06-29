@@ -32,14 +32,12 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.cloud.pipe.ArgumentExceptionPair;
 import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.settings.config.SnapshotDownloaderConfig;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import static java.util.Locale.filter;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -107,7 +105,7 @@ public final class SnapshotDownloader {
         this.retryCount = retryCount;
     }
 
-    public void moo(Http http, Client client, KeyBag keyBag, Snapshot snapshot, Tally tally) {
+    public Set<ICloud.MBSFile> moo(Http http, Client client, Snapshot snapshot, Tally tally) {
 
         List<ICloud.MBSFile> files = snapshot.files();
 
@@ -125,8 +123,6 @@ public final class SnapshotDownloader {
 
     public Map<ByteString, Set<ICloud.MBSFile>> execute(
             Client client,
-            Backup backup,
-            KeyBag keyBag,
             Snapshot snapshot,
             Tally tally) {
 

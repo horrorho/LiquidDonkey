@@ -25,6 +25,7 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.dd.plist.NSDictionary;
 import com.dd.plist.PropertyListFormatException;
+import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.client.Headers;
 import com.github.horrorho.liquiddonkey.cloud.client.Tokens;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
@@ -83,12 +84,8 @@ public final class Account {
                 mmeAuthToken = newMmeAuthToken;
             }
 
-            Account account = newInstance(
-                    Authentication.newInstance(dsPrsID, mmeAuthToken),
-                    fullName,
-                    appleId,
-                    contentUrl,
-                    mobileBackupUrl);
+            Client client = Client.from(dsPrsID, mmeAuthToken, contentUrl, mobileBackupUrl, config);
+            Account account = newInstance(client, fullName, appleId);
 
             logger.trace(">> from() > account: {}", account);
             return account;
@@ -105,19 +102,8 @@ public final class Account {
         // TODO wrap authentication here
     }
 
-    public static Account newInstance(
-            Authentication authentication,
-            String fullName,
-            String appleId,
-            String contentUrl,
-            String mobileBackupUrl) {
-
-        return new Account(
-                authentication,
-                appleId,
-                fullName,
-                contentUrl,
-                mobileBackupUrl);
+    public static Account newInstance(Client client, String fullName, String appleId) {
+        return new Account(client, fullName, appleId);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Account.class);
@@ -125,45 +111,34 @@ public final class Account {
     // Thread safe.
     private static final ResponseHandler<byte[]> byteArrayResponseHandler = ResponseHandlerFactory.toByteArray();
 
-    private final Authentication authentication;
+    private final Client client;
     private final String fullName;
     private final String appleId;
-    private final String contentUrl;
-    private final String mobileBackupUrl;
 
     Account(
-            Authentication authentication,
+            Client client,
             String fullName,
-            String appleId,
-            String contentUrl,
-            String mobileBackupUrl) {
+            String appleId) {
 
-        this.authentication = authentication;
+        this.client = Objects.requireNonNull(client);
         this.fullName = Objects.requireNonNull(fullName);
         this.appleId = Objects.requireNonNull(appleId);
-        this.contentUrl = Objects.requireNonNull(contentUrl);
-        this.mobileBackupUrl = Objects.requireNonNull(mobileBackupUrl);
     }
 
-    public Authentication authentication() {
-        return authentication;
+    public Client client() {
+        return client;
+    }
+
+    public String fullName() {
+        return fullName;
     }
 
     public String appleId() {
         return appleId;
     }
 
-    public String contentUrl() {
-        return contentUrl;
-    }
-
-    public String mobileBackupUrl() {
-        return mobileBackupUrl;
-    }
-
     @Override
     public String toString() {
-        return "Account{" + "authentication=" + authentication + ", fullName=" + fullName + ", appleId=" + appleId
-                + ", contentUrl=" + contentUrl + ", mobileBackupUrl=" + mobileBackupUrl + '}';
+        return "Account{" + "client=" + client + ", fullName=" + fullName + ", appleId=" + appleId + '}';
     }
 }

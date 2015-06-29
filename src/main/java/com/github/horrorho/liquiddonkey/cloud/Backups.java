@@ -44,25 +44,31 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class Backups {
 
-    public static Backups from(Http http, Client client, Printer printer) throws IOException {
-        ICloud.MBSAccount account = client.account(http);
+    public static Backups from(Http http, Account account, Printer printer) throws IOException {
+        ICloud.MBSAccount account = account.client().account(http);
 
         List<Backup> backups = account.getBackupUDIDList().stream()
                 .map(udid -> Backup.newInstance(http, client, udid, printer))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        return newInstance(backups);
+        return newInstance(client, backups);
     }
 
-    public static Backups newInstance(List<Backup> backups) {
-        return new Backups(backups);
+    public static Backups newInstance(Client client, List<Backup> backups) {
+        return new Backups(client, backups);
     }
 
+    private final Client client;
     private final List<Backup> backups;
 
-    Backups(List<Backup> backups) {
+    Backups(Client client, List<Backup> backups) {
+        this.client = Objects.requireNonNull(client);
         this.backups = Objects.requireNonNull(backups);
+    }
+
+    public Client client() {
+        return client;
     }
 
     public List<Backup> backups() {
@@ -71,6 +77,6 @@ public final class Backups {
 
     @Override
     public String toString() {
-        return "Backups{" + "backups=" + backups + '}';
+        return "Backups{" + "client=" + client + ", backups=" + backups + '}';
     }
 }

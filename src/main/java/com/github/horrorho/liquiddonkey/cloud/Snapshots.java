@@ -37,17 +37,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * SnapshotFactory.
+ * Snapshots.
  *
  * @author Ahseya
  */
 @Immutable
 @ThreadSafe
-public final class SnapshotFactory {
+public final class Snapshots {
 
-    private static final Logger logger = LoggerFactory.getLogger(SnapshotFactory.class);
+    private static final Logger logger = LoggerFactory.getLogger(Snapshots.class);
 
-    public static SnapshotFactory newInstance(
+    public static Snapshots newInstance(
             Backup backup,
             boolean toHunt) {
 
@@ -57,8 +57,8 @@ public final class SnapshotFactory {
                 backup.snapshots().stream().mapToInt(Integer::intValue).max().orElse(0), toHunt);
     }
 
-    static SnapshotFactory newInstance(Backup backup, List<Integer> snapshots, int latest, boolean toHunt) {
-        return new SnapshotFactory(backup, snapshots, latest, toHunt);
+    static Snapshots newInstance(Backup backup, List<Integer> snapshots, int latest, boolean toHunt) {
+        return new Snapshots(backup, snapshots, latest, toHunt);
     }
 
     private final Backup backup;
@@ -66,21 +66,21 @@ public final class SnapshotFactory {
     private final int latest;
     private final boolean toHunt;
 
-    SnapshotFactory(Backup backup, List<Integer> snapshots, int latest, boolean toHunt) {
+    Snapshots(Backup backup, List<Integer> snapshots, int latest, boolean toHunt) {
         this.backup = backup;
         this.snapshots = snapshots;
         this.latest = latest;
         this.toHunt = toHunt;
     }
 
-    public Snapshot of(Http http, Client client, int request) {
+    public Snapshot of(Http http, int request) {
         try {
             logger.trace("<< of() < id: {}", request);
 
             int id = request < 0 ? latest + request + 1 : request;
             logger.debug("-- of() > id: {}", id);
 
-            Snapshot snapshot = snapshot(http, client, id);
+            Snapshot snapshot = snapshot(http, id);
 
             logger.trace(">> of() > snapshot: {}", snapshot);
             return snapshot;
@@ -90,7 +90,7 @@ public final class SnapshotFactory {
         }
     }
 
-    Snapshot snapshot(Http http, Client client, int id) throws IOException {
+    Snapshot snapshot(Http http,int id) throws IOException {
         if (!snapshots.contains(id)) {
             logger.warn("-- snapshots() > no snapshot: {}", id);
             return null;
@@ -100,26 +100,26 @@ public final class SnapshotFactory {
                 ? snapshots.get(1)
                 : id + 1;
 
-        List<ICloud.MBSFile> files = files(http, client, id, to);
+        List<ICloud.MBSFile> files = files(http,  id, to);
 
         return files == null
                 ? null
                 : Snapshot.newInstance(id, backup, files);
     }
 
-    List<ICloud.MBSFile> files(Http http, Client client, int from, int to) throws IOException {
+    List<ICloud.MBSFile> files(Http http, int from, int to) throws IOException {
         int snapshot = from;
         List<ICloud.MBSFile> files = null;
 
         while (snapshot < to && files == null) {
-            files = files(http, client, snapshot++);
+            files = files(http, snapshot++);
         }
         return files;
     }
 
-    List<ICloud.MBSFile> files(Http http, Client client, int snapshot) throws IOException {
+    List<ICloud.MBSFile> files(Http http, int snapshot) throws IOException {
         try {
-            return client.listFiles(http, backup.udid(), snapshot);
+            return backup.client.listFiles(http, backup.udid(), snapshot);
         } catch (HttpResponseException ex) {
 
             if (ex.getStatusCode() == 401) {
