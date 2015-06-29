@@ -23,122 +23,60 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.dd.plist.NSDictionary;
-import com.dd.plist.PropertyListFormatException;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
-import com.github.horrorho.liquiddonkey.cloud.client.Headers;
-import com.github.horrorho.liquiddonkey.cloud.client.Tokens;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
-import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
-import com.github.horrorho.liquiddonkey.settings.config.ClientConfig;
-import com.github.horrorho.liquiddonkey.util.PropertyLists;
+import com.github.horrorho.liquiddonkey.printer.Printer;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
-import org.apache.http.client.HttpResponseException;
-import org.apache.http.client.ResponseHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.jcip.annotations.Immutable;
+import net.jcip.annotations.ThreadSafe;
 
 /**
  * Account.
  *
  * @author Ahseya
  */
+@Immutable
+@ThreadSafe
 public final class Account {
 
-    public static Account from(Http http, Authentication authentication, ClientConfig config) throws IOException {
-        try {
-            logger.trace("<< from() < http: {} authentication: {}", http, authentication);
+    public static Account from(Http http, Client client, Printer printer) throws IOException {
 
-            Tokens tokens = Tokens.getInstance();
-            String dsPrsID = authentication.dsPrsID();
-            String mmeAuthToken = authentication.mmeAuthToken();
+        List<Backup> backups = new ArrayList<>();
+        Account account = Account.newInstance(client, backups);
 
-            String auth = tokens.basic(dsPrsID, mmeAuthToken);
-            logger.trace("-- from() >  authentication token: {}", auth);
+        client.account(http).getBackupUDIDList().stream()
+                .map(udid -> Backup.newInstance(http, account, udid, printer))
+                .filter(Objects::nonNull)
+                .forEach(backups::add);
 
-            NSDictionary settings = (NSDictionary) PropertyLists.parse(
-                    http.executor("https://setup.icloud.com/setup/get_account_settings", byteArrayResponseHandler)
-                    .headers(Headers.mmeClientInfo, Headers.authorization(auth))
-                    .get());
-            logger.trace("-- from() >  account settings: {}", settings.toASCIIPropertyList());
-
-            String fullName = PropertyLists.stringValueOrDefault("Unknown", settings, "appleAccountInfo", "fullName");
-            String appleId = PropertyLists.stringValueOrDefault("Unknown", settings, "appleAccountInfo", "appleId");
-            String newDsPrsID = PropertyLists.stringValue(settings, "appleAccountInfo", "dsPrsID");
-            String newMmeAuthToken = PropertyLists.stringValue(settings, "tokens", "mmeAuthToken");
-            String mobileBackupUrl
-                    = PropertyLists.stringValue(settings, "com.apple.mobileme", "com.apple.Dataclass.Backup", "url");
-            String contentUrl
-                    = PropertyLists.stringValue(settings, "com.apple.mobileme", "com.apple.Dataclass.Content", "url");
-
-            if (!dsPrsID.equals(newDsPrsID)) {
-                logger.debug("-- from() > dsPrsID overwritten {} > {}", dsPrsID, newDsPrsID);
-                dsPrsID = newDsPrsID;
-            }
-
-            if (!mmeAuthToken.equals(newMmeAuthToken)) {
-                logger.debug("-- from() > mmeAuthToken overwritten {} > {}", mmeAuthToken, newMmeAuthToken);
-                mmeAuthToken = newMmeAuthToken;
-            }
-
-            Client client = Client.from(dsPrsID, mmeAuthToken, contentUrl, mobileBackupUrl, config);
-            Account account = newInstance(client, fullName, appleId);
-
-            logger.trace(">> from() > account: {}", account);
-            return account;
-
-        } catch (BadDataException | PropertyListFormatException ex) {
-            throw new AuthenticationException(ex);
-        } catch (HttpResponseException ex) {
-            logger.warn("-- authenticate() >  exception: ", ex);
-            if (ex.getStatusCode() == 401) {
-                throw new AuthenticationException("Bad authorization token.", ex);
-            }
-            throw new AuthenticationException(ex);
-        }
-        // TODO wrap authentication here
+        return account;
     }
 
-    public static Account newInstance(Client client, String fullName, String appleId) {
-        return new Account(client, fullName, appleId);
+    static Account newInstance(Client client, List<Backup> backups) {
+        return new Account(client, backups);
     }
-
-    private static final Logger logger = LoggerFactory.getLogger(Account.class);
-
-    // Thread safe.
-    private static final ResponseHandler<byte[]> byteArrayResponseHandler = ResponseHandlerFactory.toByteArray();
 
     private final Client client;
-    private final String fullName;
-    private final String appleId;
+    private final List<Backup> backups;
 
-    Account(
-            Client client,
-            String fullName,
-            String appleId) {
-
+    Account(Client client, List<Backup> backups) {
         this.client = Objects.requireNonNull(client);
-        this.fullName = Objects.requireNonNull(fullName);
-        this.appleId = Objects.requireNonNull(appleId);
+        this.backups = Objects.requireNonNull(backups);
     }
 
     public Client client() {
         return client;
     }
 
-    public String fullName() {
-        return fullName;
-    }
-
-    public String appleId() {
-        return appleId;
+    public List<Backup> backups() {
+        return new ArrayList<>(backups);
     }
 
     @Override
     public String toString() {
-        return "Account{" + "client=" + client + ", fullName=" + fullName + ", appleId=" + appleId + '}';
+        return "Backups{" + "client=" + client + ", backups=" + backups + '}';
     }
 }

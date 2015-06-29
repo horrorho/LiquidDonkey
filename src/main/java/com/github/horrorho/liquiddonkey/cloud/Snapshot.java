@@ -65,6 +65,6 @@ public final class Snapshot {
 
     @Override
     public String toString() {
-        return "Snapshot{" + "id=" + id + ", backup=" + backup + ", files=" + files + '}';
+        return "Snapshot{" + "id=" + id + ", backup=" + backup + ", files=" + files.size() + '}';
     }
 }

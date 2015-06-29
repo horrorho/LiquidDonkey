@@ -30,17 +30,21 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.ChunkListStore;
 import com.github.horrorho.liquiddonkey.cloud.store.MemoryStore;
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.http.client.HttpResponseException;
@@ -53,7 +57,30 @@ import org.slf4j.LoggerFactory;
  * @author ahseya
  */
 @NotThreadSafe
-public final class Donkey implements Callable<Map<ByteString, Set<ICloud.MBSFile>>> {
+public final class Donkey implements Callable<Boolean> {
+
+    public static Donkey newInstance(
+            Http http,
+            Snapshot snapshot,
+            Iterator<Map<ByteString, Set<ICloud.MBSFile>>> iterator,
+            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results,
+            ChunkDecrypter decrypter,
+            LocalFileWriter writer,
+            boolean isAggressive,
+            int attempts) {
+
+        return new Donkey(
+                http,
+                snapshot.backup().account().client(),
+                snapshot.backup().udid(),
+                snapshot.id(),
+                iterator,
+                results,
+                decrypter,
+                writer,
+                isAggressive,
+                attempts);
+    }
 
     public static Donkey newInstance(
             Http http,
@@ -61,6 +88,7 @@ public final class Donkey implements Callable<Map<ByteString, Set<ICloud.MBSFile
             ByteString backupUdid,
             int snapshot,
             Iterator<Map<ByteString, Set<ICloud.MBSFile>>> iterator,
+            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results,
             ChunkDecrypter decrypter,
             LocalFileWriter writer,
             boolean isAggressive,
@@ -72,6 +100,7 @@ public final class Donkey implements Callable<Map<ByteString, Set<ICloud.MBSFile
                 backupUdid,
                 snapshot,
                 iterator,
+                results,
                 decrypter,
                 writer,
                 isAggressive,
@@ -85,6 +114,7 @@ public final class Donkey implements Callable<Map<ByteString, Set<ICloud.MBSFile
     private final ByteString backupUdid;
     private final int snapshot;
     private final Iterator<Map<ByteString, Set<ICloud.MBSFile>>> iterator;
+    private final ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results;
     private final ChunkDecrypter decrypter;
     private final LocalFileWriter writer;
     private final boolean isAggressive;
@@ -96,6 +126,7 @@ public final class Donkey implements Callable<Map<ByteString, Set<ICloud.MBSFile
             ByteString backupUdid,
             int snapshot,
             Iterator<Map<ByteString, Set<ICloud.MBSFile>>> iterator,
+            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results,
             ChunkDecrypter decrypter,
             LocalFileWriter writer,
             boolean isAggressive,
@@ -106,6 +137,7 @@ public final class Donkey implements Callable<Map<ByteString, Set<ICloud.MBSFile
         this.backupUdid = Objects.requireNonNull(backupUdid);
         this.snapshot = snapshot;
         this.iterator = Objects.requireNonNull(iterator);
+        this.results = Objects.requireNonNull(results);
         this.decrypter = Objects.requireNonNull(decrypter);
         this.writer = Objects.requireNonNull(writer);
         this.isAggressive = isAggressive;
@@ -113,10 +145,9 @@ public final class Donkey implements Callable<Map<ByteString, Set<ICloud.MBSFile
     }
 
     @Override
-    public Map<ByteString, Set<ICloud.MBSFile>> call() throws Exception {
+    public Boolean call() throws Exception {
         logger.trace("<< call() < {}");
 
-        Map<ByteString, Set<ICloud.MBSFile>> failures = new HashMap<>();
         while (iterator.hasNext()) {
             Map<ByteString, Set<ICloud.MBSFile>> signatures = iterator.next();
 
@@ -125,25 +156,31 @@ public final class Donkey implements Callable<Map<ByteString, Set<ICloud.MBSFile
                     logger.warn("-- call() > empty signature list");
                 } else {
                     download(signatures);
+                    addAll(true, signatures);
                 }
             } catch (IOException ex) {
+                // TODO work through
                 logger.warn("-- call() > exception: ", ex);
-                failures.putAll(signatures);
-
-                if (!isAggressive) {
-                    break;
-                }
+                addAll(false, signatures);
 
                 Throwable cause = ex.getCause();
                 if (cause instanceof HttpResponseException) {
                     if (((HttpResponseException) cause).getStatusCode() == 401) {
-                        break;
+                        throw new AuthenticationException(ex);
                     }
+                }
+
+                if (!isAggressive) {
+                    throw new UncheckedIOException(ex);
                 }
             }
         }
-        logger.trace(">> call() > failures: {}", failures.size());
-        return failures;
+        logger.trace(">> call()");
+        return true;
+    }
+
+    void addAll(boolean key, Map<ByteString, Set<ICloud.MBSFile>> signatures) {
+        results.computeIfAbsent(key, k -> new ConcurrentHashMap<>()).putAll(signatures);
     }
 
     public void download(Map<ByteString, Set<ICloud.MBSFile>> signatures) throws IOException {

@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.client.Authentication;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
@@ -87,7 +88,7 @@ public class Looter implements Closeable {
         FileFilter fileFilter = FileFilter.getInstance(config.fileFilter());
         Snapshots factory = Snapshots.newInstance(client, backup, config.selection().snapshots(), fileFilter, config.snapshotFactory());
         DonkeyFactory donkeyFactory = DonkeyFactory.newInstance(config.donkeyFactory(), config.file(), printer);
-        SnapshotDownloader downloader = SnapshotDownloader.newInstance(donkeyFactory, config.snapshotDownloader());
+        SignatureDownloader downloader = SignatureDownloader.newInstance(donkeyFactory, config.snapshotDownloader());
 
         KeyBag keybag;
         try {

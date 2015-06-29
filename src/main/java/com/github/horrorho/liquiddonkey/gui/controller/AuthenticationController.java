@@ -24,7 +24,7 @@
 package com.github.horrorho.liquiddonkey.gui.controller;
 
 import com.github.horrorho.liquiddonkey.cloud.Account;
-import com.github.horrorho.liquiddonkey.cloud.Authentication;
+import com.github.horrorho.liquiddonkey.cloud.client.Authentication;
 import com.github.horrorho.liquiddonkey.cloud.Backup;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.gui.controller.data.BackupProperties;

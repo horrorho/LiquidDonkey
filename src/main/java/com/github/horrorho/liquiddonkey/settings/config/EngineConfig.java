@@ -45,8 +45,8 @@ public final class EngineConfig {
         return EngineConfig.newInstance(
                 isAggressive,
                 props.get(Property.ENGINE_BATCH_SIZE_MINIMUM_BYTES, parsers::asLong),
-                isAggressive ? props.get(Property.ENGINE_CHUNK_LIST_DOWNLOAD_RETRY_AGGRESSIVE, parsers::asInteger)
-                        : props.get(Property.ENGINE_CHUNK_LIST_DOWNLOAD_RETRY, parsers::asInteger),
+                isAggressive ? props.get(Property.ENGINE_RETRY_AGGRESSIVE, parsers::asInteger)
+                        : props.get(Property.ENGINE_DOWNLOAD_RETRY, parsers::asInteger),
                 props.get(Property.ENGINE_PERSISTENT, parsers::asBoolean),
                 props.get(Property.ENGINE_RETRY_DELAY_MS, parsers::asInteger),
                 props.get(Property.ENGINE_THREAD_STAGGER_DELAY, parsers::asInteger),
@@ -55,9 +55,10 @@ public final class EngineConfig {
                 props.get(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, parsers::asBoolean));
     }
 
-    static EngineConfig newInstance(boolean isAggressive,
+    static EngineConfig newInstance(
+            boolean isAggressive,
             long batchSizeMinimumBytes,
-            int chunkListDownloadRetry,
+            int retryCount,
             boolean isPersistent,
             int retryDelay,
             int threadStaggerDelay,
@@ -67,7 +68,7 @@ public final class EngineConfig {
 
         return new EngineConfig(isAggressive,
                 batchSizeMinimumBytes,
-                chunkListDownloadRetry,
+                retryCount,
                 isPersistent,
                 retryDelay,
                 threadStaggerDelay,
@@ -78,7 +79,7 @@ public final class EngineConfig {
 
     private final boolean isAggressive;
     private final long batchSizeMinimumBytes;
-    private final int chunkListDownloadRetry;
+    private final int retryCount;
     private final boolean isPersistent;
     private final int retryDelay;
     private final int threadStaggerDelay;
@@ -89,7 +90,7 @@ public final class EngineConfig {
     EngineConfig(
             boolean isAggressive,
             long batchSizeMinimumBytes,
-            int chunkListDownloadRetry,
+            int retryCount,
             boolean isPersistent,
             int retryDelay,
             int threadStaggerDelay,
@@ -99,7 +100,7 @@ public final class EngineConfig {
 
         this.isAggressive = isAggressive;
         this.batchSizeMinimumBytes = batchSizeMinimumBytes;
-        this.chunkListDownloadRetry = chunkListDownloadRetry;
+        this.retryCount = retryCount;
         this.isPersistent = isPersistent;
         this.retryDelay = retryDelay;
         this.threadStaggerDelay = threadStaggerDelay;
@@ -116,8 +117,8 @@ public final class EngineConfig {
         return batchSizeMinimumBytes;
     }
 
-    public int chunkListDownloadRetry() {
-        return chunkListDownloadRetry;
+    public int retryCount() {
+        return retryCount;
     }
 
     public boolean isPersistent() {
@@ -147,7 +148,7 @@ public final class EngineConfig {
     @Override
     public String toString() {
         return "EngineConfig{" + "isAggressive=" + isAggressive + ", batchSizeMinimumBytes=" + batchSizeMinimumBytes
-                + ", chunkListDownloadRetry=" + chunkListDownloadRetry + ", isPersistent=" + isPersistent
+                + ", chunkListDownloadRetry=" + retryCount + ", isPersistent=" + isPersistent
                 + ", retryDelay=" + retryDelay + ", threadStaggerDelay=" + threadStaggerDelay
                 + ", threadCount=" + threadCount + ", toForceOverwrite=" + toForceOverwrite
                 + ", toSetLastModifiedTimestamp=" + toSetLastModifiedTimestamp + '}';

@@ -119,7 +119,7 @@ public final class Snapshots {
 
     List<ICloud.MBSFile> files(Http http, int snapshot) throws IOException {
         try {
-            return backup.client.listFiles(http, backup.udid(), snapshot);
+            return backup.account().client().listFiles(http, backup.udid(), snapshot);
         } catch (HttpResponseException ex) {
 
             if (ex.getStatusCode() == 401) {
