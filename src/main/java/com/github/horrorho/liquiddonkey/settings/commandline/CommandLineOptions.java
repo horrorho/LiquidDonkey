@@ -128,7 +128,7 @@ public final class CommandLineOptions {
                 .argName("Kb")
                 .hasArgs().build());
 
-        options.put(FILE_FORCE,
+        options.put(ENGINE_FORCE_OVERWRITE,
                 new Option("f", "force", false, "Download files regardless of whether a local version exists."));
 
         options.put(ENGINE_PERSISTENT,
@@ -147,7 +147,7 @@ public final class CommandLineOptions {
         options.put(HTTP_RELAX_SSL,
                 new Option(null, "relax-ssl", false, "Relaxed SSL verification, for SSL validation errors."));
 
-        options.put(ENGINE_PRINT_STACK_TRACE,
+        options.put(PRINTER_STACK_TRACE,
                 new Option("x", "stack-trace", false, "Prints stack trace on errors, useful for debugging."));
 
         options.put(COMMAND_LINE_HELP,

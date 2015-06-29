@@ -79,11 +79,11 @@ public class Main {
             return;
         }
 
-        if (config.print().toPrintStackTrace()) {
+        if (config.printer().toPrintStackTrace()) {
             DumpStackTraceHook.add();
         }
 
-        Printer printer = Printer.instanceOf(config.print());
+        Printer printer = Printer.instanceOf(config.printer());
 
         try (Looter looter = Looter.newInstance(config, printer)) {
             looter.loot();
@@ -95,7 +95,7 @@ public class Main {
             printer.println(Level.ERROR, ex);
         }
 
-        if (config.print().toPrintStackTrace()) {
+        if (config.printer().toPrintStackTrace()) {
             DumpStackTraceHook.remove();
         }
 

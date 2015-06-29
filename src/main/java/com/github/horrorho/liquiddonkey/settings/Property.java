@@ -26,9 +26,7 @@ package com.github.horrorho.liquiddonkey.settings;
 import com.github.horrorho.liquiddonkey.settings.props.Parsers;
 import com.github.horrorho.liquiddonkey.settings.props.Props;
 import com.github.horrorho.liquiddonkey.settings.props.PropsBuilder;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
@@ -41,7 +39,14 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public enum Property {
 
-    // Non-null values may be expected for certain prop
+    // Non-null values may be expected for certain prop 
+// Non-null values may be expected for certain prop 
+// Non-null values may be expected for certain prop 
+// Non-null values may be expected for certain prop 
+// Non-null values may be expected for certain prop 
+// Non-null values may be expected for certain prop 
+// Non-null values may be expected for certain prop 
+// Non-null values may be expected for certain prop 
     APP_NAME("LiquidDonkey"),
     AUTHENTICATION_APPLEID(null),
     AUTHENTICATION_PASSWORD(null),
@@ -50,20 +55,19 @@ public enum Property {
     COMMAND_LINE_HELP(null),
     COMMAND_LINE_VERSION(null),
     CONFIG_PREFIX_ITEM_TYPE("ITEM_TYPE_"),
-    ENGINE_BATCH_SIZE_MINIMUM("4194304"),
-    ENGINE_CHUNK_LIST_DOWNLOADER_RETRY("1"),
-    ENGINE_CHUNK_LIST_DOWNLOADER_RETRY_AGGRESSIVE("2"),
-    DONKEY_RETRY_DELAY_MS("1000"),
+    ENGINE_AGGRESSIVE("false"),
+    ENGINE_BATCH_SIZE_MINIMUM_BYTES("4194304"),
+    ENGINE_FORCE_OVERWRITE("false"), // TODO
+    ENGINE_CHUNK_LIST_DOWNLOAD_RETRY("1"),
+    ENGINE_CHUNK_LIST_DOWNLOAD_RETRY_AGGRESSIVE("2"),    
+    ENGINE_SET_LAST_MODIFIED_TIMESTAMP("true"),
+    ENGINE_PERSISTENT("false"),
+    ENGINE_RETRY_DELAY_MS("1000"),
     ENGINE_THREAD_STAGGER_DELAY("1000"),
     ENGINE_THREAD_COUNT("4"),
-    ENGINE_AGGRESSIVE("false"),
-    ENGINE_PERSISTENT("false"),
-    ENGINE_PRINT_STACK_TRACE("false"),
     FILE_COMBINED("false"),
-    FILE_FORCE("false"), // TODO
     FILE_FLAT("false"),
     FILE_OUTPUT_DIRECTORY("output"),
-    FILE_SET_LAST_MODIFIED_TIMESTAMP("true"),
     FILTER_DATE_MIN("0000-01-01"),
     FILTER_DATE_MAX("9999-01-01"),
     FILTER_DOMAIN(null),
@@ -93,6 +97,7 @@ public enum Property {
     ITEM_TYPE_SMS("sms.db"),
     ITEM_TYPE_VOICEMAILS("voicemail"),
     ITEM_TYPE_NOTES("notes"),
+    PRINTER_STACK_TRACE("false"),
     PROJECT_VERSION("N/A"),
     PROPERTIES_GUI_PATH("gui.properties"),
     PROPERTIES_JAR("/liquiddonkey.properties"),

@@ -26,57 +26,66 @@ package com.github.horrorho.liquiddonkey.settings.config;
 import com.github.horrorho.liquiddonkey.settings.props.Parsers;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.props.Props;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
 /**
- * DonkeyExecutor configuration.
+ * Directory configuration.
  *
  * @author Ahseya
  */
 @Immutable
 @ThreadSafe
-public final class SnapshotDownloaderConfig {
+public final class FileConfig {
 
-    public static SnapshotDownloaderConfig newInstance(Props<Property> props) {
+    public static FileConfig newInstance(Props<Property> props) {
         Parsers parsers = Property.parsers();
 
-        return newInstance(props.get(Property.ENGINE_THREAD_COUNT, parsers::asInteger),
-                props.get(Property.ENGINE_THREAD_STAGGER_DELAY, parsers::asInteger),
-                props.get(Property.ENGINE_AGGRESSIVE, parsers::asBoolean)
-                        ? 2 // TODO
-                        : 1);
+        return newInstance(
+                Paths.get(props.get(Property.FILE_OUTPUT_DIRECTORY)).toAbsolutePath(),
+                props.get(Property.FILE_COMBINED, parsers::asBoolean),
+                props.get(Property.FILE_FLAT, parsers::asBoolean));
     }
 
-    public static SnapshotDownloaderConfig newInstance(int threads, int staggerDelayMs, int retryCount) {
-        return new SnapshotDownloaderConfig(threads, staggerDelayMs, retryCount);
+    public static FileConfig newInstance(
+            Path base,
+            boolean isCombined,
+            boolean isFlat) {
+
+        return new FileConfig(base,
+                isCombined,
+                isFlat);
     }
 
-    private final int threads;
-    private final int staggerDelayMs;
-    private final int retryCount;
+    private final Path base;
+    private final boolean isCombined;
+    private final boolean isFlat;
 
-    SnapshotDownloaderConfig(int threads, int staggerDelayMs, int retryCount) {
-        this.threads = threads;
-        this.staggerDelayMs = staggerDelayMs;
-        this.retryCount = retryCount;
+    FileConfig(Path base,
+            boolean isCombined,
+            boolean isFlat) {
+
+        this.base = base;
+        this.isCombined = isCombined;
+        this.isFlat = isFlat;
     }
 
-    public int threads() {
-        return threads;
+    public Path base() {
+        return base;
     }
 
-    public int staggerDelayMs() {
-        return staggerDelayMs;
+    public boolean isCombined() {
+        return isCombined;
     }
 
-    public int retryCount() {
-        return retryCount;
+    public boolean isFlat() {
+        return isFlat;
     }
 
     @Override
     public String toString() {
-        return "DonkeyExecutorConfig{" + "threads=" + threads + ", staggerDelayMs=" + staggerDelayMs
-                + ", retryCount=" + retryCount + '}';
+        return "FileConfig{" + "base=" + base + ", isCombined=" + isCombined + ", isFlat=" + isFlat + '}';
     }
 }

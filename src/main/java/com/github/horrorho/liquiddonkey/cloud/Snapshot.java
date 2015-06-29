@@ -37,20 +37,26 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class Snapshot {
 
-    public static Snapshot newInstance(int id, List<ICloud.MBSFile> files) {
-        return new Snapshot(id, files);
+    public static Snapshot newInstance(int id, Backup backup, List<ICloud.MBSFile> files) {
+        return new Snapshot(id, backup, files);
     }
 
     private final int id;
+    private final Backup backup;
     private final List<ICloud.MBSFile> files;
 
-    Snapshot(int id, List<ICloud.MBSFile> files) {
+    Snapshot(int id, Backup backup, List<ICloud.MBSFile> files) {
         this.id = id;
+        this.backup = Objects.requireNonNull(backup);
         this.files = Objects.requireNonNull(files);
     }
 
     public int id() {
         return id;
+    }
+
+    public Backup backup() {
+        return backup;
     }
 
     public List<ICloud.MBSFile> files() {
@@ -59,6 +65,6 @@ public final class Snapshot {
 
     @Override
     public String toString() {
-        return "Snapshot{" + "id=" + id + ", files=" + files + '}';
+        return "Snapshot{" + "id=" + id + ", backup=" + backup + ", files=" + files + '}';
     }
 }

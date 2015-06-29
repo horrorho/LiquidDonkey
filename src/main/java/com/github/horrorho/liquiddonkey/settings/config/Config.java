@@ -25,12 +25,11 @@ package com.github.horrorho.liquiddonkey.settings.config;
 
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.props.Props;
-import java.util.Objects;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
 /**
- * PropertyAssistant.
+ * Config.
  *
  * @author Ahseya
  */
@@ -42,89 +41,77 @@ public final class Config {
         return newInstance(
                 AuthenticationConfig.newInstance(props),
                 ClientConfig.newInstance(props),
-                DirectoryConfig.newInstance(props),
-                DonkeyFactoryConfig.newInstance(props),
+                EngineConfig.newInstance(props),
+                FileConfig.newInstance(props),
                 FileFilterConfig.newInstance(props),
                 HttpConfig.newInstance(props),
                 PrintConfig.newInstance(props),
-                SelectionConfig.newInstance(props),
-                SnapshotDownloaderConfig.newInstance(props),
-                SnapshotFactoryConfig.newInstance(props));
+                SelectionConfig.newInstance(props));
     }
 
     public static Config newInstance(
             AuthenticationConfig authentication,
-            ClientConfig clientConfig,
-            DirectoryConfig directory,
-            DonkeyFactoryConfig donkeyFactory,
+            ClientConfig client,
+            EngineConfig engine,
+            FileConfig file,
             FileFilterConfig fileFilter,
             HttpConfig http,
             PrintConfig printer,
-            SelectionConfig selection,
-            SnapshotDownloaderConfig snapshotDownloader,
-            SnapshotFactoryConfig snapshotFactory) {
+            SelectionConfig selection) {
 
-        return new Config(
-                authentication,
-                clientConfig,
-                directory,
-                donkeyFactory,
+        return new Config(authentication,
+                client,
+                engine,
+                file,
                 fileFilter,
                 http,
                 printer,
-                selection,
-                snapshotDownloader,
-                snapshotFactory);
+                selection);
     }
 
     private final AuthenticationConfig authentication;
-    private final ClientConfig clientConfig;
-    private final DirectoryConfig directory;
-    private final DonkeyFactoryConfig donkeyFactory;
+    private final ClientConfig client;
+    private final EngineConfig engine;
+    private final FileConfig file;
     private final FileFilterConfig fileFilter;
     private final HttpConfig http;
     private final PrintConfig printer;
     private final SelectionConfig selection;
-    private final SnapshotDownloaderConfig snapshotDownloader;
-    private final SnapshotFactoryConfig snapshotFactory;
 
-    private Config(AuthenticationConfig authentication,
-            ClientConfig clientConfig,
-            DirectoryConfig directory,
-            DonkeyFactoryConfig donkeyFactory,
+    Config(
+            AuthenticationConfig authentication,
+            ClientConfig client,
+            EngineConfig engine,
+            FileConfig file,
             FileFilterConfig fileFilter,
             HttpConfig http,
             PrintConfig printer,
-            SelectionConfig selection,
-            SnapshotDownloaderConfig snapshotDownloader,
-            SnapshotFactoryConfig snapshotFactory) {
+            SelectionConfig selection) {
 
         this.authentication = authentication;
-        this.clientConfig = clientConfig;
-        this.directory = directory;
-        this.donkeyFactory = donkeyFactory;
+        this.client = client;
+        this.engine = engine;
+        this.file = file;
         this.fileFilter = fileFilter;
         this.http = http;
         this.printer = printer;
         this.selection = selection;
-        this.snapshotDownloader = snapshotDownloader;
-        this.snapshotFactory = snapshotFactory;
     }
 
     public AuthenticationConfig authentication() {
         return authentication;
     }
 
-    public ClientConfig clientConfig() {
-        return clientConfig;
+    public ClientConfig client() {
+        return client;
     }
 
-    public DirectoryConfig directory() {
-        return directory;
+    public EngineConfig engine() {
+        return engine;
     }
 
-    public DonkeyFactoryConfig donkeyFactory() {
-        return donkeyFactory;
+    public FileConfig file() {
+        return file;
     }
 
     public FileFilterConfig fileFilter() {
@@ -135,7 +122,7 @@ public final class Config {
         return http;
     }
 
-    public PrintConfig print() {
+    public PrintConfig printer() {
         return printer;
     }
 
@@ -143,19 +130,10 @@ public final class Config {
         return selection;
     }
 
-    public SnapshotDownloaderConfig snapshotDownloader() {
-        return snapshotDownloader;
-    }
-
-    public SnapshotFactoryConfig snapshotFactory() {
-        return snapshotFactory;
-    }
-
     @Override
     public String toString() {
-        return "Config{" + "authentication=" + authentication + ", clientConfig=" + clientConfig
-                + ", directory=" + directory + ", donkeyFactory=" + donkeyFactory + ", fileFilter=" + fileFilter
-                + ", http=" + http + ", printer=" + printer + ", selection=" + selection + ", donkeyExecutor="
-                + snapshotDownloader + ", backupDownloaderFactory=" + snapshotFactory + '}';
+        return "Config{" + "authentication=" + authentication + ", client=" + client + ", engine=" + engine
+                + ", directory=" + file + ", fileFilter=" + fileFilter + ", http=" + http + ", printer=" + printer
+                + ", selection=" + selection + '}';
     }
 }

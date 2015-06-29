@@ -24,8 +24,6 @@
 package com.github.horrorho.liquiddonkey.settings.commandline;
 
 import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.commandline.CommandLineOptions;
-import com.github.horrorho.liquiddonkey.settings.commandline.CommandLinePropsFactory;
 import com.github.horrorho.liquiddonkey.settings.props.Props;
 import com.github.horrorho.liquiddonkey.settings.props.PropsBuilder;
 import junitparams.JUnitParamsRunner;
@@ -68,18 +66,18 @@ public class CommandLinePropsFactoryTest {
             $(Property.ENGINE_PERSISTENT, "u p", null),
             $(Property.ENGINE_PERSISTENT, "u p -p", "true"),
             $(Property.ENGINE_PERSISTENT, "u p --persistent", "true"),
-            $(Property.ENGINE_PRINT_STACK_TRACE, "u p", null),
-            $(Property.ENGINE_PRINT_STACK_TRACE, "u p -x", "true"),
-            $(Property.ENGINE_PRINT_STACK_TRACE, "u p --stack-trace", "true"),
+            $(Property.PRINTER_STACK_TRACE, "u p", null),
+            $(Property.PRINTER_STACK_TRACE, "u p -x", "true"),
+            $(Property.PRINTER_STACK_TRACE, "u p --stack-trace", "true"),
             $(Property.ENGINE_THREAD_COUNT, "u p", null),
             $(Property.ENGINE_THREAD_COUNT, "u p -t 4", "4"),
             $(Property.ENGINE_THREAD_COUNT, "u p --threads 4", "4"),
             $(Property.FILE_COMBINED, "u p", null),
             $(Property.FILE_COMBINED, "u p -c", true),
             $(Property.FILE_COMBINED, "u p --combined", true),
-            $(Property.FILE_FORCE, "u p", null),
-            $(Property.FILE_FORCE, "u p -f", true),
-            $(Property.FILE_FORCE, "u p --force", true),
+            $(Property.ENGINE_FORCE_OVERWRITE, "u p", null),
+            $(Property.ENGINE_FORCE_OVERWRITE, "u p -f", true),
+            $(Property.ENGINE_FORCE_OVERWRITE, "u p --force", true),
             $(Property.FILE_OUTPUT_DIRECTORY, "u p", null),
             $(Property.FILE_OUTPUT_DIRECTORY, "u p -o test/folder", "test/folder"),
             $(Property.FILE_OUTPUT_DIRECTORY, "u p --output test/folder", "test/folder"),

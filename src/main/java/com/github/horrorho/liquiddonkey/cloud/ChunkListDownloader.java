@@ -73,6 +73,7 @@ public class ChunkListDownloader {
     /**
      * Download the specified group/ chunk lists.
      *
+     * @param http not null
      * @param group not null
      * @return the downloaded chunks, not null
      * @throws IOException

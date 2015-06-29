@@ -25,7 +25,7 @@ package com.github.horrorho.liquiddonkey.cloud.file;
 
 import com.github.horrorho.liquiddonkey.crypto.MessageDigestFactory;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.settings.config.DirectoryConfig;
+import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.nio.file.Path;
@@ -43,7 +43,7 @@ import net.jcip.annotations.NotThreadSafe;
 @NotThreadSafe
 public final class Directory {
 
-    public static Directory newInstance(ByteString backupUdid, DirectoryConfig config) {
+    public static Directory newInstance(ByteString backupUdid, FileConfig config) {
         return Directory.newInstance(
                 config.base().resolve(Bytes.hex(backupUdid)),
                 config.isFlat(),

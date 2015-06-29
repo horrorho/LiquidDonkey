@@ -23,14 +23,15 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.google.protobuf.ByteString;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 import java.util.function.Predicate;
-import net.jcip.annotations.NotThreadSafe;
+import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,44 +43,31 @@ import org.slf4j.LoggerFactory;
  * elements are batched regardless.
  *
  * @author Ahseya
- *
- * @param <K> the Map key type
- * @param <V> the Map value type
  */
-@NotThreadSafe
-public final class Batcher<K, V> implements Iterator<Map<K, V>> {
+@ThreadSafe
+public final class Bundler implements Iterator<Map<ByteString, Set<ICloud.MBSFile>>> {
 
-    /**
-     * Returns a new Batcher instance.
-     *
-     * @param <K> the Map key type
-     * @param <V> the Map value type
-     * @param map the map supplying the elements, not null
-     * @param size the function to determine the size of entry values, not null
-     * @param filter the Map value filter, not null
-     * @param batchSizeBytes the minimum batch size threshold
-     * @return a new Batcher instance
-     * @throws NullPointerException if map, size or filter arguments are null
-     */
-    public static <K, V> Batcher<K, V> newInstance(
-            ConcurrentMap<K, V> map,
-            Function<V, Long> size,
-            Predicate<V> filter,
+    private static final Logger logger = LoggerFactory.getLogger(Bundler.class);
+
+    public static Bundler wrap(
+            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> map,
+            Predicate<ICloud.MBSFile> filter,
             long batchSizeBytes) {
-        return new Batcher<>(map, size, filter, batchSizeBytes);
+
+        return new Bundler(map, filter, batchSizeBytes);
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(Batcher.class);
-
-    private final ConcurrentMap<K, V> map;
-    private final Function<V, Long> size;
-    private final Predicate<V> filter;
+    private final ConcurrentMap<ByteString, Set<ICloud.MBSFile>> map;
+    private final Predicate<ICloud.MBSFile> filter;
     private final long batchSizeBytes;
 
-    Batcher(ConcurrentMap<K, V> map, Function<V, Long> size, Predicate<V> filter, long batchSizeBytes) {
-        this.map = Objects.requireNonNull(map);
-        this.size = Objects.requireNonNull(size);
-        this.filter = Objects.requireNonNull(filter);
+    private Bundler(
+            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> map,
+            Predicate<ICloud.MBSFile> filter,
+            long batchSizeBytes) {
+
+        this.map = map;
+        this.filter = filter;
         this.batchSizeBytes = batchSizeBytes;
     }
 
@@ -89,29 +77,24 @@ public final class Batcher<K, V> implements Iterator<Map<K, V>> {
     }
 
     @Override
-    public Map<K, V> next() {
+    public Map<ByteString, Set<ICloud.MBSFile>> next() {
         logger.trace("<< next()");
-        Map<K, V> files = new HashMap<>();
+        Map<ByteString, Set<ICloud.MBSFile>> files = new HashMap<>();
         long total = 0;
 
         loop:
-        while (!map.isEmpty()) {
-            for (Map.Entry<K, V> entry : map.entrySet()) {
-                if (map.remove(entry.getKey()) == null) {
-                    continue;
-                }
-
-                if (!filter.test(entry.getValue())) {
-                    continue;
-                }
-
-                files.put(entry.getKey(), entry.getValue());
-
-                total += size.apply(entry.getValue());
-                if (total > batchSizeBytes) {
-                    break loop;
-                }
+        for (Map.Entry<ByteString, Set<ICloud.MBSFile>> entry : map.entrySet()) {
+            if (total > batchSizeBytes) {
+                break;
             }
+
+            // If null, another thread acquired this map entry.
+            if (map.remove(entry.getKey()) == null || !entry.getValue().stream().allMatch(filter)) {
+                continue;
+            }
+
+            files.put(entry.getKey(), entry.getValue());
+            total += entry.getValue().stream().mapToLong(ICloud.MBSFile::getSize).findAny().orElse(0);
         }
 
         logger.trace(">> next() > entries: {} size: {}", files.size(), total);

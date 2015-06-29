@@ -34,8 +34,8 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.cloud.pipe.ArgumentExceptionPair;
 import com.github.horrorho.liquiddonkey.cloud.pipe.Piper;
-import com.github.horrorho.liquiddonkey.settings.config.DirectoryConfig;
-import com.github.horrorho.liquiddonkey.settings.config.DonkeyFactoryConfig;
+import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
+import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.google.protobuf.ByteString;
 import java.nio.file.Path;
 import java.util.Iterator;
@@ -62,17 +62,9 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class DonkeyFactory {
 
-    private static final Logger logger = LoggerFactory.getLogger(DonkeyFactory.class);
 
-    /**
-     * Returns a new instance.
-     *
-     * @param config not null
-     * @param directoryConfig not null
-     * @param printer not null
-     * @return a new instance, not null
-     */
-    public static DonkeyFactory newInstance(DonkeyFactoryConfig config, DirectoryConfig directoryConfig, Printer printer) {
+ 
+    public static DonkeyFactory newInstance(EngineConfig config, Printer printer) {
 
         return new DonkeyFactory(
                 printer,
@@ -84,35 +76,11 @@ public final class DonkeyFactory {
                 config.toForceOverwrite(),
                 config.toSetLastModifiedTime());
     }
+    private static final Logger logger = LoggerFactory.getLogger(DonkeyFactory.class);
 
-    private final Path backupFolder;
-    private final Printer printer;
-    private final long batchSizeBytes;
-    private final boolean isFlat;
-    private final boolean isCombined;
-    private final boolean isAggressive;
-    private final boolean toForceOverwrite;
-    private final boolean toSetLastModifiedTime;
+    private final DonkeyFactory config;
+    private final Printer pr
 
-    DonkeyFactory(
-            Printer printer,
-            Path backupFolder,
-            long batchSizeBytes,
-            boolean isFlat,
-            boolean isCombined,
-            boolean isAggressive,
-            boolean toForceOverwrite,
-            boolean toSetLastModifiedTime) {
-
-        this.backupFolder = Objects.requireNonNull(backupFolder);
-        this.printer = Objects.requireNonNull(printer);
-        this.batchSizeBytes = batchSizeBytes;
-        this.isFlat = isFlat;
-        this.isCombined = isCombined;
-        this.isAggressive = isAggressive;
-        this.toForceOverwrite = toForceOverwrite;
-        this.toSetLastModifiedTime = toSetLastModifiedTime;
-    }
 
     /**
      * Returns a new instance.
@@ -124,8 +92,7 @@ public final class DonkeyFactory {
      * @param signatureToFileMap the required files, not null
      * @return a new instance, not null
      */
-    public Callable<Iterator<Map<ByteString, Set<ICloud.MBSFile>>>, List<ArgumentExceptionPair<Map<ByteString, Set<ICloud.MBSFile>>>>>
-            from(
+    public Donkey from(
                     Http http,
                     Client client,
                     Backup backup,
@@ -147,8 +114,8 @@ public final class DonkeyFactory {
                                 snapshot,
                                 toSetLastModifiedTime);
 
-                Batcher<ByteString, Set<ICloud.MBSFile>> batcher
-                        = Batcher.<ByteString, Set<ICloud.MBSFile>>newInstance(
+                Bundler<ByteString, Set<ICloud.MBSFile>> batcher
+                        = Bundler.<ByteString, Set<ICloud.MBSFile>>newInstance(
                                 signatureToFileMap,
                                 files -> files.stream().mapToLong(ICloud.MBSFile::getSize).findAny().orElse(0),
                                 files -> !files.stream().allMatch(localFileFilter),

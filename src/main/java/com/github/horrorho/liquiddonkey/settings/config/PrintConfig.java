@@ -41,7 +41,7 @@ public class PrintConfig {
     public static PrintConfig newInstance(Props<Property> props) {
         Parsers parsers = Property.parsers();
 
-        return newInstance(props.get(Property.ENGINE_PRINT_STACK_TRACE, parsers::asBoolean));
+        return newInstance(props.get(Property.PRINTER_STACK_TRACE, parsers::asBoolean));
     }
 
     public static PrintConfig newInstance(boolean toPrintStackTrace) {

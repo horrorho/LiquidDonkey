@@ -24,11 +24,14 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
+import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
+import com.github.horrorho.liquiddonkey.cloud.file.Mode;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.cloud.pipe.ArgumentExceptionPair;
+import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.settings.config.SnapshotDownloaderConfig;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -36,6 +39,7 @@ import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import static java.util.Locale.filter;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -46,6 +50,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
@@ -71,37 +76,53 @@ public final class SnapshotDownloader {
      * Returns a new instance.
      *
      * @param factory not null
+     * @param filter not null
      * @param config not null
      * @return a new instance, not null
      */
-    public static SnapshotDownloader newInstance(DonkeyFactory factory, SnapshotDownloaderConfig config) {
+    public static SnapshotDownloader newInstance(
+            DonkeyFactory factory,
+            FileFilter filter,
+            SnapshotDownloaderConfig config) {
 
         return new SnapshotDownloader(
                 factory,
+                filter,
                 config.threads(),
                 config.staggerDelayMs(),
                 config.retryCount());
     }
 
     private final DonkeyFactory factory;
+    private final FileFilter filter;
     private final int threads;
     private final int staggerDelayMs;
     private final int retryCount;
 
-    SnapshotDownloader(DonkeyFactory factory, int threads, int staggerDelayMs, int retryCount) {
+    SnapshotDownloader(DonkeyFactory factory, FileFilter filter, int threads, int staggerDelayMs, int retryCount) {
         this.factory = Objects.requireNonNull(factory);
+        this.filter = Objects.requireNonNull(filter);
         this.threads = threads;
         this.staggerDelayMs = staggerDelayMs;
         this.retryCount = retryCount;
     }
 
-    
-    public void moo(Http http, Client client, Backup backup, KeyB) {
-        
-        
-        
+    public void moo(Http http, Client client, KeyBag keyBag, Snapshot snapshot, Tally tally) {
+
+        List<ICloud.MBSFile> files = snapshot.files();
+
+        Map<Mode, List<ICloud.MBSFile>> modeToFiles = groupingBy(files, Mode::mode);
+        logger.info("-- signatures() > modes: {}", summary(modeToFiles));
+
+        Map<Boolean, List<ICloud.MBSFile>> isFilteredToFiles = groupingBy(files, filter::test);
+        logger.info("-- signatures() > filtered: {}", summary(isFilteredToFiles));
+
+        ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileMap
+                = isFilteredToFiles.getOrDefault(Boolean.TRUE, new ArrayList<>()).stream()
+                .collect(Collectors.groupingByConcurrent(ICloud.MBSFile::getSignature, Collectors.toSet()));
+
     }
-    
+
     public Map<ByteString, Set<ICloud.MBSFile>> execute(
             Client client,
             Backup backup,
@@ -219,5 +240,15 @@ public final class SnapshotDownloader {
         } catch (InterruptedException ex) {
             throw new FatalException(ex);
         }
+    }
+
+    <T, K> Map<K, List<T>> groupingBy(List<T> t, Function<T, K> classifier) {
+        return t == null
+                ? new HashMap<>()
+                : t.stream().collect(Collectors.groupingBy(classifier));
+    }
+
+    <K, V> Map<K, Integer> summary(Map<K, List<V>> map) {
+        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().size()));
     }
 }

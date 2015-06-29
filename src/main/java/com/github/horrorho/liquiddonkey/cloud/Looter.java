@@ -86,7 +86,7 @@ public class Looter implements Closeable {
 
         FileFilter fileFilter = FileFilter.getInstance(config.fileFilter());
         SnapshotFactory factory = SnapshotFactory.newInstance(client, backup, config.selection().snapshots(), fileFilter, config.snapshotFactory());
-        DonkeyFactory donkeyFactory = DonkeyFactory.newInstance(config.donkeyFactory(), config.directory(), printer);
+        DonkeyFactory donkeyFactory = DonkeyFactory.newInstance(config.donkeyFactory(), config.file(), printer);
         SnapshotDownloader downloader = SnapshotDownloader.newInstance(donkeyFactory, config.snapshotDownloader());
 
         KeyBag keybag;
