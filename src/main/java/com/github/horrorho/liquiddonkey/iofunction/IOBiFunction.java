@@ -23,6 +23,10 @@
  */
 package com.github.horrorho.liquiddonkey.iofunction;
 
+import java.io.IOException;
+import java.util.Objects;
+import java.util.function.Function;
+
 /**
  * Represents a function that accepts one argument and produces a result.
  *
@@ -31,8 +35,13 @@ package com.github.horrorho.liquiddonkey.iofunction;
  * @param <U> Second input type.
  * @param <R> Return type.
  */
-//@FunctionalInterface
-//public interface IOBiFunction<T, U, R> {
-//
-//    R apply(T t, U u) throws IOException;
-//}
+@FunctionalInterface
+public interface IOBiFunction<T, U, R> {
+
+    R apply(T t, U u) throws IOException;
+
+    default <V> IOBiFunction<T, U, V> andThen(Function<? super R, ? extends V> after) {
+        Objects.requireNonNull(after);
+        return (T t, U u) -> after.apply(apply(t, u));
+    }
+}

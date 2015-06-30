@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.file;
 
-import com.github.horrorho.liquiddonkey.exception.FileHandlingException;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -57,7 +56,6 @@ public final class LocalFileFilter implements Predicate<ICloud.MBSFile> {
      * @param snapshot the snapshot id
      * @param toCheckLastModifiedTimestamp to test the last modified timestamp
      * @return a new instance
-     * @throws NullPointerException if the supplied directory argument is null
      */
     public static LocalFileFilter newInstance(
             Directory directory,
@@ -102,7 +100,7 @@ public final class LocalFileFilter implements Predicate<ICloud.MBSFile> {
             logger.trace(">> test() < {} true", remote.getRelativePath());
             return true;
         } catch (IOException | SecurityException ex) {
-            throw new FileHandlingException(ex);
+            throw new IllegalStateException("File io error");
         }
     }
 

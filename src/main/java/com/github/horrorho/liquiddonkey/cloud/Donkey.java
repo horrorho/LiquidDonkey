@@ -47,7 +47,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import net.jcip.annotations.NotThreadSafe;
-import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,13 +112,15 @@ public final class Donkey implements Callable<Boolean> {
             } catch (BadDataException ex) {
                 logger.warn("-- call() > exception: ", ex);
                 addAll(false, signatures);
-                
+
             } catch (UncheckedIOException ex) {
                 logger.warn("-- call() > exception: ", ex);
                 addAll(false, signatures);
 
-                if (!isAggressive) {
-                    throw ex;
+                IOException ioex = ex.getCause();
+
+                if (ioex instanceof AuthenticationException || !isAggressive) {
+                    throw ioex;
                 }
             }
         }
@@ -131,7 +132,9 @@ public final class Donkey implements Callable<Boolean> {
         results.computeIfAbsent(key, k -> new ConcurrentHashMap<>()).putAll(signatures);
     }
 
-    public void download(Map<ByteString, Set<ICloud.MBSFile>> signatures) throws BadDataException {
+    public void download(Map<ByteString, Set<ICloud.MBSFile>> signatures)
+            throws BadDataException, UncheckedIOException {
+
         logger.trace("<< download() < {}", signatures.size());
 
         List<ICloud.MBSFile> files = signatures.entrySet().stream()
@@ -149,7 +152,7 @@ public final class Donkey implements Callable<Boolean> {
     private void downloadFileGroups(
             ChunkServer.FileGroups fileGroups,
             Map<ByteString, Set<ICloud.MBSFile>> signatureToFileSet
-    ) {
+    ) throws UncheckedIOException {
 
         for (ChunkServer.FileChecksumStorageHostChunkLists group : fileGroups.getFileGroupsList()) {
             ChunkListStore store = download(group);
@@ -169,7 +172,7 @@ public final class Donkey implements Callable<Boolean> {
         }
     }
 
-    public ChunkListStore download(ChunkServer.FileChecksumStorageHostChunkLists group) {
+    public ChunkListStore download(ChunkServer.FileChecksumStorageHostChunkLists group) throws UncheckedIOException {
         logger.trace("<< download() < group count : {}", group.getStorageHostChunkListCount());
 
         // TODO memory or disk based depending on size
@@ -183,14 +186,14 @@ public final class Donkey implements Callable<Boolean> {
         return storage;
     }
 
-    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList) {
+    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList) throws UncheckedIOException {
         // Recursive.
         return chunkList.getChunkInfoCount() == 0
                 ? new ArrayList<>()
                 : download(chunkList, 0);
     }
 
-    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList, int attempt) {
+    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList, int attempt) throws UncheckedIOException {
         // Recursive.
         List<byte[]> decrypted = attempt++ == attempts
                 ? new ArrayList<>()

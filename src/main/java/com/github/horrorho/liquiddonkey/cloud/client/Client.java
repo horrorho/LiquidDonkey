@@ -38,9 +38,7 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFileAuthTokens;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSKeySet;
 import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ProtoBufArray;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.exception.FatalException;
 import static com.github.horrorho.liquiddonkey.settings.Markers.CLIENT;
 import static com.github.horrorho.liquiddonkey.http.NameValuePairs.parameter;
 import static com.github.horrorho.liquiddonkey.util.Bytes.hex;
@@ -48,7 +46,6 @@ import com.github.horrorho.liquiddonkey.settings.config.ClientConfig;
 import com.github.horrorho.liquiddonkey.util.PropertyLists;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -79,10 +76,12 @@ public final class Client {
      * @param authentication, not null
      * @param config, not null
      * @return a new instance
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
+     * @throws BadDataException
+     * @throws IOException
      */
-    public static Client from(Http http, Authentication authentication, ClientConfig config) {
+    public static Client from(Http http, Authentication authentication, ClientConfig config)
+            throws BadDataException, IOException {
+
         logger.trace("<< from() < authentication: {}", http, authentication);
 
         String dsPrsID = authentication.dsPrsID();
@@ -101,7 +100,7 @@ public final class Client {
         return client;
     }
 
-    static Client newInstance(byte[] settings, int listLimit) {
+    static Client newInstance(byte[] settings, int listLimit) throws BadDataException {
         try {
             logger.trace("<< newInstance()");
 
@@ -129,7 +128,7 @@ public final class Client {
             return client;
 
         } catch (IOException | BadDataException | PropertyListFormatException ex) {
-            throw new AuthenticationException(ex);
+            throw new BadDataException(ex);
         }
     }
 
@@ -176,11 +175,8 @@ public final class Client {
         this.listFilesLimit = listFilesLimit;
     }
 
-    /**
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
-     */
-    <T> T mobileBackupGet(Http http, ResponseHandler<T> handler, String path, NameValuePair... parameters) {
+    <T> T mobileBackupGet(Http http, ResponseHandler<T> handler, String path, NameValuePair... parameters)
+            throws IOException {
 
         return http.executor(path(mobileBackupUrl, path), handler)
                 .headers(mobileBackupHeaders)
@@ -188,11 +184,8 @@ public final class Client {
                 .get();
     }
 
-    /**
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
-     */
-    <T> T mobileBackupPost(Http http, ResponseHandler<T> handler, String path, byte[] postData) {
+    <T> T mobileBackupPost(Http http, ResponseHandler<T> handler, String path, byte[] postData)
+            throws IOException {
 
         return http.executor(path(mobileBackupUrl, path), handler)
                 .headers(mobileBackupHeaders)
@@ -204,10 +197,9 @@ public final class Client {
      *
      * @param http, not null
      * @return MBSAccount, not null
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
+     * @throws IOException
      */
-    public MBSAccount account(Http http) {
+    public MBSAccount account(Http http) throws IOException {
         logger.trace("<< account()");
         MBSAccount account
                 = mobileBackupGet(
@@ -225,10 +217,9 @@ public final class Client {
      * @param http, not null
      * @param backupUDID, not null
      * @return MBSBackup, not null
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
+     * @throws IOException
      */
-    public MBSBackup backup(Http http, ByteString backupUDID) {
+    public MBSBackup backup(Http http, ByteString backupUDID) throws IOException {
         logger.trace("<< backup() < {}", hex(backupUDID));
         MBSBackup backup
                 = mobileBackupGet(
@@ -246,10 +237,9 @@ public final class Client {
      * @param http, not null
      * @param backupUDID, not null
      * @return MBSKeySet, not null
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
+     * @throws IOException
      */
-    public MBSKeySet getKeys(Http http, ByteString backupUDID) {
+    public MBSKeySet getKeys(Http http, ByteString backupUDID) throws IOException {
         logger.trace("<< getKeys() < {}", hex(backupUDID));
         MBSKeySet keys
                 = mobileBackupGet(
@@ -268,10 +258,9 @@ public final class Client {
      * @param backupUDID, not null
      * @param snapshotId
      * @return a list of MBSFiles, not null
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
+     * @throws IOException
      */
-    public List<MBSFile> listFiles(Http http, ByteString backupUDID, int snapshotId) {
+    public List<MBSFile> listFiles(Http http, ByteString backupUDID, int snapshotId) throws IOException {
         logger.trace("<< listFiles() < backupUDID: {} snapshotId: {}", hex(backupUDID), snapshotId);
 
         List<MBSFile> files = new ArrayList<>();
@@ -303,11 +292,10 @@ public final class Client {
      * @param files
      * @return FileGroups, not null
      * @throws BadDataException
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
+     * @throws IOException
      */
     public FileGroups getFileGroups(Http http, ByteString backupUdid, int snapshotId, List<MBSFile> files)
-            throws BadDataException {
+            throws BadDataException, IOException {
 
         logger.trace("<< getFilesGroups() < backupUdid: {} snapshot: {} files: {}",
                 hex(backupUdid), snapshotId, files.size());
@@ -326,12 +314,8 @@ public final class Client {
         return fileGroups;
     }
 
-    /**
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
-     */
     List<MBSFileAuthToken> getFiles(Http http, ByteString backupUdid, int snapshotId, List<MBSFile> files)
-            throws BadDataException {
+            throws BadDataException, IOException {
 
         logger.trace("<< getFiles() < backupUdid: {} snapshot: {} files: {}",
                 hex(backupUdid), snapshotId, files.size());
@@ -360,11 +344,8 @@ public final class Client {
         return tokens;
     }
 
-    /**
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
-     */
-    FileGroups authorizeGet(Http http, List<ICloud.MBSFile> files, List<MBSFileAuthToken> fileIdAuthTokens) {
+    FileGroups authorizeGet(Http http, List<ICloud.MBSFile> files, List<MBSFileAuthToken> fileIdAuthTokens)
+            throws IOException {
 
         logger.trace("<< authorizeGet() < tokens: {} files: {}", fileIdAuthTokens.size(), files.size());
 
@@ -414,10 +395,9 @@ public final class Client {
      * @param http, not null
      * @param chunks, not null
      * @return chunk data, not null
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
+     * @throws IOException
      */
-    public byte[] chunks(Http http, StorageHostChunkList chunks) {
+    public byte[] chunks(Http http, StorageHostChunkList chunks) throws IOException {
         logger.trace("<< chunks() < chunks count: {}", chunks.getChunkInfoCount());
 
         HostInfo hostInfo = chunks.getHostInfo();
@@ -439,7 +419,7 @@ public final class Client {
             return (NSDictionary) PropertyLists.parse(settings);
         } catch (BadDataException | IOException ex) {
             // Shouldn't happen here.
-            throw new FatalException(ex);
+            throw new IllegalStateException(ex);
         }
     }
 

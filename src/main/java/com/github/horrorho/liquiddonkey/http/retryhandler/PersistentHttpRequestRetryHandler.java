@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.http.retryhandler;
 
-import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import java.io.IOException;
@@ -102,7 +101,7 @@ public final class PersistentHttpRequestRetryHandler implements HttpRequestRetry
             final HttpContext context) {
 
         if (Thread.currentThread().isInterrupted()) {
-            throw new FatalException("Interruped.");
+            throw new IllegalStateException("Interruped");
         }
 
         HttpClientContext clientContext = HttpClientContext.adapt(context);
@@ -157,7 +156,7 @@ public final class PersistentHttpRequestRetryHandler implements HttpRequestRetry
         try {
             TimeUnit.MILLISECONDS.sleep(timeMs);
         } catch (InterruptedException ex) {
-            throw new FatalException("Interrupted.", ex);
+            throw new IllegalStateException("Interrupted", ex);
         }
     }
 }

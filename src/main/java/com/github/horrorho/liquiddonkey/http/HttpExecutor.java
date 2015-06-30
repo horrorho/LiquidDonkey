@@ -23,14 +23,14 @@
  */
 package com.github.horrorho.liquiddonkey.http;
 
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
+import com.github.horrorho.liquiddonkey.iofunction.IOBiFunction;
+import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.BiFunction;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
@@ -40,8 +40,6 @@ import org.apache.http.client.methods.RequestBuilder;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Request builder and executor.
@@ -52,14 +50,14 @@ import org.slf4j.LoggerFactory;
 @NotThreadSafe
 public class HttpExecutor<T> {
 
-    private final BiFunction<HttpUriRequest, ResponseHandler<T>, T> http;
+    private final IOBiFunction<HttpUriRequest, ResponseHandler<T>, T> http;
     private final ResponseHandler<T> handler;
     private final String uri;
     private final List<Header> headers = new ArrayList<>();
     private final List<NameValuePair> parameters = new ArrayList<>();
 
     HttpExecutor(
-            BiFunction<HttpUriRequest, ResponseHandler<T>, T> http,
+            IOBiFunction<HttpUriRequest, ResponseHandler<T>, T> http,
             String uri,
             ResponseHandler<T> handler) {
 
@@ -99,10 +97,9 @@ public class HttpExecutor<T> {
      * Get.
      *
      * @return result, may be null
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
+     * @throws IOException
      */
-    public T get() {
+    public T get() throws IOException {
         return execute(RequestBuilder.get());
     }
 
@@ -110,10 +107,9 @@ public class HttpExecutor<T> {
      * Post.
      *
      * @return result, may be null
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
+     * @throws IOException
      */
-    public T post() {
+    public T post() throws IOException {
         return execute(RequestBuilder.post());
     }
 
@@ -122,10 +118,9 @@ public class HttpExecutor<T> {
      *
      * @param postData post data, not null
      * @return result, may be null
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
+     * @throws IOException
      */
-    public T post(byte[] postData) {
+    public T post(byte[] postData) throws IOException {
         RequestBuilder builder = RequestBuilder.post();
         builder.setEntity(new ByteArrayEntity(postData));
         return execute(builder);
@@ -136,18 +131,13 @@ public class HttpExecutor<T> {
      *
      * @param method, not null
      * @return result, may be null
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
+     * @throws IOException
      */
-    public T execute(String method) {
+    public T execute(String method) throws IOException {
         return execute(RequestBuilder.create(method));
     }
 
-    /**
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
-     */
-    T execute(RequestBuilder builder) {
+    T execute(RequestBuilder builder) throws IOException {
         builder.setUri(uri);
         headers.stream().forEach(builder::addHeader);
         parameters.stream().forEach(builder::addParameter);

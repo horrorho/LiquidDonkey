@@ -149,7 +149,7 @@ public final class SnapshotDownloader {
         return results;
     }
 
-    <T> T error(Future<T> future) {
+    <T> T error(Future<T> future) throws FatalException {
         // TODO work through rules
         T t = null;
         try {
@@ -161,13 +161,11 @@ public final class SnapshotDownloader {
             Throwable throwable = ex.getCause();
 
             if (throwable instanceof FatalException) {
-                throw new FatalException(throwable);
+                throw (FatalException) throwable;
             }
 
-            if (throwable instanceof HttpResponseException) {
-                if (((HttpResponseException) throwable).getStatusCode() == 401) {
-                    throw new AuthenticationException(throwable);
-                }
+            if (throwable instanceof AuthenticationException) {
+                throw (AuthenticationException)
             }
         }
         return t;

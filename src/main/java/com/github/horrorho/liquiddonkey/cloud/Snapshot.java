@@ -24,7 +24,6 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import java.io.UncheckedIOException;
@@ -54,10 +53,9 @@ public final class Snapshot {
      * @param id
      * @param config, not null
      * @return a new Snapshot
-     * @throws AuthenticationException
      * @throws UncheckedIOException
      */
-    public Snapshot from(Http http, Backup backup, int id, EngineConfig config) {
+    public Snapshot from(Http http, Backup backup, int id, EngineConfig config) throws UncheckedIOException {
         logger.trace("<< of() < id: {}", id);
         int latest = backup.snapshots().stream().mapToInt(Integer::intValue).max().orElse(0);
 
@@ -71,7 +69,7 @@ public final class Snapshot {
         return snapshot;
     }
 
-    Snapshot from(Http http, List<Integer> snapshots, int id, boolean toHunt) {
+    Snapshot from(Http http, List<Integer> snapshots, int id, boolean toHunt) throws UncheckedIOException {
         if (!snapshots.contains(id)) {
             logger.warn("-- snapshots() > no snapshot: {}", id);
             return null;
@@ -88,7 +86,7 @@ public final class Snapshot {
                 : new Snapshot(id, backup, list);
     }
 
-    List<ICloud.MBSFile> list(Http http, int from, int to) {
+    List<ICloud.MBSFile> list(Http http, int from, int to) throws UncheckedIOException {
         int snapshot = from;
         List<ICloud.MBSFile> list = null;
 
@@ -98,7 +96,7 @@ public final class Snapshot {
         return list;
     }
 
-    List<ICloud.MBSFile> list(Http http, int snapshot) {
+    List<ICloud.MBSFile> list(Http http, int snapshot) throws UncheckedIOException {
         return backup.account().client().listFiles(http, backup.udid(), snapshot);
     }
 

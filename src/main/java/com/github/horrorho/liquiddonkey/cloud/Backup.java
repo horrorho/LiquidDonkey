@@ -70,10 +70,9 @@ public final class Backup {
      * @param account not null
      * @param udid not null
      * @return a new instance, may be null
-     * @throws AuthenticationException
      * @throws UncheckedIOException
      */
-    public static Backup from(Http http, Account account, ByteString udid) {
+    public static Backup from(Http http, Account account, ByteString udid) throws UncheckedIOException {
         try {
             ICloud.MBSBackup backup = account.client().backup(http, udid);
             KeyBag keyBag = KeyBagFactory.newInstance().from(account.client().getKeys(http, udid));

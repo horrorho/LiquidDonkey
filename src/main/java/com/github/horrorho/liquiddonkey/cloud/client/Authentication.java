@@ -36,7 +36,6 @@ import java.io.UncheckedIOException;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,10 +56,10 @@ public final class Authentication {
      * @param config, not null
      * @return Authentication, not null
      * @throws IOException
-     * @throws AuthenticationException
-     * @throws UncheckedIOException
+     * @throws BadDataException
      */
-    public static Authentication authenticate(Http http, AuthenticationConfig config) throws IOException {
+    public static Authentication authenticate(Http http, AuthenticationConfig config)
+            throws IOException, BadDataException {
         if (config instanceof AuthenticationConfig.AuthorizationToken) {
             return authenticate((AuthenticationConfig.AuthorizationToken) config);
         }
@@ -83,7 +82,7 @@ public final class Authentication {
     }
 
     static Authentication authenticate(Http http, AuthenticationConfig.AppleIdPassword config)
-            throws IOException {
+            throws IOException, BadDataException {
 
         return authenticate(http, config.id(), config.password());
     }
@@ -95,10 +94,12 @@ public final class Authentication {
      * @param appleId, not null
      * @param password, not null
      * @return Authentication, not null
-     * @throws AuthenticationException
-     * @throws UncheckedIOException
+     * @throws BadDataException
+     * @throws IOException
      */
-    public static Authentication authenticate(Http http, String appleId, String password) {
+    public static Authentication authenticate(Http http, String appleId, String password)
+            throws BadDataException, IOException {
+
         try {
             logger.trace("<< authenticate() < id: {} password: {}", appleId, password);
 
@@ -123,17 +124,14 @@ public final class Authentication {
             return authentication;
 
         } catch (IOException | BadDataException | PropertyListFormatException ex) {
-            throw new AuthenticationException("Unexpected server response", ex);
+            throw new BadDataException("Unexpected server response", ex);
         } catch (UncheckedIOException ex) {
             IOException ioex = ex.getCause();
-            if (ioex instanceof HttpResponseException) {
-                if (((HttpResponseException) ioex).getStatusCode() == 401) {
-                    throw new AuthenticationException("Bad appleId/ password or not an iCloud account", ex);
-                }
+            if (ioex instanceof AuthenticationException) {
+                logger.warn("-- authenticate() > exception: {}", ioex);
+                throw new AuthenticationException("Bad appleId/ password or not an iCloud account");
             }
-            throw ex;
-        } catch (AuthenticationException ex) {
-            throw new AuthenticationException("Bad appleId/ password or not an iCloud account", ex);
+            throw ex.getCause();
         }
     }
 

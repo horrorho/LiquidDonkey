@@ -25,7 +25,6 @@ package com.github.horrorho.liquiddonkey;
 
 import com.github.horrorho.liquiddonkey.util.DumpStackTraceHook;
 import com.github.horrorho.liquiddonkey.cloud.Looter;
-import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
@@ -87,9 +86,6 @@ public class Main {
 
         try (Looter looter = Looter.newInstance(config, printer)) {
             looter.loot();
-        } catch (FatalException ex) {
-            logger.warn("-- main() > FatalException", ex);
-            printer.println(Level.ERROR, ex);
         } catch (Exception ex) {
             logger.warn("-- main() > Exception", ex);
             printer.println(Level.ERROR, ex);

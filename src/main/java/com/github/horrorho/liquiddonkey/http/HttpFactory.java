@@ -24,7 +24,6 @@
 package com.github.horrorho.liquiddonkey.http;
 
 import com.github.horrorho.liquiddonkey.http.retryhandler.PersistentHttpRequestRetryHandler;
-import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.HttpConfig;
 import java.security.KeyManagementException;
@@ -120,7 +119,7 @@ public final class HttpFactory {
         try {
             return new SSLContextBuilder().loadTrustMaterial(null, (chain, authType) -> true).build();
         } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException ex) {
-            throw new FatalException("Unable to create relaxed SSL context.");
+            throw new IllegalStateException("Unable to create relaxed SSL context.");
         }
     }
 }

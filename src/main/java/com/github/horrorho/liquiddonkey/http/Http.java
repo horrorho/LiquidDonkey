@@ -71,10 +71,9 @@ public final class Http implements Closeable {
      * @param request not null
      * @param handler not null
      * @return result, may be null
-     * @throws UncheckedIOException
-     * @throws AuthenticationException
+     * @throws IOException
      */
-    public <T> T request(HttpUriRequest request, ResponseHandler<T> handler) {
+    public <T> T request(HttpUriRequest request, ResponseHandler<T> handler) throws IOException {
         logger.trace(HTTP, "<< request() < {}", request);
         int count = 0;
         while (true) {
@@ -82,24 +81,24 @@ public final class Http implements Closeable {
                 T response = client.execute(request, handler);
                 return response;
             } catch (SocketTimeoutException ex) {
-
+                // Not handled by the retry handler.
                 if (count++ < socketTimeoutRetryCount) {
                     logger.trace("-- request() > retrying: ", ex);
                 } else {
                     logger.trace(HTTP, "-- request() > ", ex);
-                    throw new UncheckedIOException(ex);
+                    throw ex;
                 }
             } catch (HttpResponseException ex) {
 
                 logger.trace(HTTP, "-- request() > ", ex);
                 if (ex.getStatusCode() == 401) {
-                    throw new AuthenticationException("Bad authentication", ex);
+                    throw new AuthenticationException("Bad authentication", ex.getCause());
                 }
-                throw new UncheckedIOException(ex);
+                throw ex;
             } catch (IOException ex) {
 
                 logger.trace(HTTP, "-- request() > ", ex);
-                throw new UncheckedIOException(ex);
+                throw ex;
             }
         }
     }

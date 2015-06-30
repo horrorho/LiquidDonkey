@@ -31,8 +31,8 @@ import java.io.IOException;
  * @author ahseya
  * @param <T> the input type.
  */
-//@FunctionalInterface
-//public interface IOSupplier<T> {
-//
-//    T get() throws IOException;
-//}
+@FunctionalInterface
+public interface IOSupplier<T> {
+
+    T get() throws IOException;
+}

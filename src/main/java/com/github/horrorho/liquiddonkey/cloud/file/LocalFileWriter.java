@@ -25,7 +25,6 @@ package com.github.horrorho.liquiddonkey.cloud.file;
 
 import com.github.horrorho.liquiddonkey.cloud.store.ChunkListStore;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.exception.FileHandlingException;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagTools;
 import com.github.horrorho.liquiddonkey.printer.Level;
@@ -132,7 +131,7 @@ public final class LocalFileWriter {
      * @param file the file, not null
      * @param writer the IOWriter, not null
      * @throws NullPointerException if the file or writer arguments are null
-     * @throws FileHandlingException if an IOException occurred
+     * @throws IllegalStateException if a file IOException occurs
      */
     public void write(int snapshot, MBSFile file, IOWriter writer) {
         try {
@@ -154,7 +153,7 @@ public final class LocalFileWriter {
 
             setLastModifiedTime(path, file);
         } catch (IOException ex) {
-            throw new FileHandlingException(ex);
+            throw new IllegalStateException("File io error", ex);
         }
     }
 

@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.crypto;
 
-import com.github.horrorho.liquiddonkey.exception.FatalException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import net.jcip.annotations.Immutable;
@@ -43,7 +42,7 @@ public final class MessageDigestFactory {
             return MessageDigest.getInstance(algorithm);
         } catch (NoSuchAlgorithmException ex) {
             // Unexpected, these hashes should be supported.
-            throw new FatalException("--getInstance() > failed to create Hash instance: " + algorithm, ex);
+            throw new IllegalStateException("Failed to create Hash: " + algorithm, ex);
         }
     }
 

@@ -23,12 +23,14 @@
  */
 package com.github.horrorho.liquiddonkey.exception;
 
+import java.io.IOException;
+
 /**
  * Authentication exception.
  *
  * @author ahseya
  */
-public class AuthenticationException extends FatalException {
+public class AuthenticationException extends IOException {
 
     public AuthenticationException() {
     }
@@ -43,9 +45,5 @@ public class AuthenticationException extends FatalException {
 
     public AuthenticationException(Throwable cause) {
         super(cause);
-    }
-
-    public AuthenticationException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace) {
-        super(message, cause, enableSuppression, writableStackTrace);
     }
 }
