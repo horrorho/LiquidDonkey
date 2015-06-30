@@ -4,7 +4,7 @@
  * Copyright 2015 Ahseya.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * of this software and associated documentation list (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
@@ -209,7 +209,7 @@ public final class Donkey implements Callable<Boolean> {
                 // Files with identical signatures/ hash.
                 Set<ICloud.MBSFile> files = signatureToFileSet.get(fileChecksumChunkReference.getFileChecksum());
 
-                // Reassemble the files from the chunk store via the file-chunk references. 
+                // Reassemble the list from the chunk store via the file-chunk references. 
                 files.stream().forEach(file
                         -> writer.write(
                                 snapshot,
