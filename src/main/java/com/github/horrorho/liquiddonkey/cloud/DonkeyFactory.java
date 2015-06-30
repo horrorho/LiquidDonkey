@@ -26,7 +26,6 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.github.horrorho.liquiddonkey.cloud.file.Directory;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileWriter;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
-import com.github.horrorho.liquiddonkey.cloud.file.Mode;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagTools;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
@@ -34,16 +33,9 @@ import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.google.protobuf.ByteString;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
@@ -80,7 +72,7 @@ public final class DonkeyFactory {
             Http http,
             Snapshot snapshot,
             ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileMap,
-            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>>  results) {
+            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results) {
 
         logger.trace("<< from()");
 
@@ -103,9 +95,11 @@ public final class DonkeyFactory {
                 printer,
                 engineConfig.toSetLastModifiedTimestamp());
 
-        Donkey donkey = Donkey.newInstance(
+        Donkey donkey = new Donkey(
                 http,
-                snapshot,
+                snapshot.backup().account().client(),
+                snapshot.backup().udid(),
+                snapshot.id(),
                 bundler,
                 results,
                 ChunkDecrypter.newInstance(),
@@ -116,5 +110,4 @@ public final class DonkeyFactory {
         logger.trace(">> from()");
         return donkey;
     }
-
 }

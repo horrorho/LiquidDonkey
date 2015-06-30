@@ -26,10 +26,11 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.dd.plist.NSDictionary;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.util.PropertyLists;
 import com.google.protobuf.ByteString;
-import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.List;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
@@ -46,7 +47,16 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Account {
 
-    public static Account from(Http http, Client client) throws IOException {
+    /**
+     * Returns a new Account.
+     *
+     * @param http, not null
+     * @param client, not null
+     * @return Account, not null
+     * @throws AuthenticationException
+     * @throws UncheckedIOException
+     */
+    public static Account from(Http http, Client client) {
         logger.trace("<< from()");
 
         NSDictionary plist = client.settings();

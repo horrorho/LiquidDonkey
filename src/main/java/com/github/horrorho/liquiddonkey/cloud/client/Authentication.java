@@ -32,6 +32,7 @@ import com.dd.plist.NSDictionary;
 import com.dd.plist.PropertyListFormatException;
 import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -49,6 +50,16 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Authentication {
 
+    /**
+     * Returns a new Authentication.
+     *
+     * @param http, not null
+     * @param config, not null
+     * @return Authentication, not null
+     * @throws IOException
+     * @throws AuthenticationException
+     * @throws UncheckedIOException
+     */
     public static Authentication authenticate(Http http, AuthenticationConfig config) throws IOException {
         if (config instanceof AuthenticationConfig.AuthorizationToken) {
             return authenticate((AuthenticationConfig.AuthorizationToken) config);
@@ -65,23 +76,33 @@ public final class Authentication {
         throw new AuthenticationException();
     }
 
-    public static Authentication authenticate(AuthenticationConfig.AuthorizationToken config)
+    static Authentication authenticate(AuthenticationConfig.AuthorizationToken config)
             throws IOException {
 
         return newInstance(config.dsPrsId(), config.mmeAuthToken());
     }
 
-    public static Authentication authenticate(Http http, AuthenticationConfig.AppleIdPassword config)
+    static Authentication authenticate(Http http, AuthenticationConfig.AppleIdPassword config)
             throws IOException {
 
         return authenticate(http, config.id(), config.password());
     }
 
-    public static Authentication authenticate(Http http, String id, String password) throws IOException {
+    /**
+     * Returns a new Authentication.
+     *
+     * @param http, not null
+     * @param appleId, not null
+     * @param password, not null
+     * @return Authentication, not null
+     * @throws AuthenticationException
+     * @throws UncheckedIOException
+     */
+    public static Authentication authenticate(Http http, String appleId, String password) {
         try {
-            logger.trace("<< authenticate() < id: {} password: {}", id, password);
+            logger.trace("<< authenticate() < id: {} password: {}", appleId, password);
 
-            String authBasic = Tokens.getInstance().basic(id, password);
+            String authBasic = Tokens.getInstance().basic(appleId, password);
             logger.trace("-- authenticate() > authentication basic token: {}", authBasic);
 
             NSDictionary response = (NSDictionary) PropertyLists.parse(
@@ -101,20 +122,28 @@ public final class Authentication {
 
             return authentication;
 
-        } catch (BadDataException | PropertyListFormatException ex) {
+        } catch (IOException | BadDataException | PropertyListFormatException ex) {
             throw new AuthenticationException("Unexpected server response", ex);
-        } catch (HttpResponseException ex) {
-            logger.warn("-- authenticate() >  exception: ", ex);
-            if (ex.getStatusCode() == 401) {
-                throw new AuthenticationException("Bad appleId/ password or not an iCloud account", ex);
+        } catch (UncheckedIOException ex) {
+            IOException ioex = ex.getCause();
+            if (ioex instanceof HttpResponseException) {
+                if (((HttpResponseException) ioex).getStatusCode() == 401) {
+                    throw new AuthenticationException("Bad appleId/ password or not an iCloud account", ex);
+                }
             }
-            if (ex.getStatusCode() == 409) {
-                throw new AuthenticationException("Two-step authentication or not an iCloud account", ex);
-            }
-            throw new AuthenticationException(ex);
+            throw ex;
+        } catch (AuthenticationException ex) {
+            throw new AuthenticationException("Bad appleId/ password or not an iCloud account", ex);
         }
     }
 
+    /**
+     * Returns a new Authentication.
+     *
+     * @param dsPrsID, not null
+     * @param mmeAuthToken, not null
+     * @return Authentication, not null
+     */
     public static Authentication newInstance(String dsPrsID, String mmeAuthToken) {
         return new Authentication(dsPrsID, mmeAuthToken);
     }

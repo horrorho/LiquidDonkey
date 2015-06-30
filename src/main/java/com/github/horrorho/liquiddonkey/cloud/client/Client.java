@@ -43,12 +43,12 @@ import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
 import static com.github.horrorho.liquiddonkey.settings.Markers.CLIENT;
 import static com.github.horrorho.liquiddonkey.http.NameValuePairs.parameter;
-import com.github.horrorho.liquiddonkey.iofunction.IOSupplier;
 import static com.github.horrorho.liquiddonkey.util.Bytes.hex;
 import com.github.horrorho.liquiddonkey.settings.config.ClientConfig;
 import com.github.horrorho.liquiddonkey.util.PropertyLists;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -59,7 +59,6 @@ import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,35 +72,36 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Client {
 
-    public static Client from(Http http, Authentication authentication, ClientConfig config) throws IOException {
-        try {
-            logger.trace("<< from() < authentication: {}", http, authentication);
+    /**
+     * Returns a new Client instance.
+     *
+     * @param http, not null
+     * @param authentication, not null
+     * @param config, not null
+     * @return a new instance
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    public static Client from(Http http, Authentication authentication, ClientConfig config) {
+        logger.trace("<< from() < authentication: {}", http, authentication);
 
-            String dsPrsID = authentication.dsPrsID();
-            String mmeAuthToken = authentication.mmeAuthToken();
+        String dsPrsID = authentication.dsPrsID();
+        String mmeAuthToken = authentication.mmeAuthToken();
 
-            String auth = Tokens.getInstance().basic(dsPrsID, mmeAuthToken);
-            logger.trace("-- from() >  authentication token: {}", auth);
+        String auth = Tokens.getInstance().basic(dsPrsID, mmeAuthToken);
+        logger.trace("-- from() >  authentication token: {}", auth);
 
-            byte[] settings
-                    = http.executor("https://setup.icloud.com/setup/get_account_settings", byteArrayResponseHandler)
-                    .headers(Headers.mmeClientInfo, Headers.authorization(auth))
-                    .get();
+        byte[] settings
+                = http.executor("https://setup.icloud.com/setup/get_account_settings", byteArrayResponseHandler)
+                .headers(Headers.mmeClientInfo, Headers.authorization(auth))
+                .get();
 
-            Client client = Client.newInstance(settings, config.listLimit());
-            logger.trace(">> from()");
-            return client;
-
-        } catch (HttpResponseException ex) {
-            logger.warn("-- authenticate() >  exception: ", ex);
-            if (ex.getStatusCode() == 401) {
-                throw new AuthenticationException("Bad authorization token.", ex);
-            }
-            throw new AuthenticationException(ex);
-        }
+        Client client = Client.newInstance(settings, config.listLimit());
+        logger.trace(">> from()");
+        return client;
     }
 
-    public static Client newInstance(byte[] settings, int listLimit) {
+    static Client newInstance(byte[] settings, int listLimit) {
         try {
             logger.trace("<< newInstance()");
 
@@ -117,7 +117,7 @@ public final class Client {
 
             String authMme = Tokens.getInstance().mobilemeAuthToken(dsPrsID, mmeAuthToken);
 
-            Client client = Client.newInstance(
+            Client client = new Client(
                     settings,
                     Headers.mobileBackupHeaders(authMme),
                     Headers.contentHeaders(dsPrsID),
@@ -131,28 +131,6 @@ public final class Client {
         } catch (IOException | BadDataException | PropertyListFormatException ex) {
             throw new AuthenticationException(ex);
         }
-    }
-
-    static Client newInstance(
-            byte[] settings,
-            List<Header> mobileBackupHeaders,
-            List<Header> contentHeaders,
-            String dsPrsID,
-            String contentUrl,
-            String mobileBackupUrl,
-            int listFilesLimit) {
-
-        logger.trace("<< newInstance()");
-        Client client = new Client(
-                settings,
-                new ArrayList<>(mobileBackupHeaders),
-                new ArrayList<>(contentHeaders),
-                dsPrsID,
-                contentUrl,
-                mobileBackupUrl,
-                listFilesLimit);
-        logger.trace(">> newInstance() > ", client);
-        return client;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Client.class);
@@ -198,37 +176,38 @@ public final class Client {
         this.listFilesLimit = listFilesLimit;
     }
 
-    private <T> T mobileBackupGet(Http http, ResponseHandler<T> handler, String path, NameValuePair... parameters)
-            throws IOException {
+    /**
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    <T> T mobileBackupGet(Http http, ResponseHandler<T> handler, String path, NameValuePair... parameters) {
 
-        return authenticationException(()
-                -> http.executor(path(mobileBackupUrl, path), handler)
+        return http.executor(path(mobileBackupUrl, path), handler)
                 .headers(mobileBackupHeaders)
                 .parameters(parameters)
-                .get());
+                .get();
     }
 
-    private <T> T mobileBackupPost(Http http, ResponseHandler<T> handler, String path, byte[] postData)
-            throws IOException {
+    /**
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    <T> T mobileBackupPost(Http http, ResponseHandler<T> handler, String path, byte[] postData) {
 
-        return authenticationException(()
-                -> http.executor(path(mobileBackupUrl, path), handler)
+        return http.executor(path(mobileBackupUrl, path), handler)
                 .headers(mobileBackupHeaders)
-                .post(postData));
+                .post(postData);
     }
 
-    private <T> T authenticationException(IOSupplier<T> supplier) throws IOException {
-        try {
-            return supplier.get();
-        } catch (HttpResponseException ex) {
-            if (ex.getStatusCode() == 401) {
-                throw new AuthenticationException(ex);
-            }
-            throw ex;
-        }
-    }
-
-    public MBSAccount account(Http http) throws IOException {
+    /**
+     * Returns MBSAccount.
+     *
+     * @param http, not null
+     * @return MBSAccount, not null
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    public MBSAccount account(Http http) {
         logger.trace("<< account()");
         MBSAccount account
                 = mobileBackupGet(
@@ -240,7 +219,16 @@ public final class Client {
         return account;
     }
 
-    public MBSBackup backup(Http http, ByteString backupUDID) throws IOException {
+    /**
+     * Returns MBSBackup.
+     *
+     * @param http, not null
+     * @param backupUDID, not null
+     * @return MBSBackup, not null
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    public MBSBackup backup(Http http, ByteString backupUDID) {
         logger.trace("<< backup() < {}", hex(backupUDID));
         MBSBackup backup
                 = mobileBackupGet(
@@ -252,7 +240,16 @@ public final class Client {
         return backup;
     }
 
-    public MBSKeySet getKeys(Http http, ByteString backupUDID) throws IOException {
+    /**
+     * Returns MBSKeySet.
+     *
+     * @param http, not null
+     * @param backupUDID, not null
+     * @return MBSKeySet, not null
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    public MBSKeySet getKeys(Http http, ByteString backupUDID) {
         logger.trace("<< getKeys() < {}", hex(backupUDID));
         MBSKeySet keys
                 = mobileBackupGet(
@@ -264,7 +261,17 @@ public final class Client {
         return keys;
     }
 
-    public List<MBSFile> listFiles(Http http, ByteString backupUDID, Integer snapshotId) throws IOException {
+    /**
+     * Returns a list of MBSFiles.
+     *
+     * @param http, not null
+     * @param backupUDID, not null
+     * @param snapshotId
+     * @return a list of MBSFiles, not null
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    public List<MBSFile> listFiles(Http http, ByteString backupUDID, int snapshotId) {
         logger.trace("<< listFiles() < backupUDID: {} snapshotId: {}", hex(backupUDID), snapshotId);
 
         List<MBSFile> files = new ArrayList<>();
@@ -275,7 +282,7 @@ public final class Client {
             data = mobileBackupGet(
                     http,
                     mbsFileListHandler,
-                    path("mbs", dsPrsID, hex(backupUDID), snapshotId.toString(), "listFiles"),
+                    path("mbs", dsPrsID, hex(backupUDID), Integer.toString(snapshotId), "listFiles"),
                     parameter("offset", offset), limitParameter);
 
             files.addAll(data);
@@ -287,11 +294,23 @@ public final class Client {
         return files;
     }
 
-    public FileGroups getFileGroups(Http http, ByteString backupUdid, Integer snapshot, List<MBSFile> files)
-            throws IOException {
+    /**
+     * Returns FileGroups.
+     *
+     * @param http, not null
+     * @param backupUdid, not null
+     * @param snapshotId
+     * @param files
+     * @return FileGroups, not null
+     * @throws BadDataException
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    public FileGroups getFileGroups(Http http, ByteString backupUdid, int snapshotId, List<MBSFile> files)
+            throws BadDataException {
 
         logger.trace("<< getFilesGroups() < backupUdid: {} snapshot: {} files: {}",
-                hex(backupUdid), snapshot, files.size());
+                hex(backupUdid), snapshotId, files.size());
 
         FileGroups fileGroups = authorizeGet(
                 http,
@@ -299,7 +318,7 @@ public final class Client {
                 getFiles(
                         http,
                         backupUdid,
-                        snapshot,
+                        snapshotId,
                         files));
 
         logger.trace(">> getFileGroups() > count: {}", fileGroups.getFileGroupsCount());
@@ -307,11 +326,15 @@ public final class Client {
         return fileGroups;
     }
 
-    List<MBSFileAuthToken> getFiles(Http http, ByteString backupUdid, Integer snapshot, List<MBSFile> files)
-            throws IOException {
+    /**
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    List<MBSFileAuthToken> getFiles(Http http, ByteString backupUdid, int snapshotId, List<MBSFile> files)
+            throws BadDataException {
 
         logger.trace("<< getFiles() < backupUdid: {} snapshot: {} files: {}",
-                hex(backupUdid), snapshot, files.size());
+                hex(backupUdid), snapshotId, files.size());
 
         List<MBSFileAuthToken> tokens;
         if (files.isEmpty()) {
@@ -321,16 +344,27 @@ public final class Client {
                     .map(file -> MBSFile.newBuilder().setFileID(file.getFileID()).build())
                     .collect(Collectors.toList());
 
-            String uri = path("mbs", dsPrsID, hex(backupUdid), snapshot.toString(), "getFiles");
-            tokens = mobileBackupPost(http, mbsFileAuthTokenListHandler, uri, ProtoBufArray.encode(post));
+            String uri = path("mbs", dsPrsID, hex(backupUdid), Integer.toString(snapshotId), "getFiles");
+
+            byte[] encoded;
+            try {
+                encoded = ProtoBufArray.encode(post);
+            } catch (IOException ex) {
+                throw new BadDataException(ex);
+            }
+
+            tokens = mobileBackupPost(http, mbsFileAuthTokenListHandler, uri, encoded);
         }
         logger.trace(">> getFiles() > count: {}", tokens.size());
         logger.trace(CLIENT, ">> getFiles() > {}", tokens);
         return tokens;
     }
 
-    FileGroups authorizeGet(Http http, List<ICloud.MBSFile> files, List<MBSFileAuthToken> fileIdAuthTokens)
-            throws IOException {
+    /**
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    FileGroups authorizeGet(Http http, List<ICloud.MBSFile> files, List<MBSFileAuthToken> fileIdAuthTokens) {
 
         logger.trace("<< authorizeGet() < tokens: {} files: {}", fileIdAuthTokens.size(), files.size());
 
@@ -343,11 +377,10 @@ public final class Client {
             Header mmcsAuth
                     = Headers.mmcsAuth(hex(tokens.getTokens(0).getFileID()) + " " + tokens.getTokens(0).getAuthToken());
 
-            groups = authenticationException(()
-                    -> http.executor(path(contentUrl, dsPrsID, "authorizeGet"), filesGroupsHandler)
+            groups = http.executor(path(contentUrl, dsPrsID, "authorizeGet"), filesGroupsHandler)
                     .headers(mmcsAuth)
                     .headers(contentHeaders)
-                    .post(tokens.toByteArray()));
+                    .post(tokens.toByteArray());
         }
         logger.trace(">> authorizeGet() > count: {}", groups.getFileGroupsCount());
         logger.trace(CLIENT, ">> authorizeGet)() > fileError: {}", groups.getFileErrorList());
@@ -375,7 +408,16 @@ public final class Client {
         return builder.build();
     }
 
-    public byte[] chunks(Http http, StorageHostChunkList chunks) throws IOException {
+    /**
+     * Returns chunk data.
+     *
+     * @param http, not null
+     * @param chunks, not null
+     * @return chunk data, not null
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    public byte[] chunks(Http http, StorageHostChunkList chunks) {
         logger.trace("<< chunks() < chunks count: {}", chunks.getChunkInfoCount());
 
         HostInfo hostInfo = chunks.getHostInfo();

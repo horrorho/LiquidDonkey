@@ -23,8 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.iofunction;
 
-import java.io.IOException;
-
 /**
  * Represents a function that accepts one argument and produces a result.
  *
@@ -33,8 +31,8 @@ import java.io.IOException;
  * @param <U> Second input type.
  * @param <R> Return type.
  */
-@FunctionalInterface
-public interface IOBiFunction<T, U, R> {
-
-    R apply(T t, U u) throws IOException;
-}
+//@FunctionalInterface
+//public interface IOBiFunction<T, U, R> {
+//
+//    R apply(T t, U u) throws IOException;
+//}

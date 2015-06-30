@@ -31,17 +31,17 @@ import java.io.OutputStream;
  *
  * @author Ahseya
  */
-@FunctionalInterface
-
-public interface IOWriter extends IOFunction<OutputStream, Long> {
-
-    /**
-     * Writes data to the specified {@code outputStream}.
-     *
-     * @param outputStream
-     * @return the number of bytes written, or -1 if a problem occurred, not null
-     * @throws IOException
-     */
-    @Override
-    Long apply(OutputStream outputStream) throws IOException;
-}
+//@FunctionalInterface
+//
+//public interface IOWriter extends IOFunction<OutputStream, Long> {
+//
+//    /**
+//     * Writes data to the specified {@code outputStream}.
+//     *
+//     * @param outputStream
+//     * @return the number of bytes written, or -1 if a problem occurred, not null
+//     * @throws IOException
+//     */
+//    @Override
+//    Long apply(OutputStream outputStream) throws IOException;
+//}

@@ -31,6 +31,7 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.ChunkListStore;
 import com.github.horrorho.liquiddonkey.cloud.store.MemoryStore;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -57,29 +58,6 @@ import org.slf4j.LoggerFactory;
  */
 @NotThreadSafe
 public final class Donkey implements Callable<Boolean> {
-
-    public static Donkey newInstance(
-            Http http,
-            Snapshot snapshot,
-            Iterator<Map<ByteString, Set<ICloud.MBSFile>>> iterator,
-            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results,
-            ChunkDecrypter decrypter,
-            LocalFileWriter writer,
-            boolean isAggressive,
-            int attempts) {
-
-        return new Donkey(
-                http,
-                snapshot.backup().account().client(),
-                snapshot.backup().udid(),
-                snapshot.id(),
-                iterator,
-                results,
-                decrypter,
-                writer,
-                isAggressive,
-                attempts);
-    }
 
     private static final Logger logger = LoggerFactory.getLogger(Donkey.class);
 
@@ -132,20 +110,16 @@ public final class Donkey implements Callable<Boolean> {
                     download(signatures);
                     addAll(true, signatures);
                 }
-            } catch (IOException ex) {
-                // TODO work through
+            } catch (BadDataException ex) {
+                logger.warn("-- call() > exception: ", ex);
+                addAll(false, signatures);
+                
+            } catch (UncheckedIOException ex) {
                 logger.warn("-- call() > exception: ", ex);
                 addAll(false, signatures);
 
-                Throwable cause = ex.getCause();
-                if (cause instanceof HttpResponseException) {
-                    if (((HttpResponseException) cause).getStatusCode() == 401) {
-                        throw new AuthenticationException(ex);
-                    }
-                }
-
                 if (!isAggressive) {
-                    throw new UncheckedIOException(ex);
+                    throw ex;
                 }
             }
         }
@@ -157,7 +131,7 @@ public final class Donkey implements Callable<Boolean> {
         results.computeIfAbsent(key, k -> new ConcurrentHashMap<>()).putAll(signatures);
     }
 
-    public void download(Map<ByteString, Set<ICloud.MBSFile>> signatures) throws IOException {
+    public void download(Map<ByteString, Set<ICloud.MBSFile>> signatures) throws BadDataException {
         logger.trace("<< download() < {}", signatures.size());
 
         List<ICloud.MBSFile> files = signatures.entrySet().stream()
@@ -166,6 +140,7 @@ public final class Donkey implements Callable<Boolean> {
                 .collect(Collectors.toList());
 
         FileGroups fileGroups = client.getFileGroups(http, backupUdid, snapshot, files);
+
         downloadFileGroups(fileGroups, signatures);
 
         logger.trace(">> download()");
@@ -174,7 +149,7 @@ public final class Donkey implements Callable<Boolean> {
     private void downloadFileGroups(
             ChunkServer.FileGroups fileGroups,
             Map<ByteString, Set<ICloud.MBSFile>> signatureToFileSet
-    ) throws IOException {
+    ) {
 
         for (ChunkServer.FileChecksumStorageHostChunkLists group : fileGroups.getFileGroupsList()) {
             ChunkListStore store = download(group);
@@ -194,7 +169,7 @@ public final class Donkey implements Callable<Boolean> {
         }
     }
 
-    public ChunkListStore download(ChunkServer.FileChecksumStorageHostChunkLists group) throws IOException {
+    public ChunkListStore download(ChunkServer.FileChecksumStorageHostChunkLists group) {
         logger.trace("<< download() < group count : {}", group.getStorageHostChunkListCount());
 
         // TODO memory or disk based depending on size
@@ -208,14 +183,14 @@ public final class Donkey implements Callable<Boolean> {
         return storage;
     }
 
-    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList) throws IOException {
+    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList) {
         // Recursive.
         return chunkList.getChunkInfoCount() == 0
                 ? new ArrayList<>()
                 : download(chunkList, 0);
     }
 
-    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList, int attempt) throws IOException {
+    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList, int attempt) {
         // Recursive.
         List<byte[]> decrypted = attempt++ == attempts
                 ? new ArrayList<>()

@@ -27,7 +27,6 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
-import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
 import java.util.HashSet;
@@ -36,7 +35,6 @@ import java.util.Objects;
 import java.util.Set;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,26 +46,32 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Snapshot {
 
+    /**
+     * Returns a new Snapshot.
+     *
+     * @param http, not null
+     * @param backup, not null
+     * @param id
+     * @param config, not null
+     * @return a new Snapshot
+     * @throws AuthenticationException
+     * @throws UncheckedIOException
+     */
     public Snapshot from(Http http, Backup backup, int id, EngineConfig config) {
-        try {
-            logger.trace("<< of() < id: {}", id);
-            int latest = backup.snapshots().stream().mapToInt(Integer::intValue).max().orElse(0);
+        logger.trace("<< of() < id: {}", id);
+        int latest = backup.snapshots().stream().mapToInt(Integer::intValue).max().orElse(0);
 
-            Snapshot snapshot = from(
-                    http,
-                    backup.snapshots(),
-                    id < 0 ? latest + id + 1 : id,
-                    config.isAggressive());
+        Snapshot snapshot = from(
+                http,
+                backup.snapshots(),
+                id < 0 ? latest + id + 1 : id,
+                config.isAggressive());
 
-            logger.trace(">> of() > snapshot: {}", snapshot);
-            return snapshot;
-        } catch (IOException ex) {
-            //TODO how do we handle this?
-            throw new UncheckedIOException(ex);
-        }
+        logger.trace(">> of() > snapshot: {}", snapshot);
+        return snapshot;
     }
 
-    Snapshot from(Http http, List<Integer> snapshots, int id, boolean toHunt) throws IOException {
+    Snapshot from(Http http, List<Integer> snapshots, int id, boolean toHunt) {
         if (!snapshots.contains(id)) {
             logger.warn("-- snapshots() > no snapshot: {}", id);
             return null;
@@ -84,7 +88,7 @@ public final class Snapshot {
                 : new Snapshot(id, backup, list);
     }
 
-    List<ICloud.MBSFile> list(Http http, int from, int to) throws IOException {
+    List<ICloud.MBSFile> list(Http http, int from, int to) {
         int snapshot = from;
         List<ICloud.MBSFile> list = null;
 
@@ -94,17 +98,8 @@ public final class Snapshot {
         return list;
     }
 
-    List<ICloud.MBSFile> list(Http http, int snapshot) throws IOException {
-        try {
-            return backup.account().client().listFiles(http, backup.udid(), snapshot);
-        } catch (HttpResponseException ex) {
-            if (ex.getStatusCode() == 401) {
-                throw new AuthenticationException(ex);
-            }
-
-            logger.trace("-- files() > snapshot not found: {}", snapshot);
-            return null;
-        }
+    List<ICloud.MBSFile> list(Http http, int snapshot) {
+        return backup.account().client().listFiles(http, backup.udid(), snapshot);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Snapshot.class);

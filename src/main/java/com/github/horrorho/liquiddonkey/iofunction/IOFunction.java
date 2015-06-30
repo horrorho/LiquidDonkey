@@ -24,6 +24,8 @@
 package com.github.horrorho.liquiddonkey.iofunction;
 
 import java.io.IOException;
+import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * Represents a function that accepts two arguments and produces a result.
@@ -36,4 +38,18 @@ import java.io.IOException;
 public interface IOFunction<T, R> {
 
     R apply(T t) throws IOException;
+
+    default <V> IOFunction<V, R> compose(Function<? super V, ? extends T> before) {
+        Objects.requireNonNull(before);
+        return (V v) -> apply(before.apply(v));
+    }
+
+    default <V> IOFunction<T, V> andThen(Function<? super R, ? extends V> after) {
+        Objects.requireNonNull(after);
+        return (T t) -> after.apply(apply(t));
+    }
+
+    static <T> Function<T, T> identity() {
+        return t -> t;
+    }
 }

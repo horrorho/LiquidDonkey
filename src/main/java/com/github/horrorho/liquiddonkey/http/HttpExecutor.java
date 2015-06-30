@@ -24,18 +24,16 @@
 package com.github.horrorho.liquiddonkey.http;
 
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
-import com.github.horrorho.liquiddonkey.iofunction.IOBiFunction;
-import static com.github.horrorho.liquiddonkey.settings.Markers.HTTP;
-import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiFunction;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
-import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
@@ -46,7 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Fluent request builder and executor.
+ * Request builder and executor.
  *
  * @author ahseya
  * @param <T> Return type.
@@ -54,16 +52,14 @@ import org.slf4j.LoggerFactory;
 @NotThreadSafe
 public class HttpExecutor<T> {
 
-    private static final Logger logger = LoggerFactory.getLogger(HttpExecutor.class);
-
-    private final IOBiFunction<HttpUriRequest, ResponseHandler<T>, T> http;
+    private final BiFunction<HttpUriRequest, ResponseHandler<T>, T> http;
     private final ResponseHandler<T> handler;
     private final String uri;
     private final List<Header> headers = new ArrayList<>();
     private final List<NameValuePair> parameters = new ArrayList<>();
 
     HttpExecutor(
-            IOBiFunction<HttpUriRequest, ResponseHandler<T>, T> http,
+            BiFunction<HttpUriRequest, ResponseHandler<T>, T> http,
             String uri,
             ResponseHandler<T> handler) {
 
@@ -99,42 +95,63 @@ public class HttpExecutor<T> {
         return this;
     }
 
-    public T get() throws IOException {
+    /**
+     * Get.
+     *
+     * @return result, may be null
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    public T get() {
         return execute(RequestBuilder.get());
     }
 
-    public T post() throws IOException {
+    /**
+     * Post.
+     *
+     * @return result, may be null
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    public T post() {
         return execute(RequestBuilder.post());
     }
 
-    public T post(byte[] postData) throws IOException {
+    /**
+     * Post.
+     *
+     * @param postData post data, not null
+     * @return result, may be null
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    public T post(byte[] postData) {
         RequestBuilder builder = RequestBuilder.post();
         builder.setEntity(new ByteArrayEntity(postData));
         return execute(builder);
     }
 
-    public T execute(String method) throws IOException {
+    /**
+     * Execute.
+     *
+     * @param method, not null
+     * @return result, may be null
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    public T execute(String method) {
         return execute(RequestBuilder.create(method));
     }
 
-    public T execute(RequestBuilder builder) throws IOException {
+    /**
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    T execute(RequestBuilder builder) {
         builder.setUri(uri);
         headers.stream().forEach(builder::addHeader);
         parameters.stream().forEach(builder::addParameter);
         HttpUriRequest request = builder.build();
-        try {
-            return http.apply(request, handler);
-        } catch (HttpResponseException ex) {
-            logger.trace(HTTP, "--execute() > request: {} headers: {} exception: {}",
-                    request, request.getAllHeaders(), ex);
-            if (ex.getStatusCode() == 401) {
-                throw new AuthenticationException(ex);
-            }
-            throw ex;
-        } catch (IOException ex) {
-            logger.trace(HTTP, "--execute() > request: {} headers: {} exception: {}",
-                    request, request.getAllHeaders(), ex);
-            throw ex;
-        }
+        return http.apply(request, handler);
     }
 }

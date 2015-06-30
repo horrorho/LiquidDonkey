@@ -23,11 +23,14 @@
  */
 package com.github.horrorho.liquiddonkey.http;
 
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import static com.github.horrorho.liquiddonkey.settings.Markers.HTTP;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.SocketTimeoutException;
 import java.util.Objects;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.BasicResponseHandler;
@@ -48,7 +51,7 @@ public final class Http implements Closeable {
     private final CloseableHttpClient client;
     private final int socketTimeoutRetryCount;
 
-    public Http(CloseableHttpClient client, int socketTimeoutRetryCount) {
+    Http(CloseableHttpClient client, int socketTimeoutRetryCount) {
         this.client = Objects.requireNonNull(client);
         this.socketTimeoutRetryCount = socketTimeoutRetryCount;
     }
@@ -61,20 +64,42 @@ public final class Http implements Closeable {
         return new HttpExecutor<>(this::request, uri, handler);
     }
 
-    public <T> T request(HttpUriRequest request, ResponseHandler<T> handler) throws IOException {
+    /**
+     * Request.
+     *
+     * @param <T> type
+     * @param request not null
+     * @param handler not null
+     * @return result, may be null
+     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     */
+    public <T> T request(HttpUriRequest request, ResponseHandler<T> handler) {
         logger.trace(HTTP, "<< request() < {}", request);
         int count = 0;
         while (true) {
             try {
                 T response = client.execute(request, handler);
-                logger.trace(HTTP, ">> request()", response);
                 return response;
             } catch (SocketTimeoutException ex) {
+
                 if (count++ < socketTimeoutRetryCount) {
-                    logger.warn("-- request() > retry: ", ex);
-                    continue;
+                    logger.trace("-- request() > retrying: ", ex);
+                } else {
+                    logger.trace(HTTP, "-- request() > ", ex);
+                    throw new UncheckedIOException(ex);
                 }
-                throw ex;
+            } catch (HttpResponseException ex) {
+
+                logger.trace(HTTP, "-- request() > ", ex);
+                if (ex.getStatusCode() == 401) {
+                    throw new AuthenticationException("Bad authentication", ex);
+                }
+                throw new UncheckedIOException(ex);
+            } catch (IOException ex) {
+
+                logger.trace(HTTP, "-- request() > ", ex);
+                throw new UncheckedIOException(ex);
             }
         }
     }

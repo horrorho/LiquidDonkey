@@ -110,7 +110,7 @@ public final class ChunkDecrypter {
                     return null;
                 }
             } else {
-                logger.warn("--decrypt() >  missing chunk info checksum, unable to verify data integrity");
+                logger.warn("-- decrypt() >  missing chunk info checksum, unable to verify data integrity");
             }
 
             return decrypted;
