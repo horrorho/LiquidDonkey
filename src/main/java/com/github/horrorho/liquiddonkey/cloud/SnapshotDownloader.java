@@ -23,13 +23,17 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.file.Mode;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.google.protobuf.ByteString;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
@@ -40,6 +44,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
@@ -57,23 +63,22 @@ import org.slf4j.LoggerFactory;
  */
 @Immutable
 @ThreadSafe
-public final class SignatureDownloader {
+public final class SnapshotDownloader {
 
-    private static final Logger logger = LoggerFactory.getLogger(SignatureDownloader.class);
+    private static final Logger logger = LoggerFactory.getLogger(SnapshotDownloader.class);
 
     /**
      * Returns a new instance.
      *
      * @param factory not null
-     * @param filter not null
      * @param config not null
      * @return a new instance, not null
      */
-    public static SignatureDownloader newInstance(
+    public static SnapshotDownloader newInstance(
             DonkeyFactory factory,
             EngineConfig config) {
 
-        return new SignatureDownloader(
+        return new SnapshotDownloader(
                 factory,
                 config.threadCount(),
                 config.threadStaggerDelay(),
@@ -85,7 +90,7 @@ public final class SignatureDownloader {
     private final int staggerDelayMs;
     private final int retryCount;
 
-    SignatureDownloader(DonkeyFactory factory, int threads, int staggerDelayMs, int retryCount) {
+    SnapshotDownloader(DonkeyFactory factory, int threads, int staggerDelayMs, int retryCount) {
         this.factory = Objects.requireNonNull(factory);
         this.threads = threads;
         this.staggerDelayMs = staggerDelayMs;
@@ -177,5 +182,28 @@ public final class SignatureDownloader {
         } catch (InterruptedException ex) {
             throw new FatalException(ex);
         }
+    }
+
+    public ConcurrentMap<ByteString, Set<ICloud.MBSFile>>
+            moo(List<ICloud.MBSFile> files, Predicate<ICloud.MBSFile> filter) {
+
+        Map<Mode, List<ICloud.MBSFile>> modeToFiles = groupingBy(files, Mode::mode);
+        logger.info("-- signatures() > modes: {}", summary(modeToFiles));
+
+        Map<Boolean, List<ICloud.MBSFile>> isFilteredToFiles = groupingBy(files, filter::test);
+        logger.info("-- signatures() > filtered: {}", summary(isFilteredToFiles));
+
+        return isFilteredToFiles.getOrDefault(Boolean.TRUE, new ArrayList<>()).stream()
+                .collect(Collectors.groupingByConcurrent(ICloud.MBSFile::getSignature, Collectors.toSet()));
+    }
+
+    <T, K> Map<K, List<T>> groupingBy(List<T> t, Function<T, K> classifier) {
+        return t == null
+                ? new HashMap<>()
+                : t.stream().collect(Collectors.groupingBy(classifier));
+    }
+
+    <K, V> Map<K, Integer> summary(Map<K, List<V>> map) {
+        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().size()));
     }
 }

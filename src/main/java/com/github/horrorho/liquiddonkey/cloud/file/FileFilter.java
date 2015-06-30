@@ -23,13 +23,13 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.file;
 
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFileAttributes;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.settings.config.FileFilterConfig;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Set;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
@@ -42,7 +42,8 @@ import net.jcip.annotations.ThreadSafe;
  */
 @Immutable
 @ThreadSafe
-public final class FileFilter implements Predicate<MBSFile> {
+public final class FileFilter
+        implements Predicate<ICloud.MBSFile>, Function<Collection<ICloud.MBSFile>, Set<ICloud.MBSFile>> {
 
     public static FileFilter getInstance(FileFilterConfig config) {
 
@@ -87,7 +88,12 @@ public final class FileFilter implements Predicate<MBSFile> {
     }
 
     @Override
-    public boolean test(MBSFile file) {
+    public Set<ICloud.MBSFile> apply(Collection<ICloud.MBSFile> files) {
+        return files.stream().filter(this::test).collect(Collectors.toSet());
+    }
+
+    @Override
+    public boolean test(ICloud.MBSFile file) {
         return testDomain(file.getDomain())
                 && testSize(file)
                 && testExtensions(file.getRelativePath())
@@ -95,11 +101,11 @@ public final class FileFilter implements Predicate<MBSFile> {
                 && testTimestamp(file);
     }
 
-    public boolean testTimestamp(MBSFile file) {
+    public boolean testTimestamp(ICloud.MBSFile file) {
         if (!file.hasAttributes()) {
             return true;
         }
-        MBSFileAttributes attributes = file.getAttributes();
+        ICloud.MBSFileAttributes attributes = file.getAttributes();
         if (!attributes.hasLastModified()) {
             return true;
         }
@@ -107,7 +113,7 @@ public final class FileFilter implements Predicate<MBSFile> {
         return timestamp >= minDate && timestamp <= maxDate;
     }
 
-    public boolean testSize(MBSFile file) {
+    public boolean testSize(ICloud.MBSFile file) {
         long size = file.getSize();
         return size >= minSize && size <= maxSize;
     }
