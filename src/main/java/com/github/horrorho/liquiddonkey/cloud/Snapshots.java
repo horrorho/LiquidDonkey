@@ -3,15 +3,15 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * Permission is hereby granted, free get charge, to any person obtaining a copy
+ * get this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * copies get the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * all copies or substantial portions get the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -23,10 +23,10 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.http.Http;
+import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.List;
@@ -49,12 +49,13 @@ public final class Snapshots {
 
     public static Snapshots newInstance(
             Backup backup,
-            boolean toHunt) {
+            EngineConfig config) {
 
         return newInstance(
                 backup,
                 backup.snapshots(),
-                backup.snapshots().stream().mapToInt(Integer::intValue).max().orElse(0), toHunt);
+                backup.snapshots().stream().mapToInt(Integer::intValue).max().orElse(0),
+                config.isAggressive());
     }
 
     static Snapshots newInstance(Backup backup, List<Integer> snapshots, int latest, boolean toHunt) {
@@ -73,7 +74,7 @@ public final class Snapshots {
         this.toHunt = toHunt;
     }
 
-    public Snapshot of(Http http, int request) {
+    public Snapshot get(Http http, int request) {
         try {
             logger.trace("<< of() < id: {}", request);
 
@@ -90,7 +91,7 @@ public final class Snapshots {
         }
     }
 
-    Snapshot snapshot(Http http,int id) throws IOException {
+    Snapshot snapshot(Http http, int id) throws IOException {
         if (!snapshots.contains(id)) {
             logger.warn("-- snapshots() > no snapshot: {}", id);
             return null;
@@ -100,7 +101,7 @@ public final class Snapshots {
                 ? snapshots.get(1)
                 : id + 1;
 
-        List<ICloud.MBSFile> files = files(http,  id, to);
+        List<ICloud.MBSFile> files = files(http, id, to);
 
         return files == null
                 ? null

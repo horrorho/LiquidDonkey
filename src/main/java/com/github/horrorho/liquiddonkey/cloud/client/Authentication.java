@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.client;
 
-import com.github.horrorho.liquiddonkey.cloud.client.Tokens;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
@@ -31,7 +30,7 @@ import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFact
 import com.github.horrorho.liquiddonkey.util.PropertyLists;
 import com.dd.plist.NSDictionary;
 import com.dd.plist.PropertyListFormatException;
-import com.github.horrorho.liquiddonkey.cloud.client.Headers;
+import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import java.io.IOException;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
@@ -50,10 +49,33 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Authentication {
 
-    private static final Logger logger = LoggerFactory.getLogger(Authentication.class);
+    public static Authentication authenticate(Http http, AuthenticationConfig config) throws IOException {
+        if (config instanceof AuthenticationConfig.AuthorizationToken) {
+            return authenticate((AuthenticationConfig.AuthorizationToken) config);
+        }
 
-    // Thread safe.
-    private static final ResponseHandler<byte[]> byteArrayResponseHandler = ResponseHandlerFactory.toByteArray();
+        if (config instanceof AuthenticationConfig.AppleIdPassword) {
+            return authenticate(http, (AuthenticationConfig.AppleIdPassword) config);
+        }
+
+        if (config instanceof AuthenticationConfig.Null) {
+            throw new AuthenticationException("No authorization data");
+        }
+
+        throw new AuthenticationException();
+    }
+
+    public static Authentication authenticate(AuthenticationConfig.AuthorizationToken config)
+            throws IOException {
+
+        return newInstance(config.dsPrsId(), config.mmeAuthToken());
+    }
+
+    public static Authentication authenticate(Http http, AuthenticationConfig.AppleIdPassword config)
+            throws IOException {
+
+        return authenticate(http, config.id(), config.password());
+    }
 
     public static Authentication authenticate(Http http, String id, String password) throws IOException {
         try {
@@ -96,6 +118,11 @@ public final class Authentication {
     public static Authentication newInstance(String dsPrsID, String mmeAuthToken) {
         return new Authentication(dsPrsID, mmeAuthToken);
     }
+
+    private static final Logger logger = LoggerFactory.getLogger(Authentication.class);
+
+    // Thread safe.
+    private static final ResponseHandler<byte[]> byteArrayResponseHandler = ResponseHandlerFactory.toByteArray();
 
     private final String dsPrsID;
     private final String mmeAuthToken;

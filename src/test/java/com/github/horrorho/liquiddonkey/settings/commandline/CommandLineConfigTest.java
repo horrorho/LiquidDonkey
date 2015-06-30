@@ -62,8 +62,8 @@ public class CommandLineConfigTest {
 
     public static Object[] parametersForTestFromArgs() {
         return new Object[]{
-            o("user password", config -> ((AuthenticationConfig.AuthenticationConfigAppleIdPassword) config.authentication()).id(), "user"),
-            o("user password", config -> ((AuthenticationConfig.AuthenticationConfigAppleIdPassword) config.authentication()).password(), "password"),
+            o("user password", config -> ((AuthenticationConfig.AppleIdPassword) config.authentication()).id(), "user"),
+            o("user password", config -> ((AuthenticationConfig.AppleIdPassword) config.authentication()).password(), "password"),
             o("u p --output test/folder", config -> config.file().base(), Paths.get("test/folder").toAbsolutePath()),
             o("u p --udid", config -> config.selection().udids(), set("")),
             o("u p --udid 1FfF", config -> config.selection().udids(), set("1FfF")),

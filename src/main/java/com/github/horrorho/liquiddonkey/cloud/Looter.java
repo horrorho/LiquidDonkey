@@ -72,40 +72,40 @@ public class Looter implements Closeable {
         this.printer = Objects.requireNonNull(printer);
     }
 
-    public void loot() {
+    public void loot() throws IOException {
         printer.println(Level.VV, "Authenticating.");
-        Authentication authentication = Authentication.from(http, config.authentication());
-        Client client = Client.newInstance(authentication, config.clientConfig());
+        Authentication authentication = Authentication.authenticate(http, config.authentication());
+        Client client = Client.from(http, authentication, config.client());
         UnaryOperator<List<Backup>> backupSelector = BackupSelector.newInstance(config.selection().udids(), printer);
-        Account account = Account.newInstance(http, client, printer);
-
+        
+        Account account = Account.from(http, client, printer); 
         backupSelector.apply(account.backups()).stream()
                 .forEach(backup -> backup(http, client, backup));
     }
 
     void backup(Http http, Client client, Backup backup) {
 
-        FileFilter fileFilter = FileFilter.getInstance(config.fileFilter());
-        Snapshots factory = Snapshots.newInstance(client, backup, config.selection().snapshots(), fileFilter, config.snapshotFactory());
-        DonkeyFactory donkeyFactory = DonkeyFactory.newInstance(config.donkeyFactory(), config.file(), printer);
-        SnapshotDownloader downloader = SnapshotDownloader.newInstance(donkeyFactory, config.snapshotDownloader());
+        FileFilter filter = FileFilter.getInstance(config.fileFilter());
+        Snapshots snapshots = Snapshots.newInstance(backup, config.engine());       
+        DonkeyFactory factory = DonkeyFactory.newInstance(config.engine(), config.file(), printer);
+        SnapshotDownloader downloader = SnapshotDownloader.newInstance(factory, config.engine());
 
-        KeyBag keybag;
-        try {
-            keybag = KeyBagFactory.newInstance().from(http, client, backup);
-        } catch (IOException ex) {
-            throw new FatalException(ex);
-        } catch (BadDataException ex) {
-            logger.warn("-- backup() > keybag failure for {}: {}", backup.udidString(), ex);
-            return;
-        }
 
-        Tally tally = Tally.newInstance();
+        config.selection().snapshots().stream()
+                .map(request -> snapshots.get(http, request))
+                .filter(Objects::nonNull)
+                .map(snapshot -> filter(snapshot, filter))
+                .map(downloader.)
+        
         backup.snapshots().stream()
                 .map(id -> factory.of(http, id))
                 .filter(Objects::nonNull)
                 .forEach(snapshot -> downloader.execute(client, backup, keybag, snapshot, tally));
 
+    } 
+    
+    Snapshot filter(Snapshot snapshot, FileFilter filter) {
+        return Snapshot.newInstance(snapshot.id(), snapshot.backup(), filter.apply(snapshot.files()));
     }
 
     @Override

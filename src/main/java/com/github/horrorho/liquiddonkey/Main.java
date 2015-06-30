@@ -74,7 +74,7 @@ public class Main {
             return;
         }
 
-        if (config.authentication() instanceof AuthenticationConfig.AuthenticationConfigNull) {
+        if (config.authentication() instanceof AuthenticationConfig.Null) {
             System.out.println("Missing appleid/ password or authentication token.");
             return;
         }

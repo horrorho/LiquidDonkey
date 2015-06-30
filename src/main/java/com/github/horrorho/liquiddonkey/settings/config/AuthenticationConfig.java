@@ -56,18 +56,18 @@ public class AuthenticationConfig {
             }
         }
 
-        return AuthenticationConfigNull.instance;
+        return Null.instance;
     }
 
-    public static AuthenticationConfigAppleIdPassword fromAppleIdPassword(String id, String password) {
-        return new AuthenticationConfigAppleIdPassword(id, password);
+    public static AppleIdPassword fromAppleIdPassword(String id, String password) {
+        return new AppleIdPassword(id, password);
     }
 
-    public static AuthenticationConfigAuthorizationToken fromAuthorization(String dsPrsID, String mmeAuthToken) {
-        return new AuthenticationConfigAuthorizationToken(dsPrsID, mmeAuthToken);
+    public static AuthorizationToken fromAuthorization(String dsPrsID, String mmeAuthToken) {
+        return new AuthorizationToken(dsPrsID, mmeAuthToken);
     }
 
-    public static AuthenticationConfigAuthorizationToken fromAuthorizationToken(String token) {
+    public static AuthorizationToken fromAuthorizationToken(String token) {
         String[] split = token.split(":");
         if (split.length != 2) {
             throw new IllegalArgumentException("Bad authentication token.");
@@ -77,12 +77,12 @@ public class AuthenticationConfig {
 
     @Immutable
     @ThreadSafe
-    public static final class AuthenticationConfigAppleIdPassword extends AuthenticationConfig {
+    public static final class AppleIdPassword extends AuthenticationConfig {
 
         private final String id;
         private final String password;
 
-        AuthenticationConfigAppleIdPassword(String id, String password) {
+        AppleIdPassword(String id, String password) {
             this.id = id;
             this.password = password;
         }
@@ -103,12 +103,12 @@ public class AuthenticationConfig {
 
     @Immutable
     @ThreadSafe
-    public static final class AuthenticationConfigAuthorizationToken extends AuthenticationConfig {
+    public static final class AuthorizationToken extends AuthenticationConfig {
 
         private final String dsPrsId;
         private final String mmeAuthToken;
 
-        AuthenticationConfigAuthorizationToken(String dsPrsId, String mmeAuthToken) {
+        AuthorizationToken(String dsPrsId, String mmeAuthToken) {
             this.dsPrsId = dsPrsId;
             this.mmeAuthToken = mmeAuthToken;
         }
@@ -129,11 +129,11 @@ public class AuthenticationConfig {
 
     @Immutable
     @ThreadSafe
-    public static final class AuthenticationConfigNull extends AuthenticationConfig {
+    public static final class Null extends AuthenticationConfig {
 
-        private final static AuthenticationConfigNull instance = new AuthenticationConfigNull();
+        private final static Null instance = new Null();
 
-        AuthenticationConfigNull() {
+        Null() {
         }
     }
 }
