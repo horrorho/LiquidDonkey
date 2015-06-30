@@ -40,7 +40,6 @@ import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFact
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ProtoBufArray;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.exception.FatalException;
 import static com.github.horrorho.liquiddonkey.settings.Markers.CLIENT;
 import static com.github.horrorho.liquiddonkey.http.NameValuePairs.parameter;
 import static com.github.horrorho.liquiddonkey.util.Bytes.hex;
@@ -74,23 +73,57 @@ public final class Client {
 
     public static Client from(Http http, Authentication authentication, ClientConfig config) throws IOException {
         try {
-            logger.trace("<< from() < authentication: {}", http, authentication);
+            logger.trace("<< from() < http: {} authentication: {}", http, authentication);
 
+            Tokens tokens = Tokens.getInstance();
             String dsPrsID = authentication.dsPrsID();
             String mmeAuthToken = authentication.mmeAuthToken();
 
-            String auth = Tokens.getInstance().basic(dsPrsID, mmeAuthToken);
+            String auth = tokens.basic(dsPrsID, mmeAuthToken);
             logger.trace("-- from() >  authentication token: {}", auth);
 
-            byte[] settings
-                    = http.executor("https://setup.icloud.com/setup/get_account_settings", byteArrayResponseHandler)
+            NSDictionary settings = (NSDictionary) PropertyLists.parse(
+                    http.executor("https://setup.icloud.com/setup/get_account_settings", byteArrayResponseHandler)
                     .headers(Headers.mmeClientInfo, Headers.authorization(auth))
-                    .get();
+                    .get());
+            logger.trace("-- from() >  account settings: {}", settings.toASCIIPropertyList());
 
-            Client client = Client.newInstance(settings, config.listLimit());
-            logger.trace(">> from()");
+            String fullName = PropertyLists.stringValueOrDefault("Unknown", settings, "appleAccountInfo", "fullName");
+            String appleId = PropertyLists.stringValueOrDefault("Unknown", settings, "appleAccountInfo", "appleId");
+            String newDsPrsID = PropertyLists.stringValue(settings, "appleAccountInfo", "dsPrsID");
+            String newMmeAuthToken = PropertyLists.stringValue(settings, "tokens", "mmeAuthToken");
+            String mobileBackupUrl
+                    = PropertyLists.stringValue(settings, "com.apple.mobileme", "com.apple.Dataclass.Backup", "url");
+            String contentUrl
+                    = PropertyLists.stringValue(settings, "com.apple.mobileme", "com.apple.Dataclass.Content", "url");
+
+            if (!dsPrsID.equals(newDsPrsID)) {
+                logger.debug("-- from() > dsPrsID overwritten {} > {}", dsPrsID, newDsPrsID);
+                dsPrsID = newDsPrsID;
+            }
+
+            if (!mmeAuthToken.equals(newMmeAuthToken)) {
+                logger.debug("-- from() > mmeAuthToken overwritten {} > {}", mmeAuthToken, newMmeAuthToken);
+                mmeAuthToken = newMmeAuthToken;
+            }
+
+            String authMme = Tokens.getInstance().mobilemeAuthToken(dsPrsID, mmeAuthToken);
+
+            Client client = Client.newInstance(
+                    Headers.mobileBackupHeaders(authMme),
+                    Headers.contentHeaders(dsPrsID),
+                    fullName,
+                    appleId,
+                    dsPrsID,
+                    contentUrl,
+                    mobileBackupUrl,
+                    config.listLimit());
+
+            logger.trace(">> from() > client: {}", client);
             return client;
 
+        } catch (BadDataException | PropertyListFormatException ex) {
+            throw new AuthenticationException(ex);
         } catch (HttpResponseException ex) {
             logger.warn("-- authenticate() >  exception: ", ex);
             if (ex.getStatusCode() == 401) {
@@ -100,42 +133,11 @@ public final class Client {
         }
     }
 
-    public static Client newInstance(byte[] settings, int listLimit) {
-        try {
-            logger.trace("<< newInstance()");
-
-            NSDictionary plist = (NSDictionary) PropertyLists.parse(settings);
-            logger.trace("-- from() >  account settings: {}", plist.toASCIIPropertyList());
-
-            String dsPrsID = PropertyLists.stringValue(plist, "appleAccountInfo", "dsPrsID");
-            String mmeAuthToken = PropertyLists.stringValue(plist, "tokens", "mmeAuthToken");
-            String mobileBackupUrl
-                    = PropertyLists.stringValue(plist, "com.apple.mobileme", "com.apple.Dataclass.Backup", "url");
-            String contentUrl
-                    = PropertyLists.stringValue(plist, "com.apple.mobileme", "com.apple.Dataclass.Content", "url");
-
-            String authMme = Tokens.getInstance().mobilemeAuthToken(dsPrsID, mmeAuthToken);
-
-            Client client = Client.newInstance(
-                    settings,
-                    Headers.mobileBackupHeaders(authMme),
-                    Headers.contentHeaders(dsPrsID),
-                    dsPrsID,
-                    contentUrl,
-                    mobileBackupUrl,
-                    listLimit);
-            logger.trace(">> newInstance() > client: {}", client);
-            return client;
-
-        } catch (IOException | BadDataException | PropertyListFormatException ex) {
-            throw new AuthenticationException(ex);
-        }
-    }
-
-    static Client newInstance(
-            byte[] settings,
+    public static Client newInstance(
             List<Header> mobileBackupHeaders,
             List<Header> contentHeaders,
+            String fullName,
+            String appleId,
             String dsPrsID,
             String contentUrl,
             String mobileBackupUrl,
@@ -143,13 +145,15 @@ public final class Client {
 
         logger.trace("<< newInstance()");
         Client client = new Client(
-                settings,
                 new ArrayList<>(mobileBackupHeaders),
                 new ArrayList<>(contentHeaders),
+                fullName,
+                appleId,
                 dsPrsID,
                 contentUrl,
                 mobileBackupUrl,
                 listFilesLimit);
+
         logger.trace(">> newInstance() > ", client);
         return client;
     }
@@ -158,6 +162,7 @@ public final class Client {
 
     // Thread safe.
     private static final ResponseHandler<byte[]> byteArrayResponseHandler = ResponseHandlerFactory.toByteArray();
+
     private static final ResponseHandler<List<MBSFile>> mbsFileListHandler
             = ResponseHandlerFactory.of(inputStream -> ProtoBufArray.decode(inputStream, MBSFile.PARSER));
     private static final ResponseHandler<List<MBSFileAuthToken>> mbsFileAuthTokenListHandler
@@ -171,26 +176,29 @@ public final class Client {
     private static final ResponseHandler<MBSKeySet> mbsaKeySetResponseHandler
             = ResponseHandlerFactory.of(MBSKeySet.PARSER::parseFrom);
 
-    private final byte[] settings;
     private final List<Header> mobileBackupHeaders;
     private final List<Header> contentHeaders;
+    private final String fullName;
+    private final String appleId;
     private final String dsPrsID;
     private final String contentUrl;
     private final String mobileBackupUrl;
     private final int listFilesLimit;
 
     Client(
-            byte[] settings,
             List<Header> mobileBackupHeaders,
             List<Header> contentHeaders,
+            String fullName,
+            String appleId,
             String dsPrsID,
             String contentUrl,
             String mobileBackupUrl,
             int listFilesLimit) {
 
-        this.settings = Objects.requireNonNull(settings);
         this.mobileBackupHeaders = Objects.requireNonNull(mobileBackupHeaders);
         this.contentHeaders = Objects.requireNonNull(contentHeaders);
+        this.fullName = fullName;
+        this.appleId = appleId;
         this.dsPrsID = Objects.requireNonNull(dsPrsID);
         this.contentUrl = Objects.requireNonNull(contentUrl);
         this.mobileBackupUrl = Objects.requireNonNull(mobileBackupUrl);
@@ -377,13 +385,12 @@ public final class Client {
         return dsPrsID;
     }
 
-    public NSDictionary settings() {
-        try {
-            return (NSDictionary) PropertyLists.parse(settings);
-        } catch (BadDataException | IOException ex) {
-            // Shouldn't happen here.
-            throw new FatalException(ex);
-        }
+    public String fullName() {
+        return fullName;
+    }
+
+    public String appleId() {
+        return appleId;
     }
 
     String path(String... parts) {
@@ -396,8 +403,6 @@ public final class Client {
 
     @Override
     public String toString() {
-        return "Client{" + "mobileBackupHeaders=" + mobileBackupHeaders + ", contentHeaders=" + contentHeaders
-                + ", dsPrsID=" + dsPrsID + ", contentUrl=" + contentUrl + ", mobileBackupUrl=" + mobileBackupUrl
-                + ", listFilesLimit=" + listFilesLimit + '}';
+        return "Client{" + "fullName=" + fullName + ", appleId=" + appleId + ", dsPrsID=" + dsPrsID + '}';
     }
 }

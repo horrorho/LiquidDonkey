@@ -23,15 +23,19 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.dd.plist.NSDictionary;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.printer.Printer;
+import com.github.horrorho.liquiddonkey.util.PropertyLists;
+import com.google.protobuf.ByteString;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Account.
@@ -42,41 +46,61 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class Account {
 
-    public static Account from(Http http, Client client, Printer printer) throws IOException {
+    public static Account from(Http http, Client client) throws IOException {
+        logger.trace("<< from()");
 
-        List<Backup> backups = new ArrayList<>();
-        Account account = Account.newInstance(client, backups);
+        NSDictionary plist = client.settings();
+        String fullName = PropertyLists.stringValueOrDefault("Unknown", plist, "appleAccountInfo", "fullName");
+        String appleId = PropertyLists.stringValueOrDefault("Unknown", plist, "appleAccountInfo", "appleId");
 
-        client.account(http).getBackupUDIDList().stream()
-                .map(udid -> Backup.newInstance(http, account, udid, printer))
-                .filter(Objects::nonNull)
-                .forEach(backups::add);
+        ICloud.MBSAccount account = client.account(http);
+        Account instance = newInstance(client, account, fullName, appleId);
 
-        return account;
+        logger.trace(">> from() > {}", instance);
+        return instance;
     }
 
-    static Account newInstance(Client client, List<Backup> backups) {
-        return new Account(client, backups);
+    static Account newInstance(Client client, ICloud.MBSAccount account, String fullName, String appleId) {
+        return new Account(client, account, fullName, appleId);
     }
+
+    private static final Logger logger = LoggerFactory.getLogger(Account.class);
 
     private final Client client;
-    private final List<Backup> backups;
+    private final ICloud.MBSAccount account;
+    private final String fullName;
+    private final String appleId;
 
-    Account(Client client, List<Backup> backups) {
+    public Account(Client client, ICloud.MBSAccount account, String fullName, String appleId) {
         this.client = Objects.requireNonNull(client);
-        this.backups = Objects.requireNonNull(backups);
+        this.account = Objects.requireNonNull(account);
+        this.fullName = fullName;
+        this.appleId = appleId;
     }
 
     public Client client() {
         return client;
     }
 
-    public List<Backup> backups() {
-        return new ArrayList<>(backups);
+    public String id() {
+        return account.getAccountID();
+    }
+
+    public List<ByteString> backups() {
+        return account.getBackupUDIDList();
+    }
+
+    public String appleId() {
+        return appleId;
+    }
+
+    public String fullName() {
+        return fullName;
     }
 
     @Override
     public String toString() {
-        return "Backups{" + "client=" + client + ", backups=" + backups + '}';
+        return "Account{" + "client=" + client + ", account=" + account + ", fullName=" + fullName + ", appleId="
+                + appleId + '}';
     }
 }

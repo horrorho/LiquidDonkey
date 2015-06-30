@@ -30,8 +30,6 @@ import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.printer.Level;
-import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
@@ -73,12 +71,11 @@ public final class Backup {
      * @param http not null
      * @param account not null
      * @param udid not null
-     * @param printer not null
      * @return a new instance, may be null
      * @throws FatalException
      */
-    public static Backup newInstance(Http http, Account account, ByteString udid, Printer printer) {
-        return newInstance(http, account, udid, printer, defaultDateTimeFormatter);
+    public static Backup newInstance(Http http, Account account, ByteString udid) {
+        return newInstance(http, account, udid, defaultDateTimeFormatter);
     }
 
     /**
@@ -87,7 +84,6 @@ public final class Backup {
      * @param http not null
      * @param account not null
      * @param udid not null
-     * @param printer not null
      * @param dateTimeFormatter not null
      * @return a new instance, may be null
      * @throws FatalException
@@ -96,7 +92,6 @@ public final class Backup {
             Http http,
             Account account,
             ByteString udid,
-            Printer printer,
             DateTimeFormatter dateTimeFormatter) {
 
         try {
@@ -110,8 +105,7 @@ public final class Backup {
             if (ex.getStatusCode() == 401) {
                 throw new AuthenticationException(ex);
             }
-
-            printer.println(Level.WARN, "Unable to retrieve backup information: " + Bytes.hex(udid), ex);
+            
             return null;
         } catch (IOException ex) {
             throw new FatalException("IOError", ex);
