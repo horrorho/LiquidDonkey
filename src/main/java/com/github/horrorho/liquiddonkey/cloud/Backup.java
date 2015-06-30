@@ -28,7 +28,6 @@ import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagFactory;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
@@ -70,31 +69,23 @@ public final class Backup {
      * @param account not null
      * @param udid not null
      * @return a new instance, may be null
-     * @throws FatalException
+     * @throws IOException
      */
     public static Backup newInstance(
             Http http,
             Account account,
-            ByteString udid) {
+            ByteString udid) throws IOException {
 
         try {
             ICloud.MBSBackup backup = account.client().backup(http, udid);
             KeyBag keyBag = KeyBagFactory.newInstance().from(account.client().getKeys(http, udid));
             return Backup.newInstance(account, backup, keyBag);
-
+        } catch (BadDataException ex) {
+            logger.warn("-- backup() > exception", ex);
+            return null;
         } catch (HttpResponseException ex) {
             logger.warn("-- backup() > exception ", ex);
-
-            if (ex.getStatusCode() == 401) {
-                throw new AuthenticationException(ex);
-            }
-
             return null;
-
-        } catch (IOException ex) {
-            throw new FatalException("IOError", ex);
-        } catch (BadDataException ex) {
-            throw new FatalException("KeyBag error", ex);
         }
     }
 

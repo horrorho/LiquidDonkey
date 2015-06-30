@@ -43,6 +43,7 @@ import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
 import static com.github.horrorho.liquiddonkey.settings.Markers.CLIENT;
 import static com.github.horrorho.liquiddonkey.http.NameValuePairs.parameter;
+import com.github.horrorho.liquiddonkey.iofunction.IOSupplier;
 import static com.github.horrorho.liquiddonkey.util.Bytes.hex;
 import com.github.horrorho.liquiddonkey.settings.config.ClientConfig;
 import com.github.horrorho.liquiddonkey.util.PropertyLists;
@@ -200,18 +201,31 @@ public final class Client {
     private <T> T mobileBackupGet(Http http, ResponseHandler<T> handler, String path, NameValuePair... parameters)
             throws IOException {
 
-        return http.executor(path(mobileBackupUrl, path), handler)
+        return authenticationException(()
+                -> http.executor(path(mobileBackupUrl, path), handler)
                 .headers(mobileBackupHeaders)
                 .parameters(parameters)
-                .get();
+                .get());
     }
 
     private <T> T mobileBackupPost(Http http, ResponseHandler<T> handler, String path, byte[] postData)
             throws IOException {
 
-        return http.executor(path(mobileBackupUrl, path), handler)
+        return authenticationException(()
+                -> http.executor(path(mobileBackupUrl, path), handler)
                 .headers(mobileBackupHeaders)
-                .post(postData);
+                .post(postData));
+    }
+
+    private <T> T authenticationException(IOSupplier<T> supplier) throws IOException {
+        try {
+            return supplier.get();
+        } catch (HttpResponseException ex) {
+            if (ex.getStatusCode() == 401) {
+                throw new AuthenticationException(ex);
+            }
+            throw ex;
+        }
     }
 
     public MBSAccount account(Http http) throws IOException {
@@ -329,10 +343,11 @@ public final class Client {
             Header mmcsAuth
                     = Headers.mmcsAuth(hex(tokens.getTokens(0).getFileID()) + " " + tokens.getTokens(0).getAuthToken());
 
-            groups = http.executor(path(contentUrl, dsPrsID, "authorizeGet"), filesGroupsHandler)
+            groups = authenticationException(()
+                    -> http.executor(path(contentUrl, dsPrsID, "authorizeGet"), filesGroupsHandler)
                     .headers(mmcsAuth)
                     .headers(contentHeaders)
-                    .post(tokens.toByteArray());
+                    .post(tokens.toByteArray()));
         }
         logger.trace(">> authorizeGet() > count: {}", groups.getFileGroupsCount());
         logger.trace(CLIENT, ">> authorizeGet)() > fileError: {}", groups.getFileErrorList());

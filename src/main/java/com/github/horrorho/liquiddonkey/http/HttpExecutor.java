@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.http;
 
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.iofunction.IOBiFunction;
 import static com.github.horrorho.liquiddonkey.settings.Markers.HTTP;
 import java.io.IOException;
@@ -34,6 +35,7 @@ import java.util.Objects;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
@@ -122,6 +124,13 @@ public class HttpExecutor<T> {
         HttpUriRequest request = builder.build();
         try {
             return http.apply(request, handler);
+        } catch (HttpResponseException ex) {
+            logger.trace(HTTP, "--execute() > request: {} headers: {} exception: {}",
+                    request, request.getAllHeaders(), ex);
+            if (ex.getStatusCode() == 401) {
+                throw new AuthenticationException(ex);
+            }
+            throw ex;
         } catch (IOException ex) {
             logger.trace(HTTP, "--execute() > request: {} headers: {} exception: {}",
                     request, request.getAllHeaders(), ex);
