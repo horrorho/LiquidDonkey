@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Donkey factory.
  * <p>
- * Donkeys are {@link CallableFunction} threaded instances that manage snapshot downloads.
+ * Donkeys are {@link CallableFunction} threaded instances that manage from downloads.
  *
  * @author Ahseya
  */

@@ -54,14 +54,10 @@ public final class Account {
         String appleId = PropertyLists.stringValueOrDefault("Unknown", plist, "appleAccountInfo", "appleId");
 
         ICloud.MBSAccount account = client.account(http);
-        Account instance = newInstance(client, account, fullName, appleId);
+        Account instance = new Account(client, account, fullName, appleId);
 
         logger.trace(">> from() > {}", instance);
         return instance;
-    }
-
-    static Account newInstance(Client client, ICloud.MBSAccount account, String fullName, String appleId) {
-        return new Account(client, account, fullName, appleId);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Account.class);
@@ -71,7 +67,7 @@ public final class Account {
     private final String fullName;
     private final String appleId;
 
-    public Account(Client client, ICloud.MBSAccount account, String fullName, String appleId) {
+    Account(Client client, ICloud.MBSAccount account, String fullName, String appleId) {
         this.client = Objects.requireNonNull(client);
         this.account = Objects.requireNonNull(account);
         this.fullName = fullName;
@@ -86,7 +82,7 @@ public final class Account {
         return account.getAccountID();
     }
 
-    public List<ByteString> backups() {
+    public List<ByteString> list() {
         return account.getBackupUDIDList();
     }
 

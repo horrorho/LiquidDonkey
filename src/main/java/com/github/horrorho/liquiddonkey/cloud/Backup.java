@@ -30,7 +30,6 @@ import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -62,8 +61,7 @@ public final class Backup {
 
     private static final String NA = "N/A";
     private static final String INDENT = "\t";
-    private static final DateTimeFormatter defaultDateTimeFormatter
-            = Property.outputDateTimeFormatter().withLocale(Locale.getDefault()).withZone(ZoneId.systemDefault());
+    private static final DateTimeFormatter defaultDateTimeFormatter = DateTimeFormatter.RFC_1123_DATE_TIME;
 
     /**
      * Returns a new instance.
@@ -71,33 +69,18 @@ public final class Backup {
      * @param http not null
      * @param account not null
      * @param udid not null
-     * @return a new instance, may be null
-     * @throws FatalException
-     */
-    public static Backup newInstance(Http http, Account account, ByteString udid) {
-        return newInstance(http, account, udid, defaultDateTimeFormatter);
-    }
-
-    /**
-     * Returns a new instance.
-     *
-     * @param http not null
-     * @param account not null
-     * @param udid not null
-     * @param dateTimeFormatter not null
      * @return a new instance, may be null
      * @throws FatalException
      */
     public static Backup newInstance(
             Http http,
             Account account,
-            ByteString udid,
-            DateTimeFormatter dateTimeFormatter) {
+            ByteString udid) {
 
         try {
             ICloud.MBSBackup backup = account.client().backup(http, udid);
             KeyBag keyBag = KeyBagFactory.newInstance().from(account.client().getKeys(http, udid));
-            return Backup.newInstance(account, backup, keyBag, dateTimeFormatter);
+            return Backup.newInstance(account, backup, keyBag);
 
         } catch (HttpResponseException ex) {
             logger.warn("-- backup() > exception ", ex);
@@ -105,8 +88,9 @@ public final class Backup {
             if (ex.getStatusCode() == 401) {
                 throw new AuthenticationException(ex);
             }
-            
+
             return null;
+
         } catch (IOException ex) {
             throw new FatalException("IOError", ex);
         } catch (BadDataException ex) {
@@ -114,15 +98,10 @@ public final class Backup {
         }
     }
 
-    public static Backup newInstance(Account account, ICloud.MBSBackup backup, KeyBag keyBag) {
-        return Backup.newInstance(account, backup, keyBag, defaultDateTimeFormatter);
-    }
-
     public static Backup newInstance(
             Account account,
             ICloud.MBSBackup backup,
-            KeyBag keyBag,
-            DateTimeFormatter dateTimeFormatter) {
+            KeyBag keyBag) {
 
         String size = Bytes.humanize(backup.getQuotaUsed());
 
@@ -169,38 +148,6 @@ public final class Backup {
                 deviceName,
                 productVerson,
                 Bytes.hex(backup.getBackupUDID()),
-                dateTimeFormatter,
-                keyBag,
-                lastModified);
-    }
-
-    public static Backup newInstance(
-            Account account,
-            ICloud.MBSBackup backup,
-            List<Integer> snapshots,
-            String size,
-            String hardwareModel,
-            String marketingName,
-            String serialNumber,
-            String deviceName,
-            String productVerson,
-            String udid,
-            DateTimeFormatter dateTimeFormatter,
-            KeyBag keyBag,
-            long lastModified) {
-
-        return new Backup(
-                account,
-                backup,
-                snapshots,
-                size,
-                hardwareModel,
-                marketingName,
-                serialNumber,
-                deviceName,
-                productVerson,
-                udid,
-                dateTimeFormatter,
                 keyBag,
                 lastModified);
     }
@@ -247,7 +194,6 @@ public final class Backup {
     private final String deviceName;
     private final String productVerson;
     private final String udid;
-    private final DateTimeFormatter dateTimeFormatter;
     private final KeyBag keyBag;
     private final long lastModified;
 
@@ -262,7 +208,6 @@ public final class Backup {
             String deviceName,
             String productVerson,
             String udid,
-            DateTimeFormatter dateTimeFormatter,
             KeyBag keyBag,
             long lastModified) {
 
@@ -276,7 +221,6 @@ public final class Backup {
         this.deviceName = deviceName;
         this.productVerson = productVerson;
         this.udid = udid;
-        this.dateTimeFormatter = Objects.requireNonNull(dateTimeFormatter);
         this.keyBag = Objects.requireNonNull(keyBag);
         this.lastModified = lastModified;
     }
@@ -298,8 +242,20 @@ public final class Backup {
     }
 
     public String format() {
+        return format(defaultDateTimeFormatter);
+    }
+
+    public String format(DateTimeFormatter dateTimeFormatter) {
         StringWriter stringWriter = new StringWriter();
         PrintWriter print = new PrintWriter(stringWriter);
+
+        if (dateTimeFormatter.getLocale() == null) {
+            dateTimeFormatter.withLocale(Locale.getDefault());
+        }
+
+        if (dateTimeFormatter.getZone() == null) {
+            dateTimeFormatter.withZone(ZoneId.systemDefault());
+        }
 
         String lastModifiedStr
                 = dateTimeFormatter.format(Instant.ofEpochSecond(backup.getSnapshot().getLastModified()));
@@ -357,10 +313,9 @@ public final class Backup {
 
     @Override
     public String toString() {
-        return "Backup{" + "account=" + account + ", backup=" + backup + ", snapshots=" + snapshots + ", size="
-                + size + ", hardwareModel=" + hardwareModel + ", marketingName=" + marketingName + ", serialNumber="
-                + serialNumber + ", deviceName=" + deviceName + ", productVerson=" + productVerson + ", udid=" + udid
-                + ", dateTimeFormatter=" + dateTimeFormatter + ", keyBag=" + keyBag + ", lastModified=" + lastModified
-                + '}';
+        return "Backup{" + "account=" + account + ", backup=" + backup + ", snapshots=" + snapshots + ", size=" + size
+                + ", hardwareModel=" + hardwareModel + ", marketingName=" + marketingName + ", serialNumber="
+                + serialNumber + ", deviceName=" + deviceName + ", productVerson=" + productVerson + ", udid="
+                + udid + ", keyBag=" + keyBag + ", lastModified=" + lastModified + '}';
     }
 }

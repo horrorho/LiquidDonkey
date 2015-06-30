@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.aold.Snapshots;
 import com.github.horrorho.liquiddonkey.cloud.client.Authentication;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
@@ -78,8 +79,8 @@ public class Looter implements Closeable {
         Client client = Client.from(http, authentication, config.client());
         UnaryOperator<List<Backup>> backupSelector = BackupSelector.newInstance(config.selection().udids(), printer);
         
-        Account account = Account.from(http, client, printer); 
-        backupSelector.apply(account.backups()).stream()
+        Account account = Account.from(http, client); 
+        backupSelector.apply(account.list()).stream()
                 .forEach(backup -> backup(http, client, backup));
     }
 
@@ -92,7 +93,7 @@ public class Looter implements Closeable {
 
 
         config.selection().snapshots().stream()
-                .map(request -> snapshots.get(http, request))
+                .map(id -> snapshots.get(http, id))
                 .filter(Objects::nonNull)
                 .map(snapshot -> filter(snapshot, filter))
                 .map(downloader.)

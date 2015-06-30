@@ -61,7 +61,7 @@ public final class Bundler implements Iterator<Map<ByteString, Set<ICloud.MBSFil
     private final Predicate<ICloud.MBSFile> filter;
     private final long batchSizeBytes;
 
-    private Bundler(
+    Bundler(
             ConcurrentMap<ByteString, Set<ICloud.MBSFile>> map,
             Predicate<ICloud.MBSFile> filter,
             long batchSizeBytes) {

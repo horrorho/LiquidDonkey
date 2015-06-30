@@ -3,15 +3,15 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation list (the "Software"), to deal
+ * Permission is hereby granted, free from charge, to any person obtaining a copy
+ * from this software and associated documentation list (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * copies from the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * all copies or substantial portions from the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -48,14 +48,16 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Snapshot {
 
-    public Snapshot of(Http http, Backup backup, int request, EngineConfig config) {
+    public Snapshot from(Http http, Backup backup, int id, EngineConfig config) {
         try {
-            logger.trace("<< of() < id: {}", request);
+            logger.trace("<< of() < id: {}", id);
             int latest = backup.snapshots().stream().mapToInt(Integer::intValue).max().orElse(0);
-            int id = request < 0 ? latest + request + 1 : request;
-            logger.debug("-- of() > id: {}", id);
 
-            Snapshot snapshot = snapshot(http, backup.snapshots(), id, config.isAggressive());
+            Snapshot snapshot = from(
+                    http,
+                    backup.snapshots(),
+                    id < 0 ? latest + id + 1 : id,
+                    config.isAggressive());
 
             logger.trace(">> of() > snapshot: {}", snapshot);
             return snapshot;
@@ -65,7 +67,7 @@ public final class Snapshot {
         }
     }
 
-    Snapshot snapshot(Http http, List<Integer> snapshots, int id, boolean toHunt) throws IOException {
+    Snapshot from(Http http, List<Integer> snapshots, int id, boolean toHunt) throws IOException {
         if (!snapshots.contains(id)) {
             logger.warn("-- snapshots() > no snapshot: {}", id);
             return null;
@@ -79,7 +81,7 @@ public final class Snapshot {
 
         return list == null
                 ? null
-                : Snapshot.newInstance(id, backup, list);
+                : new Snapshot(id, backup, list);
     }
 
     List<ICloud.MBSFile> list(Http http, int from, int to) throws IOException {
@@ -103,10 +105,6 @@ public final class Snapshot {
             logger.trace("-- files() > snapshot not found: {}", snapshot);
             return null;
         }
-    }
-
-    public static Snapshot newInstance(int id, Backup backup, Collection<ICloud.MBSFile> files) {
-        return new Snapshot(id, backup, files);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Snapshot.class);

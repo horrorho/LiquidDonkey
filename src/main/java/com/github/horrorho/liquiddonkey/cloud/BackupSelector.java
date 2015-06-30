@@ -66,7 +66,7 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
 
     protected final Printer printer;
 
-    public BackupSelector(Printer printer) {
+    BackupSelector(Printer printer) {
         this.printer = Objects.requireNonNull(printer);
     }
 
