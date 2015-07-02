@@ -39,10 +39,6 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public enum Property {
 
-    // Non-null values may be expected for certain prop 
-// Non-null values may be expected for certain prop 
-// Non-null values may be expected for certain prop 
-// Non-null values may be expected for certain prop 
     APP_NAME("LiquidDonkey"),
     AUTHENTICATION_APPLEID(null),
     AUTHENTICATION_PASSWORD(null),
@@ -55,7 +51,8 @@ public enum Property {
     ENGINE_BATCH_SIZE_MINIMUM_BYTES("4194304"),
     ENGINE_FORCE_OVERWRITE("false"), // TODO
     ENGINE_DOWNLOAD_RETRY("1"),
-    ENGINE_RETRY_AGGRESSIVE("2"),    
+    ENGINE_DUMP_TOKEN(null),
+    ENGINE_RETRY_AGGRESSIVE("2"),
     ENGINE_SET_LAST_MODIFIED_TIMESTAMP("true"),
     ENGINE_PERSISTENT("false"),
     ENGINE_RETRY_DELAY_MS("1000"),

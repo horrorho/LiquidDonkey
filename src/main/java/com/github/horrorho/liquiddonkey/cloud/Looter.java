@@ -78,7 +78,14 @@ public class Looter implements Closeable {
     public void loot() throws AuthenticationException, BadDataException, IOException {
         printer.println(Level.VV, "Authenticating.");
         Authentication authentication = Authentication.authenticate(http, config.authentication());
+
         Client client = Client.from(http, authentication, config.client());
+
+        if (config.engine().toDumpToken()) {
+            printer.println(Level.V, "Authorization token: " + authentication.token());
+            return;
+        }
+
         Account account = Account.from(http, client);
 
         UnaryOperator<List<Backup>> backupSelector = BackupSelector.newInstance(config.selection().udids(), printer);
@@ -101,7 +108,7 @@ public class Looter implements Closeable {
 
         for (int id : backup.snapshots()) {
             Snapshot snapshot = Snapshot.from(http, backup, id, config.engine());
-            Snapshot filtered = Snapshot.from(snapshot, filter);            
+            Snapshot filtered = Snapshot.from(snapshot, filter);
             ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results
                     = downloader.execute(http, filtered, filtered.signatures());
 
@@ -119,7 +126,6 @@ public class Looter implements Closeable {
 //    <K, V> Map<K, Integer> summary(Map<K, List<V>> map) {
 //        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().size()));
 //    }
-
     @Override
     public void close() throws IOException {
         http.close();

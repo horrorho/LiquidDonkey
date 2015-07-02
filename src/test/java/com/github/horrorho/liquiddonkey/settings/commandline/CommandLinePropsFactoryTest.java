@@ -60,6 +60,8 @@ public class CommandLinePropsFactoryTest {
             $(Property.AUTHENTICATION_TOKEN, "token", "token"),
             $(Property.AUTHENTICATION_APPLEID, "username password", "username"),
             $(Property.AUTHENTICATION_PASSWORD, "username password", "password"),
+            $(Property.ENGINE_DUMP_TOKEN, "username password", null),
+            $(Property.ENGINE_DUMP_TOKEN, "username password --token", true),
             $(Property.ENGINE_AGGRESSIVE, "u p", null),
             $(Property.ENGINE_AGGRESSIVE, "u p -a", "true"),
             $(Property.ENGINE_AGGRESSIVE, "u p --aggressive", "true"),

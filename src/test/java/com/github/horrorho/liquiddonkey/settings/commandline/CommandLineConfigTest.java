@@ -94,7 +94,9 @@ public class CommandLineConfigTest {
             o("u p --min-size 0", config -> config.fileFilter().minSize(), 0L),
             o("u p --min-size 64", config -> config.fileFilter().minSize(), 65536L),
             o("u p --max-size 0", config -> config.fileFilter().maxSize(), 0L),
-            o("u p --max-size 64", config -> config.fileFilter().maxSize(), 65536L)
+            o("u p --max-size 64", config -> config.fileFilter().maxSize(), 65536L),
+            o("u p", config -> config.engine().toDumpToken(), false),
+            o("u p --token", config -> config.engine().toDumpToken(), true)
         };
     }
 

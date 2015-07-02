@@ -52,7 +52,8 @@ public final class EngineConfig {
                 props.get(Property.ENGINE_THREAD_STAGGER_DELAY, parsers::asInteger),
                 props.get(Property.ENGINE_THREAD_COUNT, parsers::asInteger),
                 props.get(Property.ENGINE_FORCE_OVERWRITE, parsers::asBoolean),
-                props.get(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, parsers::asBoolean));
+                props.get(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, parsers::asBoolean),
+                props.get(Property.ENGINE_DUMP_TOKEN, parsers::asBoolean));
     }
 
     static EngineConfig newInstance(
@@ -64,7 +65,8 @@ public final class EngineConfig {
             int threadStaggerDelay,
             int threadCount,
             boolean toForceOverwrite,
-            boolean toSetLastModifiedTimestamp) {
+            boolean toSetLastModifiedTimestamp,
+            boolean toDumpToken) {
 
         return new EngineConfig(isAggressive,
                 batchSizeMinimumBytes,
@@ -74,7 +76,8 @@ public final class EngineConfig {
                 threadStaggerDelay,
                 threadCount,
                 toForceOverwrite,
-                toSetLastModifiedTimestamp);
+                toSetLastModifiedTimestamp,
+                toDumpToken);
     }
 
     private final boolean isAggressive;
@@ -86,6 +89,7 @@ public final class EngineConfig {
     private final int threadCount;
     private final boolean toForceOverwrite;
     private final boolean toSetLastModifiedTimestamp;
+    private final boolean toDumpToken;
 
     EngineConfig(
             boolean isAggressive,
@@ -96,7 +100,8 @@ public final class EngineConfig {
             int threadStaggerDelay,
             int threadCount,
             boolean toForceOverwrite,
-            boolean toSetLastModifiedTimestamp) {
+            boolean toSetLastModifiedTimestamp,
+            boolean toDumpToken) {
 
         this.isAggressive = isAggressive;
         this.batchSizeMinimumBytes = batchSizeMinimumBytes;
@@ -107,6 +112,7 @@ public final class EngineConfig {
         this.threadCount = threadCount;
         this.toForceOverwrite = toForceOverwrite;
         this.toSetLastModifiedTimestamp = toSetLastModifiedTimestamp;
+        this.toDumpToken = toDumpToken;
     }
 
     public boolean isAggressive() {
@@ -135,6 +141,10 @@ public final class EngineConfig {
 
     public int threadCount() {
         return threadCount;
+    }
+
+    public boolean toDumpToken() {
+        return toDumpToken;
     }
 
     public boolean toForceOverwrite() {

@@ -164,6 +164,10 @@ public final class Authentication {
         return dsPrsID;
     }
 
+    public String token() {
+        return dsPrsID + ":" + mmeAuthToken;
+    }
+
     @Override
     public String toString() {
         return "Authentication{" + "dsPrsID=" + dsPrsID + ", mmeAuthToken=" + mmeAuthToken + '}';
