@@ -56,23 +56,25 @@ public final class DonkeyFactory {
      *
      * @param engineConfig, not null
      * @param fileConfig, not null
-     * @param printer, not null
      * @return new instance, not null
      */
-    public static DonkeyFactory newInstance(EngineConfig engineConfig, FileConfig fileConfig, Printer printer) {
-        return new DonkeyFactory(engineConfig, fileConfig, printer);
+    public static DonkeyFactory newInstance(EngineConfig engineConfig, FileConfig fileConfig) {
+        logger.trace("<< newInstance() < engineConfig: {} fileConfig: {}", engineConfig, fileConfig);
+
+        DonkeyFactory factory = new DonkeyFactory(engineConfig, fileConfig);
+
+        logger.trace(">> newInstance()");
+        return factory;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(DonkeyFactory.class);
 
     private final EngineConfig engineConfig;
     private final FileConfig fileConfig;
-    private final Printer printer;
 
-    DonkeyFactory(EngineConfig engineConfig, FileConfig fileConfig, Printer printer) {
+    DonkeyFactory(EngineConfig engineConfig, FileConfig fileConfig) {
         this.engineConfig = Objects.requireNonNull(engineConfig);
         this.fileConfig = Objects.requireNonNull(fileConfig);
-        this.printer = Objects.requireNonNull(printer);
     }
 
     /**
@@ -82,13 +84,15 @@ public final class DonkeyFactory {
      * @param snapshot, not null
      * @param signatureToFileMap, not null
      * @param results, not null
+     * @param printer, not null
      * @return new instance, not null
      */
     public Donkey from(
             Http http,
             Snapshot snapshot,
             ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileMap,
-            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results) {
+            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results,
+            Printer printer) {
 
         logger.trace("<< from()");
 
@@ -125,5 +129,13 @@ public final class DonkeyFactory {
 
         logger.trace(">> from()");
         return donkey;
+    }
+
+    @Override
+    public String toString() {
+        return "DonkeyFactory{"
+                + "engineConfig=" + engineConfig
+                + ", fileConfig=" + fileConfig
+                + '}';
     }
 }

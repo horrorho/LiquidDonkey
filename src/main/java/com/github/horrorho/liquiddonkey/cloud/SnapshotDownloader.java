@@ -26,6 +26,7 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.http.Http;
+import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -48,9 +49,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Donkey executor.
+ * Snapshot download.
  * <p>
- * Concurrency manager for Donkeys.
+ * Concurrently downloads snapshots via Donkeys.
  *
  * @author Ahseya
  */
@@ -93,19 +94,22 @@ public final class SnapshotDownloader {
     /**
      * Executes donkeys.
      * <p>
-     * Entries are removed from signatures as the execution proceeds.
+     * Downloads the specified snapshot concurrently. Entries are removed from signatures as the execution proceeds.
+     * Results are return as a boolean signature map: true for success, false for fail.
      *
      * @param http, not null
      * @param snapshot, not null
      * @param signatures, not null
-     * @return failures, not null
+     * @param printer, not null
+     * @return results, not null
      * @throws AuthenticationException
      * @throws IOException
      */
     public ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> execute(
             Http http,
             Snapshot snapshot,
-            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures
+            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures,
+            Printer printer
     ) throws AuthenticationException, IOException {
 
         logger.trace("<< execute() < snapshot: {} signatures: {}", snapshot, signatures.size());
@@ -119,7 +123,7 @@ public final class SnapshotDownloader {
             logger.debug("-- execute() : count: {}/{} signatures: {}", count, retryCount, signatures.size());
             signatures.putAll(results.get(false));
             results.get(false).clear();
-            doExecute(http, snapshot, signatures, results);
+            doExecute(http, snapshot, signatures, results, printer);
         }
 
         logger.trace(">> execute()");
@@ -130,7 +134,8 @@ public final class SnapshotDownloader {
             Http http,
             Snapshot snapshot,
             ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures,
-            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results
+            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results,
+            Printer printer
     ) throws AuthenticationException, IOException {
 
         logger.trace("<< doExecute() < signatures: {}", signatures.size());
@@ -138,7 +143,7 @@ public final class SnapshotDownloader {
         ExecutorService executor = Executors.newFixedThreadPool(threads);
 
         List<Future<Boolean>> futures
-                = Stream.generate(() -> factory.from(http, snapshot, signatures, results))
+                = Stream.generate(() -> factory.from(http, snapshot, signatures, results, printer))
                 .limit(threads)
                 .map(executor::submit)
                 .peek(this::stagger)

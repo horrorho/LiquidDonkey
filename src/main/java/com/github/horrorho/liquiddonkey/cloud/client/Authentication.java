@@ -58,6 +58,7 @@ public final class Authentication {
      */
     public static Authentication authenticate(Http http, AuthenticationConfig config)
             throws IOException, BadDataException {
+        
         if (config instanceof AuthenticationConfig.AuthorizationToken) {
             return authenticate((AuthenticationConfig.AuthorizationToken) config);
         }

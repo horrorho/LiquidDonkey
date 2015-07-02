@@ -103,14 +103,14 @@ public class Looter implements Closeable {
     void backup(Http http, Client client, Backup backup) throws AuthenticationException, IOException {
 
         FileFilter filter = FileFilter.getInstance(config.fileFilter());
-        DonkeyFactory factory = DonkeyFactory.newInstance(config.engine(), config.file(), printer);
+        DonkeyFactory factory = DonkeyFactory.newInstance(config.engine(), config.file());
         SnapshotDownloader downloader = SnapshotDownloader.newInstance(factory, config.engine());
 
         for (int id : backup.snapshots()) {
             Snapshot snapshot = Snapshot.from(http, backup, id, config.engine());
             Snapshot filtered = Snapshot.from(snapshot, filter);
             ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results
-                    = downloader.execute(http, filtered, filtered.signatures());
+                    = downloader.execute(http, filtered, filtered.signatures(), printer);
 
             logger.debug("--backup() > completed: {}", results.get(false).size());
             logger.debug("--backup() > failed: {}", results.get(true).size());

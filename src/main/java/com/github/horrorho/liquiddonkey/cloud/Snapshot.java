@@ -131,7 +131,9 @@ public final class Snapshot {
         return list;
     }
 
-    static List<ICloud.MBSFile> list(Http http, Backup backup, int snapshot) throws AuthenticationException, IOException {
+    static List<ICloud.MBSFile> list(Http http, Backup backup, int snapshot)
+            throws AuthenticationException, IOException {
+
         try {
             return backup.account().client().listFiles(http, backup.udid(), snapshot);
         } catch (AuthenticationException ex) {
