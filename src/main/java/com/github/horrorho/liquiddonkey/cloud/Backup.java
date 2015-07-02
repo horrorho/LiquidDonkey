@@ -74,13 +74,21 @@ public final class Backup {
      */
     public static Backup from(Http http, Account account, ByteString udid) throws AuthenticationException, IOException {
         try {
+            logger.trace("<< from() < udid: {}", Bytes.hex(udid));
+
             ICloud.MBSBackup backup = account.client().backup(http, udid);
-            KeyBag keyBag = KeyBagFactory.newInstance().from(account.client().getKeys(http, udid));
-            return Backup.newInstance(account, backup, keyBag);
+            ICloud.MBSKeySet keySet = account.client().getKeys(http, udid);
+            KeyBag keyBag = KeyBagFactory.newInstance().from(keySet);
+
+            Backup instance = Backup.newInstance(account, backup, keyBag);
+
+            logger.trace(">> from() > {}", instance);
+            return instance;
+
         } catch (AuthenticationException ex) {
             throw ex;
         } catch (BadDataException | HttpResponseException ex) {
-            logger.warn("-- backup() > exception: ", ex);
+            logger.warn("-- from() > exception: ", ex);
             return null;
         }
     }
@@ -166,10 +174,6 @@ public final class Backup {
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Backup.class);
-
-    public static Logger getLogger() {
-        return logger;
-    }
 
     private final Account account;
     private final ICloud.MBSBackup backup;
@@ -300,9 +304,18 @@ public final class Backup {
 
     @Override
     public String toString() {
-        return "Backup{" + "account=" + account + ", backup=" + backup + ", snapshots=" + snapshots + ", size=" + size
-                + ", hardwareModel=" + hardwareModel + ", marketingName=" + marketingName + ", serialNumber="
-                + serialNumber + ", deviceName=" + deviceName + ", productVerson=" + productVerson + ", udid="
-                + udid + ", keyBag=" + keyBag + ", lastModified=" + lastModified + '}';
+        return "Backup{"
+                + "backup=" + backup
+                + ", snapshots=" + snapshots
+                + ", size=" + size
+                + ", hardwareModel=" + hardwareModel
+                + ", marketingName=" + marketingName
+                + ", serialNumber=" + serialNumber
+                + ", deviceName=" + deviceName
+                + ", productVerson=" + productVerson
+                + ", udid=" + udid
+                + ", keyBag=" + keyBag
+                + ", lastModified=" + lastModified
+                + '}';
     }
 }

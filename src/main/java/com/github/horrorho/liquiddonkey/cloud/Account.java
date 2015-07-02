@@ -24,7 +24,6 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
-import com.github.horrorho.liquiddonkey.data.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.http.Http;
@@ -58,10 +57,8 @@ public final class Account {
     public static Account from(Http http, Client client) throws AuthenticationException, IOException {
         logger.trace("<< from()");
 
-        SimplePropertyList settings = client.settings();
-        String fullName = settings.valueOr("Unknown", "appleAccountInfo", "fullName");
-        String appleId = settings.valueOr("Unknown", "appleAccountInfo", "appleId");
-
+        String fullName = client.settings().valueOr("Unknown", "appleAccountInfo", "fullName");
+        String appleId = client.settings().valueOr("Unknown", "appleAccountInfo", "appleId");
         ICloud.MBSAccount account = client.account(http);
         Account instance = new Account(client, account, fullName, appleId);
 
@@ -105,7 +102,10 @@ public final class Account {
 
     @Override
     public String toString() {
-        return "Account{" + "client=" + client + ", account=" + account + ", fullName=" + fullName + ", appleId="
-                + appleId + '}';
+        return "Account{"
+                + "client=" + client
+                + ", account=" + account
+                + ", fullName=" + fullName
+                + ", appleId=" + appleId + '}';
     }
 }

@@ -46,9 +46,9 @@ import org.slf4j.LoggerFactory;
  *
  * @author Ahseya
  */
-public class MainDump {
+public class Dump {
 
-    private static final Logger logger = LoggerFactory.getLogger(MainDump.class);
+    private static final Logger logger = LoggerFactory.getLogger(Dump.class);
 
     /**
      * @param args the command line arguments
