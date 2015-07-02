@@ -44,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Snapshot.
  *
  * @author Ahseya
  */
@@ -51,6 +52,13 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Snapshot {
 
+    /**
+     * Returns a new instance with a filtered file list.
+     *
+     * @param snapshot, not null
+     * @param predicate, not null
+     * @return new instance, not null
+     */
     public static Snapshot from(Snapshot snapshot, Predicate<ICloud.MBSFile> predicate) {
         logger.trace("--from() < snapshot: {}", snapshot);
 
@@ -64,13 +72,13 @@ public final class Snapshot {
     }
 
     /**
-     * Returns a new Snapshot.
+     * Returns a new instance.
      *
      * @param http, not null
      * @param backup, not null
      * @param id
      * @param config, not null
-     * @return a new Snapshot
+     * @return new instance, may be null
      * @throws AuthenticationException
      * @throws IOException
      */
@@ -155,7 +163,7 @@ public final class Snapshot {
     }
 
     public Set<ICloud.MBSFile> files() {
-        return files;
+        return new HashSet<>(files);
     }
 
     public ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures() {
@@ -165,6 +173,9 @@ public final class Snapshot {
 
     @Override
     public String toString() {
-        return "Snapshot{" + "id=" + id + ", files=" + files.size() + '}';
+        return "Snapshot{"
+                + "id=" + id
+                + ", files=" + files.size()
+                + '}';
     }
 }

@@ -33,6 +33,7 @@ import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.google.protobuf.ByteString;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
@@ -43,8 +44,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Donkey factory.
- * <p>
- * Donkeys are {@link CallableFunction} threaded instances that manage from downloads.
  *
  * @author Ahseya
  */
@@ -52,6 +51,14 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class DonkeyFactory {
 
+    /**
+     * Returns a new instance.
+     *
+     * @param engineConfig, not null
+     * @param fileConfig, not null
+     * @param printer, not null
+     * @return new instance, not null
+     */
     public static DonkeyFactory newInstance(EngineConfig engineConfig, FileConfig fileConfig, Printer printer) {
         return new DonkeyFactory(engineConfig, fileConfig, printer);
     }
@@ -63,12 +70,21 @@ public final class DonkeyFactory {
     private final Printer printer;
 
     DonkeyFactory(EngineConfig engineConfig, FileConfig fileConfig, Printer printer) {
-        this.engineConfig = engineConfig;
-        this.fileConfig = fileConfig;
-        this.printer = printer;
+        this.engineConfig = Objects.requireNonNull(engineConfig);
+        this.fileConfig = Objects.requireNonNull(fileConfig);
+        this.printer = Objects.requireNonNull(printer);
     }
 
-    Donkey from(
+    /**
+     * Returns a new Donkey instance.
+     *
+     * @param http, not null
+     * @param snapshot, not null
+     * @param signatureToFileMap, not null
+     * @param results, not null
+     * @return new instance, not null
+     */
+    public Donkey from(
             Http http,
             Snapshot snapshot,
             ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileMap,

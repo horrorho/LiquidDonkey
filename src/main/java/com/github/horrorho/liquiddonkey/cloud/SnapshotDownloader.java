@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Donkey executor.
  * <p>
- * Concurrency manager for {@link CallableFunction} Donkeys.
+ * Concurrency manager for Donkeys.
  *
  * @author Ahseya
  */
@@ -58,14 +58,12 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class SnapshotDownloader {
 
-    private static final Logger logger = LoggerFactory.getLogger(SnapshotDownloader.class);
-
     /**
      * Returns a new instance.
      *
      * @param factory not null
      * @param config not null
-     * @return a new instance, not null
+     * @return new instance, not null
      */
     public static SnapshotDownloader newInstance(
             DonkeyFactory factory,
@@ -77,6 +75,8 @@ public final class SnapshotDownloader {
                 config.threadStaggerDelay(),
                 config.retryCount());
     }
+
+    private static final Logger logger = LoggerFactory.getLogger(SnapshotDownloader.class);
 
     private final DonkeyFactory factory;
     private final int threads;
@@ -90,6 +90,18 @@ public final class SnapshotDownloader {
         this.retryCount = retryCount;
     }
 
+    /**
+     * Executes donkeys.
+     * <p>
+     * Entries are removed from signatures as the execution proceeds.
+     *
+     * @param http, not null
+     * @param snapshot, not null
+     * @param signatures, not null
+     * @return failures, not null
+     * @throws AuthenticationException
+     * @throws IOException
+     */
     public ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> execute(
             Http http,
             Snapshot snapshot,
@@ -148,8 +160,8 @@ public final class SnapshotDownloader {
     }
 
     <T> T error(Future<T> future) throws AuthenticationException, IOException {
-        // TODO work through rules
         T t = null;
+        // Exception handling.
         try {
             t = future.get();
         } catch (CancellationException ex) {

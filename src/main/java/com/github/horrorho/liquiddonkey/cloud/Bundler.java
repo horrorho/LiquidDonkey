@@ -98,7 +98,7 @@ public final class Bundler implements Iterator<Map<ByteString, Set<ICloud.MBSFil
             }
 
             // If null, another thread has already acquired this map entry.
-            // TODO optimization: if one copy of a signature set exists, to duplicate rather than download
+            // TODO optimization: if one copy of a signature set exists, to duplicate rather than download again.
             if (map.remove(entry.getKey()) == null || entry.getValue().stream().noneMatch(filter)) {
                 continue;
             }

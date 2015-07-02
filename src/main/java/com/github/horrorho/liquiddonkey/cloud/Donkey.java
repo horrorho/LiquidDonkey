@@ -106,7 +106,7 @@ public final class Donkey implements Callable<Boolean> {
                 if (signatures.isEmpty()) {
                     logger.warn("-- call() > empty signature list");
                 } else {
-                    download(signatures);
+                    downloadSignatures(signatures);
                     addAll(true, signatures);
                 }
             } catch (AuthenticationException ex) {
@@ -124,7 +124,7 @@ public final class Donkey implements Callable<Boolean> {
         results.computeIfAbsent(key, k -> new ConcurrentHashMap<>()).putAll(signatures);
     }
 
-    public void download(Map<ByteString, Set<ICloud.MBSFile>> signatures)
+    void downloadSignatures(Map<ByteString, Set<ICloud.MBSFile>> signatures)
             throws AuthenticationException, BadDataException, IOException {
 
         logger.trace("<< download() < {}", signatures.size());
@@ -136,18 +136,16 @@ public final class Donkey implements Callable<Boolean> {
 
         FileGroups fileGroups = client.getFileGroups(http, backupUdid, snapshot, files);
 
-        downloadFileGroups(fileGroups, signatures);
+        downloadGroups(fileGroups, signatures);
 
         logger.trace(">> download()");
     }
 
-    private void downloadFileGroups(
-            ChunkServer.FileGroups fileGroups,
-            Map<ByteString, Set<ICloud.MBSFile>> signatureToFileSet
-    ) throws AuthenticationException, IOException {
+    void downloadGroups(ChunkServer.FileGroups fileGroups, Map<ByteString, Set<ICloud.MBSFile>> signatureToFileSet)
+            throws AuthenticationException, IOException {
 
         for (ChunkServer.FileChecksumStorageHostChunkLists group : fileGroups.getFileGroupsList()) {
-            ChunkListStore store = download(group);
+            ChunkListStore store = downloadGroup(group);
 
             group.getFileChecksumChunkReferencesList().stream().forEach((fileChecksumChunkReference) -> {
                 // Files with identical signatures/ hash.
@@ -164,7 +162,7 @@ public final class Donkey implements Callable<Boolean> {
         }
     }
 
-    public ChunkListStore download(ChunkServer.FileChecksumStorageHostChunkLists group)
+    ChunkListStore downloadGroup(ChunkServer.FileChecksumStorageHostChunkLists group)
             throws AuthenticationException, IOException {
 
         logger.trace("<< download() < group count : {}", group.getStorageHostChunkListCount());
@@ -172,7 +170,7 @@ public final class Donkey implements Callable<Boolean> {
         // TODO memory or disk based depending on size
         MemoryStore.Builder builder = MemoryStore.builder();
         for (ChunkServer.StorageHostChunkList chunkList : group.getStorageHostChunkListList()) {
-            builder.add(download(chunkList));
+            builder.add(downloadChunkList(chunkList));
         }
         ChunkListStore storage = builder.build();
 
@@ -180,14 +178,14 @@ public final class Donkey implements Callable<Boolean> {
         return storage;
     }
 
-    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList) throws AuthenticationException, IOException {
+    List<byte[]> downloadChunkList(ChunkServer.StorageHostChunkList chunkList) throws AuthenticationException, IOException {
         // Recursive.
         return chunkList.getChunkInfoCount() == 0
                 ? new ArrayList<>()
-                : download(chunkList, 0);
+                : Donkey.this.downloadChunkList(chunkList, 0);
     }
 
-    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList, int attempt)
+    List<byte[]> downloadChunkList(ChunkServer.StorageHostChunkList chunkList, int attempt)
             throws AuthenticationException, IOException {
         // Recursive.
         List<byte[]> decrypted = attempt++ == attempts
@@ -195,7 +193,7 @@ public final class Donkey implements Callable<Boolean> {
                 : decrypter.decrypt(chunkList, client.chunks(http, chunkList));
 
         return decrypted == null
-                ? download(chunkList, attempt)
+                ? Donkey.this.downloadChunkList(chunkList, attempt)
                 : decrypted;
     }
 
