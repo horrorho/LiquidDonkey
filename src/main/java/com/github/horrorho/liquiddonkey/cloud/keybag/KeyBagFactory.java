@@ -30,7 +30,7 @@ import com.github.horrorho.liquiddonkey.crypto.AESWrap;
 import com.github.horrorho.liquiddonkey.crypto.PBKDF2;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.tagvalue.TagValue;
+import com.github.horrorho.liquiddonkey.data.TagValue;
 import static com.github.horrorho.liquiddonkey.util.Bytes.hex;
 import static com.github.horrorho.liquiddonkey.util.Bytes.integer32;
 import com.google.protobuf.ByteString;

@@ -26,7 +26,7 @@ package com.github.horrorho.liquiddonkey.cloud.client;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
-import com.github.horrorho.liquiddonkey.cloud.plist.SimplePropertyList;
+import com.github.horrorho.liquiddonkey.data.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import java.io.IOException;

@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.client;
 
-import com.github.horrorho.liquiddonkey.cloud.plist.SimplePropertyList;
+import com.github.horrorho.liquiddonkey.data.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.HostInfo;

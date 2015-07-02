@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.tagvalue;
+package com.github.horrorho.liquiddonkey.data;
 
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import static com.github.horrorho.liquiddonkey.util.Bytes.hex;

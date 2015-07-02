@@ -24,7 +24,7 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
-import com.github.horrorho.liquiddonkey.cloud.plist.SimplePropertyList;
+import com.github.horrorho.liquiddonkey.data.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.http.Http;
