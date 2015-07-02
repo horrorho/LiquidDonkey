@@ -66,7 +66,7 @@ public final class Directory {
      * @return new instance, not null
      */
     public static Directory newInstance(Path base, boolean isFlat, boolean isCombined) {
-        return Directory.newInstance(MessageDigestFactory.SHA1(), base, isFlat, isCombined);
+        return Directory.newInstance(MessageDigestFactory.getInstance().SHA1(), base, isFlat, isCombined);
     }
 
     static Directory newInstance(MessageDigest messageDigest, Path base, boolean isFlat, boolean isCombined) {

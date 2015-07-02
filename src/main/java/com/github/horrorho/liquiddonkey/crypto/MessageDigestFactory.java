@@ -37,7 +37,21 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class MessageDigestFactory {
 
-    static MessageDigest getInstance(String algorithm) {
+    private static final MessageDigestFactory instance = new MessageDigestFactory();
+
+    /**
+     * Returns an instance.
+     *
+     * @return an instance
+     */
+    public static MessageDigestFactory getInstance() {
+        return instance;
+    }
+
+    MessageDigestFactory() {
+    }
+
+    MessageDigest getInstance(String algorithm) {
         try {
             return MessageDigest.getInstance(algorithm);
         } catch (NoSuchAlgorithmException ex) {
@@ -46,18 +60,15 @@ public final class MessageDigestFactory {
         }
     }
 
-    public static MessageDigest MD5() {
+    public MessageDigest MD5() {
         return getInstance("MD5");
     }
 
-    public static MessageDigest SHA1() {
+    public MessageDigest SHA1() {
         return getInstance("SHA-1");
     }
 
-    public static MessageDigest SHA256() {
+    public MessageDigest SHA256() {
         return getInstance("SHA-256");
-    }
-
-    private MessageDigestFactory() {
     }
 }

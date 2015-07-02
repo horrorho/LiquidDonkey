@@ -70,7 +70,7 @@ public final class LocalFileDecrypter {
     public static LocalFileDecrypter newInstance() {
         return LocalFileDecrypter.newInstance(
                 new BufferedBlockCipher(new CBCBlockCipher(new AESEngine())),
-                MessageDigestFactory.SHA1());
+                MessageDigestFactory.getInstance().SHA1());
     }
 
     static LocalFileDecrypter newInstance(BufferedBlockCipher cbcAes, MessageDigest sha1) {

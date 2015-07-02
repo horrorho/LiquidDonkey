@@ -57,7 +57,7 @@ public final class KeyBagTools {
     }
 
     private final AESWrap aesWrap = AESWrap.newInstance();
-    private final MessageDigest sha256 = MessageDigestFactory.SHA256();
+    private final MessageDigest sha256 = MessageDigestFactory.getInstance().SHA256();
     private final KeyBag keyBag;
 
     private KeyBagTools(KeyBag keyBag) {

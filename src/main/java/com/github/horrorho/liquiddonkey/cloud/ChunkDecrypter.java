@@ -54,7 +54,9 @@ public final class ChunkDecrypter {
      * @return a new instance, not null
      */
     public static ChunkDecrypter newInstance() {
-        return new ChunkDecrypter(new CFBBlockCipher(new AESEngine(), 128), MessageDigestFactory.SHA256());
+        return new ChunkDecrypter(
+                new CFBBlockCipher(new AESEngine(), 128),
+                MessageDigestFactory.getInstance().SHA256());
     }
 
     private static final Logger logger = LoggerFactory.getLogger(ChunkDecrypter.class);
