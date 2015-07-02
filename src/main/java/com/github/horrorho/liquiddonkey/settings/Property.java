@@ -49,7 +49,7 @@ public enum Property {
     CONFIG_PREFIX_ITEM_TYPE("ITEM_TYPE_"),
     ENGINE_AGGRESSIVE("false"),
     ENGINE_BATCH_SIZE_MINIMUM_BYTES("4194304"),
-    ENGINE_FORCE_OVERWRITE("false"), // TODO
+    ENGINE_FORCE_OVERWRITE("false"),
     ENGINE_DOWNLOAD_RETRY("1"),
     ENGINE_DUMP_TOKEN(null),
     ENGINE_RETRY_AGGRESSIVE("2"),
@@ -69,7 +69,6 @@ public enum Property {
     FILTER_RELATIVE_PATH(null),
     FILTER_SIZE_MIN("0"),
     FILTER_SIZE_MAX(Long.toString(Long.MAX_VALUE / 1024)),
-    GUI_SELECTION_THREADS("1 2 3 4 8 10 16"),
     HTTP_DEFAULT_USER_AGENT("Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0"),
     HTTP_MAX_CONNECTIONS("32"),
     HTTP_RETRY_COUNT("3"),
