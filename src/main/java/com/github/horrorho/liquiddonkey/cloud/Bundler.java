@@ -36,19 +36,25 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Combines Map entries into batches.
+ * Bundler. Bundles map entries.
+ * <p>
  *
- * {@link java.util.Map.Entry} elements are removed from the specified {@link java.util.concurrent.ConcurrentMap} and
- * grouped into batches with respect to the specified minimum size threshold. As the map is depleted the trailing
- * elements are batched regardless.
+ * Elements are removed from the specified signature map, filtered and then grouped into bundles with respect to the
+ * specified minimum size threshold. As the map is depleted the trailing elements are bundled regardless.
  *
  * @author Ahseya
  */
 @ThreadSafe
 public final class Bundler implements Iterator<Map<ByteString, Set<ICloud.MBSFile>>> {
 
-    private static final Logger logger = LoggerFactory.getLogger(Bundler.class);
-
+    /**
+     * Returns a new instance wrapped around the specified map.
+     *
+     * @param map, not null
+     * @param filter, not null
+     * @param batchSizeBytes
+     * @return a new instance, not null
+     */
     public static Bundler wrap(
             ConcurrentMap<ByteString, Set<ICloud.MBSFile>> map,
             Predicate<ICloud.MBSFile> filter,
@@ -56,6 +62,8 @@ public final class Bundler implements Iterator<Map<ByteString, Set<ICloud.MBSFil
 
         return new Bundler(map, filter, batchSizeBytes);
     }
+
+    private static final Logger logger = LoggerFactory.getLogger(Bundler.class);
 
     private final ConcurrentMap<ByteString, Set<ICloud.MBSFile>> map;
     private final Predicate<ICloud.MBSFile> filter;
@@ -79,6 +87,7 @@ public final class Bundler implements Iterator<Map<ByteString, Set<ICloud.MBSFil
     @Override
     public Map<ByteString, Set<ICloud.MBSFile>> next() {
         logger.trace("<< next()");
+
         Map<ByteString, Set<ICloud.MBSFile>> files = new HashMap<>();
         long total = 0;
 
@@ -88,8 +97,9 @@ public final class Bundler implements Iterator<Map<ByteString, Set<ICloud.MBSFil
                 break;
             }
 
-            // If null, another thread acquired this map entry.
-            if (map.remove(entry.getKey()) == null || !entry.getValue().stream().allMatch(filter)) {
+            // If null, another thread has already acquired this map entry.
+            // TODO optimization: if one copy of a signature set exists, to duplicate rather than download
+            if (map.remove(entry.getKey()) == null || entry.getValue().stream().noneMatch(filter)) {
                 continue;
             }
 

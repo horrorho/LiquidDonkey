@@ -46,13 +46,11 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
 
-    private static final Logger logger = LoggerFactory.getLogger(BackupSelector.class);
-
     /**
      * Returns a new instance.
      * <p>
- The newInstance UDIDs will be fully or partially matched against the supplied UDIDs, case-insensitive. If the supplied
- UDIDs list is empty, the user will be prompted for a selection.
+     * The newInstance UDIDs will be fully or partially matched against the supplied UDIDs, case-insensitive. If the
+     * supplied UDIDs list is empty, the user will be prompted for a selection.
      *
      * @param commandLineUdids the command line UDID/s, not null
      * @param printer the Printer, not null
@@ -64,6 +62,8 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
                 : new Udid(printer, new ArrayList<>(commandLineUdids));
     }
 
+    private static final Logger logger = LoggerFactory.getLogger(BackupSelector.class);
+    
     protected final Printer printer;
 
     BackupSelector(Printer printer) {
@@ -73,6 +73,7 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
     @Override
     public List<Backup> apply(List<Backup> availableBackups) {
         logger.trace("<< apply < available: {}", availableBackups);
+        
         if (availableBackups.isEmpty()) {
             printer.println(Level.WARN, "No backups available.");
             return new ArrayList<>();
@@ -87,6 +88,7 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
                 .collect(Collectors.joining(" "));
 
         printer.println(Level.V, "Selected backup/s: " + selectedStr);
+        
         logger.trace(">> apply > selected: {}", selected);
         return selected;
     }
