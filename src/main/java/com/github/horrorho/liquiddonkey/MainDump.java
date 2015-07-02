@@ -72,7 +72,7 @@ public class MainDump {
             properties.putAll(props.distinct().properties());
             properties.store(outputStream, "liquiddonkey");
 
-            logger.info("-- main() > properties written to: {}", path);
+            logger.info("-- main() > properties written to: {}", path.toAbsolutePath());
         } catch (IOException ex) {
             logger.warn("-- main() > exception: ", ex);
         }
