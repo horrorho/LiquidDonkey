@@ -33,6 +33,7 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
@@ -45,7 +46,7 @@ import org.slf4j.LoggerFactory;
  */
 public class PersistentBackingStore<E extends Enum<E>> implements BackingStore<E> {
 
-    private static final org.slf4j.Logger logger = LoggerFactory.getLogger(PersistentBackingStore.class);
+    private static final Logger logger = LoggerFactory.getLogger(PersistentBackingStore.class);
 
     private final Preferences preferences;
     private final Map<String, E> stringToEnum;

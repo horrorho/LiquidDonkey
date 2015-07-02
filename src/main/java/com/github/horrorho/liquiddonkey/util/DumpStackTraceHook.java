@@ -43,7 +43,7 @@ public final class DumpStackTraceHook extends Thread {
     private static final DumpStackTraceHook instance = new DumpStackTraceHook();
 
     /**
-     * Add as a virtual-machine hook.
+     * Add virtual-machine hook.
      */
     public static void add() {
         try {
@@ -54,7 +54,7 @@ public final class DumpStackTraceHook extends Thread {
     }
 
     /**
-     * Remove as a virtual-machine hook.
+     * Remove virtual-machine hook.
      */
     public static void remove() {
         try {
