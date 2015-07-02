@@ -41,13 +41,13 @@ public interface ChunkListStore {
      * @param chunkReference chunk reference
      * @param output output stream
      * @return bytes written or -1 if no such chunk exists
-     * @throws java.io.IOException
+     * @throws IOException
      */
     long write(ChunkServer.ChunkReference chunkReference, OutputStream output) throws IOException;
 
     /**
      * Returns the number of containers present in this ChunkListStore.
-     * 
+     *
      * @return the number of containers present in this storage
      */
     long size();

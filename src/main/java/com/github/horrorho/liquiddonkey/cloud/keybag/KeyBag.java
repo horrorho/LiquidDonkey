@@ -87,8 +87,8 @@ public final class KeyBag {
             logger.trace("** KeyBag() < attribute {}: {}", tagAttribute.getKey(), hex(tagAttribute.getValue()));
         });
 
-        logger.debug("** KeyBag() < uuid: {}", hex(uuid));
-        logger.debug("** KeyBag() < type: {}", type);
+        logger.trace("** KeyBag() < uuid: {}", hex(uuid));
+        logger.trace("** KeyBag() < type: {}", type);
     }
 
     public boolean hasAttribute(String tag) {

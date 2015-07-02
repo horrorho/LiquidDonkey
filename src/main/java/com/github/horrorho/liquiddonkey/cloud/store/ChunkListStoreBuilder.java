@@ -36,15 +36,14 @@ public interface ChunkListStoreBuilder {
      * Add a container in sequential order.
      *
      * @param container the container to be added, not null
-     * @return this builder
-     * @throws NullPointerException if container is null
+     * @return this builder, not null
      */
     ChunkListStoreBuilder add(List<byte[]> container);
 
     /**
      * Build the ChunkListStore.
      *
-     * @return the built ChunkListStore
+     * @return the built ChunkListStore, not null
      */
     ChunkListStore build();
 }
