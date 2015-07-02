@@ -23,19 +23,17 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.client;
 
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
-import com.github.horrorho.liquiddonkey.util.PropertyLists;
-import com.dd.plist.NSDictionary;
-import com.dd.plist.PropertyListFormatException;
+import com.github.horrorho.liquiddonkey.cloud.plist.SimplePropertyList;
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,10 +67,10 @@ public final class Authentication {
         }
 
         if (config instanceof AuthenticationConfig.Null) {
-            throw new AuthenticationException("No authorization data");
+            throw new IllegalArgumentException("No authorization data");
         }
 
-        throw new AuthenticationException();
+        throw new IllegalStateException("Unhandled authentication configuration");
     }
 
     static Authentication authenticate(AuthenticationConfig.AuthorizationToken config)
@@ -106,16 +104,17 @@ public final class Authentication {
             String authBasic = Tokens.getInstance().basic(appleId, password);
             logger.trace("-- authenticate() > authentication basic token: {}", authBasic);
 
-            NSDictionary response = (NSDictionary) PropertyLists.parse(
-                    http.executor("https://setup.icloud.com/setup/authenticate/$APPLE_ID$", byteArrayResponseHandler)
+            byte[] data
+                    = http.executor("https://setup.icloud.com/setup/authenticate/$APPLE_ID$", byteArrayResponseHandler)
                     .headers(Headers.mmeClientInfo, Headers.authorization(authBasic))
-                    .get());
-            logger.trace("-- authenticate() >  response: {}", response.toASCIIPropertyList());
+                    .get();
+            SimplePropertyList plist = SimplePropertyList.from(data);
+            logger.trace("-- authenticate() >  plist: {}", plist);
 
-            String dsPrsID = PropertyLists.stringValue(response, "appleAccountInfo", "dsPrsID");
+            String dsPrsID = plist.value("appleAccountInfo", "dsPrsID");
             logger.trace("-- authenticate() >  dsPrsID: {}", dsPrsID);
 
-            String mmeAuthToken = PropertyLists.stringValue(response, "tokens", "mmeAuthToken");
+            String mmeAuthToken = plist.value("tokens", "mmeAuthToken");
             logger.trace("-- authenticate() >   mmeAuthToken: {}", mmeAuthToken);
 
             Authentication authentication = newInstance(dsPrsID, mmeAuthToken);
@@ -123,15 +122,13 @@ public final class Authentication {
 
             return authentication;
 
-        } catch (IOException | BadDataException | PropertyListFormatException ex) {
-            throw new BadDataException("Unexpected server response", ex);
-        } catch (UncheckedIOException ex) {
-            IOException ioex = ex.getCause();
-            if (ioex instanceof AuthenticationException) {
-                logger.warn("-- authenticate() > exception: {}", ioex);
+        } catch (HttpResponseException ex) {
+            if (ex.getStatusCode() == 401) {
                 throw new AuthenticationException("Bad appleId/ password or not an iCloud account");
             }
-            throw ex.getCause();
+            throw ex;
+        } catch (IOException | BadDataException ex) {
+            throw new BadDataException("Unexpected server response", ex);
         }
     }
 

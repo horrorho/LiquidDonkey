@@ -26,7 +26,6 @@ package com.github.horrorho.liquiddonkey.gui.controller;
 import com.github.horrorho.liquiddonkey.cloud.Account;
 import com.github.horrorho.liquiddonkey.cloud.client.Authentication;
 import com.github.horrorho.liquiddonkey.cloud.Backup;
-import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.gui.controller.data.BackupProperties;
 import com.github.horrorho.liquiddonkey.http.HttpFactory;
 import com.github.horrorho.liquiddonkey.printer.Printer;
@@ -135,7 +134,7 @@ public class AuthenticationController implements Initializable {
         initButton(isAggressive, Property.ENGINE_AGGRESSIVE);
         initButton(toRelaxSSL, Property.HTTP_RELAX_SSL);
         initButton(toCombine, Property.FILE_COMBINED);
-        initButton(toForce, Property.FILE_FORCE);
+        initButton(toForce, Property.ENGINE_FORCE_OVERWRITE);
         initThreads();
         disableButtons();
 
@@ -177,7 +176,7 @@ public class AuthenticationController implements Initializable {
         resetButton(isAggressive, Property.ENGINE_AGGRESSIVE);
         resetButton(toRelaxSSL, Property.HTTP_RELAX_SSL);
         resetButton(toCombine, Property.FILE_COMBINED);
-        resetButton(toForce, Property.FILE_FORCE);
+        resetButton(toForce, Property.ENGINE_FORCE_OVERWRITE);
         resetThreads();
     }
 
@@ -210,28 +209,28 @@ public class AuthenticationController implements Initializable {
                 HttpFactory.from(HttpConfig.newInstance(props)),
                 Printer.instanceOf(false));
 
-        httpTask.setValue(httpTaskFactory.newInstance(
-                http -> Authentication.from(http, authenticationConfig),
-                t -> {
-                    debounceGoButtons();
-                    switch (t.getState()) {
-                        case CANCELLED:
-                            logger.debug("-- authentication() > cancelled");
-                            httpTask.setValue(null);
-                            break;
-                        case FAILED:
-                            bad("Authentication error.", t.getException());
-                            httpTask.setValue(null);
-                            break;
-                        case SUCCEEDED: {
-                            try {
-                                toSelection(t.get());
-                            } catch (InterruptedException | ExecutionException ex) {
-                                logger.warn("-- authenticate() > exception: ", ex);
-                            }
-                        }
-                    }
-                }));
+//        httpTask.setValue(httpTaskFactory.newInstance(
+//                http -> Authentication.from(http, authenticationConfig),
+//                t -> {
+//                    debounceGoButtons();
+//                    switch (t.getState()) {
+//                        case CANCELLED:
+//                            logger.debug("-- authentication() > cancelled");
+//                            httpTask.setValue(null);
+//                            break;
+//                        case FAILED:
+//                            bad("Authentication error.", t.getException());
+//                            httpTask.setValue(null);
+//                            break;
+//                        case SUCCEEDED: {
+//                            try {
+//                                toSelection(t.get());
+//                            } catch (InterruptedException | ExecutionException ex) {
+//                                logger.warn("-- authenticate() > exception: ", ex);
+//                            }
+//                        }
+//                    }
+//                }));
 
         executorService.submit(httpTask.getValue());
         debounceGoButtons();
@@ -283,20 +282,20 @@ public class AuthenticationController implements Initializable {
     }
 
     void toSelection(Authentication authentication) {
-        try {
-            logger.trace(GUI, "<< toSelection()");
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Selection.fxml"));
-            Parent root = loader.load();
-            SelectionController controller = loader.<SelectionController>getController();
-            controller.init(authentication, null, stage, executorService, props, parsers);
-            Scene scene = new Scene(root);
-            stage.setScene(scene);
-            stage.show();
-        } catch (IOException ex) {
-            throw new FatalException("Bad fxml resource", ex);
-        } finally {
-            logger.trace(GUI, ">> toSelection()");
-        }
+//        try {
+//            logger.trace(GUI, "<< toSelection()");
+//            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Selection.fxml"));
+//            Parent root = loader.load();
+//            SelectionController controller = loader.<SelectionController>getController();
+//            controller.init(authentication, null, stage, executorService, props, parsers);
+//            Scene scene = new Scene(root);
+//            stage.setScene(scene);
+//            stage.show();
+//        } catch (IOException ex) {
+//            throw new FatalException("Bad fxml resource", ex);
+//        } finally {
+//            logger.trace(GUI, ">> toSelection()");
+//        }
     }
 
     void initButton(CheckBox checkbox, Property property) {

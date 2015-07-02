@@ -24,16 +24,22 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
-import java.io.UncheckedIOException;
+import com.google.protobuf.ByteString;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +51,14 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Snapshot {
 
+    public static Snapshot from(Snapshot snapshot, Predicate<ICloud.MBSFile> predicate) {
+
+        return new Snapshot(
+                snapshot.id(),
+                snapshot.backup(),
+                snapshot.files().stream().filter(predicate::test).collect(Collectors.toSet()));
+    }
+
     /**
      * Returns a new Snapshot.
      *
@@ -53,15 +67,18 @@ public final class Snapshot {
      * @param id
      * @param config, not null
      * @return a new Snapshot
-     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     * @throws IOException
      */
-    public Snapshot from(Http http, Backup backup, int id, EngineConfig config) throws UncheckedIOException {
+    public static Snapshot from(Http http, Backup backup, int id, EngineConfig config)
+            throws AuthenticationException, IOException {
+
         logger.trace("<< of() < id: {}", id);
         int latest = backup.snapshots().stream().mapToInt(Integer::intValue).max().orElse(0);
 
         Snapshot snapshot = from(
                 http,
-                backup.snapshots(),
+                backup,
                 id < 0 ? latest + id + 1 : id,
                 config.isAggressive());
 
@@ -69,7 +86,11 @@ public final class Snapshot {
         return snapshot;
     }
 
-    Snapshot from(Http http, List<Integer> snapshots, int id, boolean toHunt) throws UncheckedIOException {
+    static Snapshot from(Http http, Backup backup, int id, boolean toHunt)
+            throws AuthenticationException, IOException {
+
+        List<Integer> snapshots = backup.snapshots();
+
         if (!snapshots.contains(id)) {
             logger.warn("-- snapshots() > no snapshot: {}", id);
             return null;
@@ -79,25 +100,34 @@ public final class Snapshot {
                 ? snapshots.get(1)
                 : id + 1;
 
-        List<ICloud.MBSFile> list = list(http, id, to);
+        List<ICloud.MBSFile> list = list(http, backup, id, to);
 
         return list == null
                 ? null
                 : new Snapshot(id, backup, list);
     }
 
-    List<ICloud.MBSFile> list(Http http, int from, int to) throws UncheckedIOException {
+    static List<ICloud.MBSFile> list(Http http, Backup backup, int from, int to)
+            throws AuthenticationException, IOException {
+
         int snapshot = from;
         List<ICloud.MBSFile> list = null;
 
         while (snapshot < to && list == null) {
-            list = Snapshot.this.list(http, snapshot++);
+            list = list(http, backup, snapshot++);
         }
         return list;
     }
 
-    List<ICloud.MBSFile> list(Http http, int snapshot) throws UncheckedIOException {
-        return backup.account().client().listFiles(http, backup.udid(), snapshot);
+    static List<ICloud.MBSFile> list(Http http, Backup backup, int snapshot) throws AuthenticationException, IOException {
+        try {
+            return backup.account().client().listFiles(http, backup.udid(), snapshot);
+        } catch (AuthenticationException ex) {
+            throw ex;
+        } catch (HttpResponseException ex) {
+            logger.warn("-- list() > exceptione: ", ex);
+            return null;
+        }
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Snapshot.class);
@@ -122,6 +152,11 @@ public final class Snapshot {
 
     public Set<ICloud.MBSFile> files() {
         return files;
+    }
+
+    public ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures() {
+        return files().stream()
+                .collect(Collectors.groupingByConcurrent(ICloud.MBSFile::getSignature, Collectors.toSet()));
     }
 
     @Override

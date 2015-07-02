@@ -24,12 +24,12 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.file.Mode;
-import com.github.horrorho.liquiddonkey.exception.FatalException;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.google.protobuf.ByteString;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +50,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,13 +99,12 @@ public final class SnapshotDownloader {
     public ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> execute(
             Http http,
             Snapshot snapshot,
-            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures,
-            Tally tally) {
+            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures
+    ) throws AuthenticationException, IOException {
 
         logger.trace("<< execute()");
 
         ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results = new ConcurrentHashMap<>();
-        tally.reset(Tally.size(signatures));
 
         int count = 0;
         while (count++ < retryCount) {
@@ -123,7 +121,8 @@ public final class SnapshotDownloader {
             Http http,
             Snapshot snapshot,
             ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures,
-            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results) {
+            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results
+    ) throws AuthenticationException, IOException {
 
         logger.trace("<< doExecute() < snapshot: {}");
 
@@ -139,7 +138,9 @@ public final class SnapshotDownloader {
         executor.shutdown();
 
         // All done.
-        futures.stream().forEach(this::error);
+        for (Future<Boolean> future : futures) {
+            error(future);
+        }
 
         if (results.containsKey(Boolean.FALSE)) {
             logger.warn("-- doExecute() > failures: {}", results.get(Boolean.FALSE).size());
@@ -149,24 +150,23 @@ public final class SnapshotDownloader {
         return results;
     }
 
-    <T> T error(Future<T> future) throws FatalException {
+    <T> T error(Future<T> future) throws AuthenticationException, IOException {
         // TODO work through rules
         T t = null;
         try {
             t = future.get();
-        } catch (CancellationException | InterruptedException ex) {
-            throw new FatalException(ex);
+        } catch (CancellationException ex) {
+            throw new IllegalStateException("Cancelled");
+        } catch (InterruptedException ex) {
+            throw new IllegalStateException("Interrupted");
         } catch (ExecutionException ex) {
-            logger.warn("-- notFatalIO() > {}", ex);
-            Throwable throwable = ex.getCause();
-
-            if (throwable instanceof FatalException) {
-                throw (FatalException) throwable;
+            Throwable cause = ex.getCause();
+            if (cause instanceof IOException) {
+                throw cause instanceof AuthenticationException
+                        ? (AuthenticationException) cause
+                        : (IOException) cause;
             }
-
-            if (throwable instanceof AuthenticationException) {
-                throw (AuthenticationException)
-            }
+            logger.warn("-- future() > exception: ", ex);
         }
         return t;
     }
@@ -178,30 +178,7 @@ public final class SnapshotDownloader {
             TimeUnit.MILLISECONDS.sleep(staggerDelayMs);
             return t;
         } catch (InterruptedException ex) {
-            throw new FatalException(ex);
+            throw new IllegalStateException("Interrupted");
         }
-    }
-
-    public ConcurrentMap<ByteString, Set<ICloud.MBSFile>>
-            moo(List<ICloud.MBSFile> files, Predicate<ICloud.MBSFile> filter) {
-
-        Map<Mode, List<ICloud.MBSFile>> modeToFiles = groupingBy(files, Mode::mode);
-        logger.info("-- signatures() > modes: {}", summary(modeToFiles));
-
-        Map<Boolean, List<ICloud.MBSFile>> isFilteredToFiles = groupingBy(files, filter::test);
-        logger.info("-- signatures() > filtered: {}", summary(isFilteredToFiles));
-
-        return isFilteredToFiles.getOrDefault(Boolean.TRUE, new ArrayList<>()).stream()
-                .collect(Collectors.groupingByConcurrent(ICloud.MBSFile::getSignature, Collectors.toSet()));
-    }
-
-    <T, K> Map<K, List<T>> groupingBy(List<T> t, Function<T, K> classifier) {
-        return t == null
-                ? new HashMap<>()
-                : t.stream().collect(Collectors.groupingBy(classifier));
-    }
-
-    <K, V> Map<K, Integer> summary(Map<K, List<V>> map) {
-        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().size()));
-    }
+    } 
 }

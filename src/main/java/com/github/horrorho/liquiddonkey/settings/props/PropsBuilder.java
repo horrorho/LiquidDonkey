@@ -101,14 +101,22 @@ public class PropsBuilder<E extends Enum<E>> {
         try (InputStream inputStream = supplier.get()) {
             if (inputStream != null) {
                 properties.load(inputStream);
-                properties.forEach((k, v) -> map.put(stringToEnum.get(k.toString()), v.toString()));
+
+                properties.forEach((k, v) -> {
+                    if (stringToEnum.containsKey(k.toString())) {
+                        map.put(stringToEnum.get(k.toString()), v.toString());
+                    } else {
+                        logger.warn("-- load() > unknown property key: {}", k);
+                    }
+                });
+
             } else {
-                logger.warn("-- inputStream() > null InputStream");
+                logger.warn("-- load() > null InputStream");
             }
         } catch (NoSuchFileException ex) {
-            logger.warn("-- inputStream() > no such file: {}", ex.getFile());
+            logger.warn("-- load() > no such file: {}", ex.getFile());
         } catch (IOException ex) {
-            logger.warn("-- inputStream() > exception: {}", ex);
+            logger.warn("-- load() > exception: {}", ex);
         }
         return this;
     }

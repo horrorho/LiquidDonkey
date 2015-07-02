@@ -1,4 +1,4 @@
-/* 
+/*
  * The MIT License
  *
  * Copyright 2015 Ahseya.
@@ -23,27 +23,28 @@
  */
 package com.github.horrorho.liquiddonkey.exception;
 
-import java.io.IOException;
+import org.apache.http.client.HttpResponseException;
 
 /**
  * Authentication exception.
  *
- * @author ahseya
+ * @author Ahseya
  */
-public class AuthenticationException extends IOException {
+public class AuthenticationException extends HttpResponseException {
 
-    public AuthenticationException() {
+    public static HttpResponseException test(HttpResponseException ex, String message) {
+        return ex.getStatusCode() == 401
+                ? new AuthenticationException(message)
+                : ex;
     }
 
-    public AuthenticationException(String message) {
-        super(message);
+    public static HttpResponseException test(HttpResponseException ex) {
+        return ex.getStatusCode() == 401
+                ? new AuthenticationException(ex.getMessage())
+                : ex;
     }
 
-    public AuthenticationException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public AuthenticationException(Throwable cause) {
-        super(cause);
+    public AuthenticationException(String s) {
+        super(401, s);
     }
 }

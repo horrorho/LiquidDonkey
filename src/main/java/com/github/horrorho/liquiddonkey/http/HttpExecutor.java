@@ -23,9 +23,9 @@
  */
 package com.github.horrorho.liquiddonkey.http;
 
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.iofunction.IOBiFunction;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -97,9 +97,10 @@ public class HttpExecutor<T> {
      * Get.
      *
      * @return result, may be null
+     * @throws AuthenticationException
      * @throws IOException
      */
-    public T get() throws IOException {
+    public T get() throws AuthenticationException, IOException {
         return execute(RequestBuilder.get());
     }
 
@@ -107,9 +108,10 @@ public class HttpExecutor<T> {
      * Post.
      *
      * @return result, may be null
+     * @throws AuthenticationException
      * @throws IOException
      */
-    public T post() throws IOException {
+    public T post() throws AuthenticationException, IOException {
         return execute(RequestBuilder.post());
     }
 
@@ -118,9 +120,10 @@ public class HttpExecutor<T> {
      *
      * @param postData post data, not null
      * @return result, may be null
+     * @throws AuthenticationException
      * @throws IOException
      */
-    public T post(byte[] postData) throws IOException {
+    public T post(byte[] postData) throws AuthenticationException, IOException {
         RequestBuilder builder = RequestBuilder.post();
         builder.setEntity(new ByteArrayEntity(postData));
         return execute(builder);
@@ -131,13 +134,14 @@ public class HttpExecutor<T> {
      *
      * @param method, not null
      * @return result, may be null
+     * @throws AuthenticationException
      * @throws IOException
      */
-    public T execute(String method) throws IOException {
+    public T execute(String method) throws AuthenticationException, IOException {
         return execute(RequestBuilder.create(method));
     }
 
-    T execute(RequestBuilder builder) throws IOException {
+    T execute(RequestBuilder builder) throws AuthenticationException, IOException {
         builder.setUri(uri);
         headers.stream().forEach(builder::addHeader);
         parameters.stream().forEach(builder::addParameter);

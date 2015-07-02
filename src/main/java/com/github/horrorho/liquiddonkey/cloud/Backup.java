@@ -34,7 +34,6 @@ import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -64,30 +63,25 @@ public final class Backup {
     private static final DateTimeFormatter defaultDateTimeFormatter = DateTimeFormatter.RFC_1123_DATE_TIME;
 
     /**
-     * Returns a new instance.
+     * Queries the client and returns a new instance.
      *
      * @param http not null
      * @param account not null
      * @param udid not null
      * @return a new instance, may be null
-     * @throws UncheckedIOException
+     * @throws AuthenticationException
+     * @throws IOException
      */
-    public static Backup from(Http http, Account account, ByteString udid) throws UncheckedIOException {
+    public static Backup from(Http http, Account account, ByteString udid) throws AuthenticationException, IOException {
         try {
             ICloud.MBSBackup backup = account.client().backup(http, udid);
             KeyBag keyBag = KeyBagFactory.newInstance().from(account.client().getKeys(http, udid));
             return Backup.newInstance(account, backup, keyBag);
-        } catch (BadDataException ex) {
+        } catch (AuthenticationException ex) {
+            throw ex;
+        } catch (BadDataException | HttpResponseException ex) {
             logger.warn("-- backup() > exception: ", ex);
             return null;
-        } catch (UncheckedIOException ex) {
-            IOException ioex = ex.getCause();
-
-            if (ioex instanceof HttpResponseException) {
-                logger.warn("-- backup() > exception: ", ex);
-                return null;
-            }
-            throw ex;
         }
     }
 

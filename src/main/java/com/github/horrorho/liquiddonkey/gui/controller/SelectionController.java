@@ -25,8 +25,7 @@ package com.github.horrorho.liquiddonkey.gui.controller;
  */
 import com.github.horrorho.liquiddonkey.cloud.Account;
 import com.github.horrorho.liquiddonkey.cloud.client.Authentication;
-import com.github.horrorho.liquiddonkey.cloud.Backup;
-import com.github.horrorho.liquiddonkey.exception.FatalException;
+import com.github.horrorho.liquiddonkey.cloud.Backup; 
 import com.github.horrorho.liquiddonkey.gui.controller.data.BackupProperties;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import static com.github.horrorho.liquiddonkey.settings.Markers.GUI;
@@ -119,19 +118,19 @@ public class SelectionController implements Initializable {
     }
 
     void toAuthentication() {
-        try {
-            logger.trace(GUI, "<< toAuthentication()");
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Authentication.fxml"));
-            Parent root = loader.load();
-            AuthenticationController controller = loader.<AuthenticationController>getController();
-            Scene scene = new Scene(root);
-            stage.setScene(scene);
-            stage.show();
-        } catch (IOException ex) {
-            throw new FatalException("Bad fxml resource", ex);
-        } finally {
-            logger.trace(GUI, ">> toAuthentication()");
-        }
+//        try {
+//            logger.trace(GUI, "<< toAuthentication()");
+//            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/Authentication.fxml"));
+//            Parent root = loader.load();
+//            AuthenticationController controller = loader.<AuthenticationController>getController();
+//            Scene scene = new Scene(root);
+//            stage.setScene(scene);
+//            stage.show();
+//        } catch (IOException ex) {
+//            throw new FatalException("Bad fxml resource", ex);
+//        } finally {
+//            logger.trace(GUI, ">> toAuthentication()");
+//        }
     }
 
     /**
@@ -174,19 +173,19 @@ public class SelectionController implements Initializable {
             Parsers parsers) {
 
         logger.trace("<< init()");
-        this.authentication = authentication;
-        this.stage = stage;
-        this.executorService = executorService;
-        this.props = props;
-        this.parsers = parsers;
-
-        Account account = Account.newInstance(authentication.client(), Printer.instanceOf(false));
-        backups.stream().map(BackupProperties::newInstance).forEach(this.backups::add);
-
-        downloadButtonEnabledHandler();
-        checkAll.setSelected(false);
-
-        main.setText(authentication.fullName() + " - " + authentication.appleId());
+//        this.authentication = authentication;
+//        this.stage = stage;
+//        this.executorService = executorService;
+//        this.props = props;
+//        this.parsers = parsers;
+//
+//        Account account = Account.newInstance(authentication.client(), Printer.instanceOf(false));
+//        backups.stream().map(BackupProperties::newInstance).forEach(this.backups::add);
+//
+//        downloadButtonEnabledHandler();
+//        checkAll.setSelected(false);
+//
+//        main.setText(authentication.fullName() + " - " + authentication.appleId());
         logger.trace(">> init()");
     }
 }

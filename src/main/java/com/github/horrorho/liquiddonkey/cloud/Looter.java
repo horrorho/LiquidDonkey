@@ -26,6 +26,9 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.github.horrorho.liquiddonkey.cloud.client.Authentication;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.HttpFactory;
 import com.github.horrorho.liquiddonkey.printer.Level;
@@ -34,8 +37,14 @@ import com.github.horrorho.liquiddonkey.settings.config.Config;
 import com.google.protobuf.ByteString;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
@@ -70,46 +79,50 @@ public class Looter implements Closeable {
         this.printer = Objects.requireNonNull(printer);
     }
 
-    public void loot() throws IOException {
+    public void loot() throws AuthenticationException, BadDataException, IOException {
         printer.println(Level.VV, "Authenticating.");
         Authentication authentication = Authentication.authenticate(http, config.authentication());
         Client client = Client.from(http, authentication, config.client());
+        Account account = Account.from(http, client);
+
         UnaryOperator<List<Backup>> backupSelector = BackupSelector.newInstance(config.selection().udids(), printer);
-        
-        Account account = Account.from(http, client); 
-        
-      
-        
-        backupSelector.apply(account.list().stream()
-                .map(udid -> Backup.newInstance(http, account, udid))
-                .collect(Collectors.toList()))
-                .forEach(backup -> backup(http, client, backup));
+
+        List<Backup> backups = new ArrayList<>();
+        for (ByteString udid : account.list()) {
+            backups.add(Backup.from(http, account, udid));
+        }
+
+        for (Backup backup : backupSelector.apply(backups)) {
+            backup(http, client, backup);
+        }
     }
 
-    void backup(Http http, Client client, Backup backup) {
+    void backup(Http http, Client client, Backup backup) throws AuthenticationException, IOException {
 
         FileFilter filter = FileFilter.getInstance(config.fileFilter());
-        Snapshots snapshots = Snapshots.newInstance(backup, config.engine());       
         DonkeyFactory factory = DonkeyFactory.newInstance(config.engine(), config.file(), printer);
         SnapshotDownloader downloader = SnapshotDownloader.newInstance(factory, config.engine());
 
+        for (int id : backup.snapshots()) {
+            Snapshot snapshot = Snapshot.from(http, backup, id, config.engine());
+            Snapshot filtered = Snapshot.from(snapshot, filter);
+            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results
+                    = downloader.execute(http, filtered, filtered.signatures());
 
-        config.selection().snapshots().stream()
-                .map(id -> snapshots.get(http, id))
-                .filter(Objects::nonNull)
-                .map(snapshot -> filter(snapshot, filter))
-                .map(downloader.)
-        
-        backup.snapshots().stream()
-                .map(id -> factory.of(http, id))
-                .filter(Objects::nonNull)
-                .forEach(snapshot -> downloader.execute(client, backup, keybag, snapshot, tally));
-
-    } 
-    
-    Snapshot filter(Snapshot snapshot, FileFilter filter) {
-        return Snapshot.newInstance(snapshot.id(), snapshot.backup(), filter.apply(snapshot.files()));
+            logger.debug("--backup() > completed: {}", results.get(false).size());
+            logger.debug("--backup() > failed: {}", results.get(true).size());
+        }
     }
+
+//    <T, K> Map<K, List<T>> groupingBy(List<T> t, Function<T, K> classifier) {
+//        return t == null
+//                ? new HashMap<>()
+//                : t.stream().collect(Collectors.groupingBy(classifier));
+//    }
+//
+//    <K, V> Map<K, Integer> summary(Map<K, List<V>> map) {
+//        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().size()));
+//    }
 
     @Override
     public void close() throws IOException {

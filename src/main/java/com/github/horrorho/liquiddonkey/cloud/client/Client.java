@@ -23,8 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.client;
 
-import com.dd.plist.NSDictionary;
-import com.dd.plist.PropertyListFormatException;
+import com.github.horrorho.liquiddonkey.cloud.plist.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.HostInfo;
@@ -38,12 +37,12 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFileAuthTokens;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSKeySet;
 import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ProtoBufArray;
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import static com.github.horrorho.liquiddonkey.settings.Markers.CLIENT;
 import static com.github.horrorho.liquiddonkey.http.NameValuePairs.parameter;
 import static com.github.horrorho.liquiddonkey.util.Bytes.hex;
 import com.github.horrorho.liquiddonkey.settings.config.ClientConfig;
-import com.github.horrorho.liquiddonkey.util.PropertyLists;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -69,67 +68,47 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Client {
 
-    /**
-     * Returns a new Client instance.
-     *
-     * @param http, not null
-     * @param authentication, not null
-     * @param config, not null
-     * @return a new instance
-     * @throws BadDataException
-     * @throws IOException
-     */
     public static Client from(Http http, Authentication authentication, ClientConfig config)
             throws BadDataException, IOException {
 
-        logger.trace("<< from() < authentication: {}", http, authentication);
+        logger.trace("<< from() < authentication: {} config: {}", authentication, config);
 
-        String dsPrsID = authentication.dsPrsID();
-        String mmeAuthToken = authentication.mmeAuthToken();
-
-        String auth = Tokens.getInstance().basic(dsPrsID, mmeAuthToken);
+        String auth = Tokens.getInstance().basic(authentication.dsPrsID(), authentication.mmeAuthToken());
         logger.trace("-- from() >  authentication token: {}", auth);
 
-        byte[] settings
+        byte[] data
                 = http.executor("https://setup.icloud.com/setup/get_account_settings", byteArrayResponseHandler)
                 .headers(Headers.mmeClientInfo, Headers.authorization(auth))
                 .get();
+        SimplePropertyList settings = SimplePropertyList.from(data);
 
-        Client client = Client.newInstance(settings, config.listLimit());
+        Client client = newInstance(settings, config.listLimit());
         logger.trace(">> from()");
         return client;
     }
 
-    static Client newInstance(byte[] settings, int listLimit) throws BadDataException {
-        try {
-            logger.trace("<< newInstance()");
+    static Client newInstance(SimplePropertyList settings, int listLimit)
+            throws BadDataException, IOException {
 
-            NSDictionary plist = (NSDictionary) PropertyLists.parse(settings);
-            logger.trace("-- from() >  account settings: {}", plist.toASCIIPropertyList());
+        logger.trace("<< newInstance() < settings: {} listLimit: {}", settings, listLimit);
 
-            String dsPrsID = PropertyLists.stringValue(plist, "appleAccountInfo", "dsPrsID");
-            String mmeAuthToken = PropertyLists.stringValue(plist, "tokens", "mmeAuthToken");
-            String mobileBackupUrl
-                    = PropertyLists.stringValue(plist, "com.apple.mobileme", "com.apple.Dataclass.Backup", "url");
-            String contentUrl
-                    = PropertyLists.stringValue(plist, "com.apple.mobileme", "com.apple.Dataclass.Content", "url");
+        String dsPrsID = settings.value("appleAccountInfo", "dsPrsID");
+        String mmeAuthToken = settings.value("tokens", "mmeAuthToken");
+        String mobileBackupUrl = settings.value("com.apple.mobileme", "com.apple.Dataclass.Backup", "url");
+        String contentUrl = settings.value("com.apple.mobileme", "com.apple.Dataclass.Content", "url");
 
-            String authMme = Tokens.getInstance().mobilemeAuthToken(dsPrsID, mmeAuthToken);
+        String authMme = Tokens.getInstance().mobilemeAuthToken(dsPrsID, mmeAuthToken);
 
-            Client client = new Client(
-                    settings,
-                    Headers.mobileBackupHeaders(authMme),
-                    Headers.contentHeaders(dsPrsID),
-                    dsPrsID,
-                    contentUrl,
-                    mobileBackupUrl,
-                    listLimit);
-            logger.trace(">> newInstance() > client: {}", client);
-            return client;
-
-        } catch (IOException | BadDataException | PropertyListFormatException ex) {
-            throw new BadDataException(ex);
-        }
+        Client client = new Client(
+                settings,
+                Headers.mobileBackupHeaders(authMme),
+                Headers.contentHeaders(dsPrsID),
+                dsPrsID,
+                contentUrl,
+                mobileBackupUrl,
+                listLimit);
+        logger.trace(">> newInstance() > client: {}", client);
+        return client;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Client.class);
@@ -149,7 +128,7 @@ public final class Client {
     private static final ResponseHandler<MBSKeySet> mbsaKeySetResponseHandler
             = ResponseHandlerFactory.of(MBSKeySet.PARSER::parseFrom);
 
-    private final byte[] settings;
+    private final SimplePropertyList settings;
     private final List<Header> mobileBackupHeaders;
     private final List<Header> contentHeaders;
     private final String dsPrsID;
@@ -158,7 +137,7 @@ public final class Client {
     private final int listFilesLimit;
 
     Client(
-            byte[] settings,
+            SimplePropertyList settings,
             List<Header> mobileBackupHeaders,
             List<Header> contentHeaders,
             String dsPrsID,
@@ -197,9 +176,10 @@ public final class Client {
      *
      * @param http, not null
      * @return MBSAccount, not null
+     * @throws AuthenticationException
      * @throws IOException
      */
-    public MBSAccount account(Http http) throws IOException {
+    public MBSAccount account(Http http) throws AuthenticationException, IOException {
         logger.trace("<< account()");
         MBSAccount account
                 = mobileBackupGet(
@@ -217,9 +197,10 @@ public final class Client {
      * @param http, not null
      * @param backupUDID, not null
      * @return MBSBackup, not null
+     * @throws AuthenticationException
      * @throws IOException
      */
-    public MBSBackup backup(Http http, ByteString backupUDID) throws IOException {
+    public MBSBackup backup(Http http, ByteString backupUDID) throws AuthenticationException, IOException {
         logger.trace("<< backup() < {}", hex(backupUDID));
         MBSBackup backup
                 = mobileBackupGet(
@@ -237,9 +218,10 @@ public final class Client {
      * @param http, not null
      * @param backupUDID, not null
      * @return MBSKeySet, not null
+     * @throws AuthenticationException
      * @throws IOException
      */
-    public MBSKeySet getKeys(Http http, ByteString backupUDID) throws IOException {
+    public MBSKeySet getKeys(Http http, ByteString backupUDID) throws AuthenticationException, IOException {
         logger.trace("<< getKeys() < {}", hex(backupUDID));
         MBSKeySet keys
                 = mobileBackupGet(
@@ -258,9 +240,11 @@ public final class Client {
      * @param backupUDID, not null
      * @param snapshotId
      * @return a list of MBSFiles, not null
+     * @throws AuthenticationException
      * @throws IOException
      */
-    public List<MBSFile> listFiles(Http http, ByteString backupUDID, int snapshotId) throws IOException {
+    public List<MBSFile> listFiles(Http http, ByteString backupUDID, int snapshotId)
+            throws AuthenticationException, IOException {
         logger.trace("<< listFiles() < backupUDID: {} snapshotId: {}", hex(backupUDID), snapshotId);
 
         List<MBSFile> files = new ArrayList<>();
@@ -291,11 +275,12 @@ public final class Client {
      * @param snapshotId
      * @param files
      * @return FileGroups, not null
+     * @throws AuthenticationException
      * @throws BadDataException
      * @throws IOException
      */
     public FileGroups getFileGroups(Http http, ByteString backupUdid, int snapshotId, List<MBSFile> files)
-            throws BadDataException, IOException {
+            throws AuthenticationException, BadDataException, IOException {
 
         logger.trace("<< getFilesGroups() < backupUdid: {} snapshot: {} files: {}",
                 hex(backupUdid), snapshotId, files.size());
@@ -315,7 +300,7 @@ public final class Client {
     }
 
     List<MBSFileAuthToken> getFiles(Http http, ByteString backupUdid, int snapshotId, List<MBSFile> files)
-            throws BadDataException, IOException {
+            throws AuthenticationException, BadDataException, IOException {
 
         logger.trace("<< getFiles() < backupUdid: {} snapshot: {} files: {}",
                 hex(backupUdid), snapshotId, files.size());
@@ -345,7 +330,7 @@ public final class Client {
     }
 
     FileGroups authorizeGet(Http http, List<ICloud.MBSFile> files, List<MBSFileAuthToken> fileIdAuthTokens)
-            throws IOException {
+            throws AuthenticationException, IOException {
 
         logger.trace("<< authorizeGet() < tokens: {} files: {}", fileIdAuthTokens.size(), files.size());
 
@@ -395,9 +380,10 @@ public final class Client {
      * @param http, not null
      * @param chunks, not null
      * @return chunk data, not null
+     * @throws AuthenticationException
      * @throws IOException
      */
-    public byte[] chunks(Http http, StorageHostChunkList chunks) throws IOException {
+    public byte[] chunks(Http http, StorageHostChunkList chunks) throws AuthenticationException, IOException {
         logger.trace("<< chunks() < chunks count: {}", chunks.getChunkInfoCount());
 
         HostInfo hostInfo = chunks.getHostInfo();
@@ -414,13 +400,8 @@ public final class Client {
         return dsPrsID;
     }
 
-    public NSDictionary settings() {
-        try {
-            return (NSDictionary) PropertyLists.parse(settings);
-        } catch (BadDataException | IOException ex) {
-            // Shouldn't happen here.
-            throw new IllegalStateException(ex);
-        }
+    public SimplePropertyList settings() {
+        return settings;
     }
 
     String path(String... parts) {

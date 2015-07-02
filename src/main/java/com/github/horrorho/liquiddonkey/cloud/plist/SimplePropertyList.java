@@ -21,15 +21,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.util;
+package com.github.horrorho.liquiddonkey.cloud.plist;
 
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.dd.plist.NSDictionary;
-import com.dd.plist.NSObject;
 import com.dd.plist.PropertyListFormatException;
 import com.dd.plist.PropertyListParser;
 import java.io.IOException;
 import java.text.ParseException;
+import java.util.Objects;
 import javax.xml.parsers.ParserConfigurationException;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -38,46 +38,72 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 /**
+ * Dictionary property list.
  *
  * @author ahseya
  */
 @Immutable
 @ThreadSafe
-public final class PropertyLists {
+public final class SimplePropertyList {
 
-    private static final Logger logger = LoggerFactory.getLogger(PropertyLists.class);
-
-    public static String stringValueOrDefault(String defaultValue, NSDictionary dictionary, String... path) {
+    public static SimplePropertyList from(byte[] data) throws BadDataException, IOException {
         try {
-            return stringValue(dictionary, path);
-        } catch (PropertyListFormatException ex) {
-            logger.warn("-- stringValue() > exception: ", ex);
+            return new SimplePropertyList((NSDictionary) PropertyListParser.parse(data));
+
+        } catch (ClassCastException |
+                PropertyListFormatException |
+                ParseException |
+                ParserConfigurationException |
+                SAXException ex) {
+
+            throw new BadDataException("Failed to parse property list", ex);
+        }
+    }
+
+    private static final Logger logger = LoggerFactory.getLogger(SimplePropertyList.class);
+
+    private final NSDictionary dictionary;
+
+    SimplePropertyList(NSDictionary dictionary) {
+        this.dictionary = Objects.requireNonNull(dictionary);
+    }
+
+    public String valueOr(String defaultValue, String... path) {
+        try {
+            return value(path);
+        } catch (BadDataException ex) {
+            logger.trace("--valueOr() > exception: ", ex);
             return defaultValue;
         }
     }
 
-    public static String stringValue(NSDictionary dictionary, String... path) throws PropertyListFormatException {
-        NSObject object = dictionary;
+    public String valueOrNull(String... path) {
+        try {
+            return value(path);
+        } catch (BadDataException ex) {
+            logger.trace("--valueOrNull() > exception: ", ex);
+            return null;
+        }
+    }
 
+    public String value(String... path) throws BadDataException {
+        Object object = dictionary;
         for (String key : path) {
             if (!(object instanceof NSDictionary)) {
-                throw new PropertyListFormatException("Bad key: " + key);
+                throw new BadDataException("Bad key: " + key);
             }
 
             object = ((NSDictionary) object).objectForKey(key);
 
             if (object == null) {
-                throw new PropertyListFormatException("Missing key: " + key);
+                throw new BadDataException("Missing key: " + key);
             }
         }
         return object.toString();
     }
 
-    public static NSObject parse(byte[] data) throws BadDataException, IOException {
-        try {
-            return PropertyListParser.parse(data);
-        } catch (ClassCastException | PropertyListFormatException | ParseException | ParserConfigurationException | SAXException ex) {
-            throw new BadDataException("Failed to parse property list.", ex);
-        }
+    @Override
+    public String toString() {
+        return "SimplePropertyList{" + "dictionary=" + dictionary.toASCIIPropertyList() + '}';
     }
-};
+}

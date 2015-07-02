@@ -27,7 +27,6 @@ import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import static com.github.horrorho.liquiddonkey.settings.Markers.HTTP;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.SocketTimeoutException;
 import java.util.Objects;
 import org.apache.http.client.HttpResponseException;
@@ -71,9 +70,11 @@ public final class Http implements Closeable {
      * @param request not null
      * @param handler not null
      * @return result, may be null
+     * @throws AuthenticationException
      * @throws IOException
      */
-    public <T> T request(HttpUriRequest request, ResponseHandler<T> handler) throws IOException {
+    public <T> T request(HttpUriRequest request, ResponseHandler<T> handler)
+            throws AuthenticationException, IOException {
         logger.trace(HTTP, "<< request() < {}", request);
         int count = 0;
         while (true) {
@@ -89,14 +90,8 @@ public final class Http implements Closeable {
                     throw ex;
                 }
             } catch (HttpResponseException ex) {
-
-                logger.trace(HTTP, "-- request() > ", ex);
-                if (ex.getStatusCode() == 401) {
-                    throw new AuthenticationException("Bad authentication", ex.getCause());
-                }
-                throw ex;
+                throw AuthenticationException.test(ex);
             } catch (IOException ex) {
-
                 logger.trace(HTTP, "-- request() > ", ex);
                 throw ex;
             }

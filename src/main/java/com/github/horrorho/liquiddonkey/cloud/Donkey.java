@@ -35,7 +35,6 @@ import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -47,11 +46,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 import net.jcip.annotations.NotThreadSafe;
+import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * BatchDownloader.
+ * Donkey. Download worker.
  *
  * @author ahseya
  */
@@ -109,19 +109,11 @@ public final class Donkey implements Callable<Boolean> {
                     download(signatures);
                     addAll(true, signatures);
                 }
-            } catch (BadDataException ex) {
+            } catch (AuthenticationException ex) {
+                throw ex;
+            } catch (HttpResponseException ex) {
                 logger.warn("-- call() > exception: ", ex);
                 addAll(false, signatures);
-
-            } catch (UncheckedIOException ex) {
-                logger.warn("-- call() > exception: ", ex);
-                addAll(false, signatures);
-
-                IOException ioex = ex.getCause();
-
-                if (ioex instanceof AuthenticationException || !isAggressive) {
-                    throw ioex;
-                }
             }
         }
         logger.trace(">> call()");
@@ -133,7 +125,7 @@ public final class Donkey implements Callable<Boolean> {
     }
 
     public void download(Map<ByteString, Set<ICloud.MBSFile>> signatures)
-            throws BadDataException, UncheckedIOException {
+            throws AuthenticationException, BadDataException, IOException {
 
         logger.trace("<< download() < {}", signatures.size());
 
@@ -152,7 +144,7 @@ public final class Donkey implements Callable<Boolean> {
     private void downloadFileGroups(
             ChunkServer.FileGroups fileGroups,
             Map<ByteString, Set<ICloud.MBSFile>> signatureToFileSet
-    ) throws UncheckedIOException {
+    ) throws AuthenticationException, IOException {
 
         for (ChunkServer.FileChecksumStorageHostChunkLists group : fileGroups.getFileGroupsList()) {
             ChunkListStore store = download(group);
@@ -172,7 +164,9 @@ public final class Donkey implements Callable<Boolean> {
         }
     }
 
-    public ChunkListStore download(ChunkServer.FileChecksumStorageHostChunkLists group) throws UncheckedIOException {
+    public ChunkListStore download(ChunkServer.FileChecksumStorageHostChunkLists group)
+            throws AuthenticationException, IOException {
+
         logger.trace("<< download() < group count : {}", group.getStorageHostChunkListCount());
 
         // TODO memory or disk based depending on size
@@ -186,14 +180,15 @@ public final class Donkey implements Callable<Boolean> {
         return storage;
     }
 
-    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList) throws UncheckedIOException {
+    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList) throws AuthenticationException, IOException {
         // Recursive.
         return chunkList.getChunkInfoCount() == 0
                 ? new ArrayList<>()
                 : download(chunkList, 0);
     }
 
-    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList, int attempt) throws UncheckedIOException {
+    List<byte[]> download(ChunkServer.StorageHostChunkList chunkList, int attempt)
+            throws AuthenticationException, IOException {
         // Recursive.
         List<byte[]> decrypted = attempt++ == attempts
                 ? new ArrayList<>()

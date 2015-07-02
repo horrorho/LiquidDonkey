@@ -23,14 +23,13 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.dd.plist.NSDictionary;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
+import com.github.horrorho.liquiddonkey.cloud.plist.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.util.PropertyLists;
 import com.google.protobuf.ByteString;
-import java.io.UncheckedIOException;
+import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
@@ -48,20 +47,20 @@ import org.slf4j.LoggerFactory;
 public final class Account {
 
     /**
-     * Returns a new Account.
+     * Queries the client and returns a new instance.
      *
      * @param http, not null
      * @param client, not null
-     * @return Account, not null
+     * @return new instance, not null
      * @throws AuthenticationException
-     * @throws UncheckedIOException
+     * @throws IOException
      */
-    public static Account from(Http http, Client client) {
+    public static Account from(Http http, Client client) throws AuthenticationException, IOException {
         logger.trace("<< from()");
 
-        NSDictionary plist = client.settings();
-        String fullName = PropertyLists.stringValueOrDefault("Unknown", plist, "appleAccountInfo", "fullName");
-        String appleId = PropertyLists.stringValueOrDefault("Unknown", plist, "appleAccountInfo", "appleId");
+        SimplePropertyList settings = client.settings();
+        String fullName = settings.valueOr("Unknown", "appleAccountInfo", "fullName");
+        String appleId = settings.valueOr("Unknown", "appleAccountInfo", "appleId");
 
         ICloud.MBSAccount account = client.account(http);
         Account instance = new Account(client, account, fullName, appleId);
