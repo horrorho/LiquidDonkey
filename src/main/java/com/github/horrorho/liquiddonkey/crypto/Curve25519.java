@@ -53,7 +53,7 @@ public final class Curve25519 {
         return curve25519.calculateAgreement(publicKey, clampPrivateKey(privateKey));
     }
 
-    private byte[] clampPrivateKey(byte[] privateKey) {
+    byte[] clampPrivateKey(byte[] privateKey) {
         byte[] copy = Arrays.copyOf(privateKey, privateKey.length);
         copy[0] &= 0xF8;
         copy[31] &= 0x7F;
