@@ -68,6 +68,16 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Client {
 
+    /**
+     * Returns a new instance.
+     *
+     * @param http, not null
+     * @param authentication, not null
+     * @param config, not null
+     * @return new instance, not null
+     * @throws BadDataException
+     * @throws IOException
+     */
     public static Client from(Http http, Authentication authentication, ClientConfig config)
             throws BadDataException, IOException {
 
@@ -83,6 +93,7 @@ public final class Client {
         SimplePropertyList settings = SimplePropertyList.from(data);
 
         Client client = newInstance(settings, config.listLimit());
+
         logger.trace(">> from()");
         return client;
     }
@@ -107,6 +118,7 @@ public final class Client {
                 contentUrl,
                 mobileBackupUrl,
                 listLimit);
+        
         logger.trace(">> newInstance() > client: {}", client);
         return client;
     }
@@ -172,7 +184,7 @@ public final class Client {
     }
 
     /**
-     * Returns MBSAccount.
+     * Queries server and returns MBSAccount.
      *
      * @param http, not null
      * @return MBSAccount, not null
@@ -192,7 +204,7 @@ public final class Client {
     }
 
     /**
-     * Returns MBSBackup.
+     * Queries server and returns MBSBackup.
      *
      * @param http, not null
      * @param backupUDID, not null
@@ -213,7 +225,7 @@ public final class Client {
     }
 
     /**
-     * Returns MBSKeySet.
+     * Queries server and returns MBSKeySet.
      *
      * @param http, not null
      * @param backupUDID, not null
@@ -234,12 +246,12 @@ public final class Client {
     }
 
     /**
-     * Returns a list of MBSFiles.
+     * Queries server and returns a list of MBSFiles.
      *
      * @param http, not null
      * @param backupUDID, not null
      * @param snapshotId
-     * @return a list of MBSFiles, not null
+     * @return list of MBSFiles, not null
      * @throws AuthenticationException
      * @throws IOException
      */
@@ -268,7 +280,7 @@ public final class Client {
     }
 
     /**
-     * Returns FileGroups.
+     * Queries server and returns FileGroups.
      *
      * @param http, not null
      * @param backupUdid, not null
@@ -375,7 +387,7 @@ public final class Client {
     }
 
     /**
-     * Returns chunk data.
+     * Queries server and returns chunk data.
      *
      * @param http, not null
      * @param chunks, not null
@@ -414,8 +426,13 @@ public final class Client {
 
     @Override
     public String toString() {
-        return "Client{" + "mobileBackupHeaders=" + mobileBackupHeaders + ", contentHeaders=" + contentHeaders
-                + ", dsPrsID=" + dsPrsID + ", contentUrl=" + contentUrl + ", mobileBackupUrl=" + mobileBackupUrl
-                + ", listFilesLimit=" + listFilesLimit + '}';
+        return "Client{"
+                + "mobileBackupHeaders=" + mobileBackupHeaders
+                + ", contentHeaders=" + contentHeaders
+                + ", dsPrsID=" + dsPrsID
+                + ", contentUrl=" + contentUrl
+                + ", mobileBackupUrl=" + mobileBackupUrl
+                + ", listFilesLimit=" + listFilesLimit
+                + '}';
     }
 }
