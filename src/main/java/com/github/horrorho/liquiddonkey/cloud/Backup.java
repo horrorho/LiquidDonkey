@@ -78,7 +78,7 @@ public final class Backup {
 
             ICloud.MBSBackup backup = account.client().backup(http, udid);
             ICloud.MBSKeySet keySet = account.client().getKeys(http, udid);
-            KeyBag keyBag = KeyBagFactory.newInstance().from(keySet);
+            KeyBag keyBag = KeyBag.from(keySet);
 
             Backup instance = Backup.newInstance(account, backup, keyBag);
 

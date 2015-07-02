@@ -67,8 +67,7 @@ public final class LocalFileWriter {
      * @param backupFolder the backup folder, not null
      * @param print the output for messages, not null
      * @param setLastModifiedTime true if last-modified timestamps should be set
-     * @return a new instance
-     * @throws NullPointerException if the keyBagTools, backupFolder or print arguments are null
+     * @return a new instance, not null
      */
     public static LocalFileWriter newInstance(
             KeyBagTools keyBagTools,
@@ -115,7 +114,6 @@ public final class LocalFileWriter {
      * @param snapshot the file's snapshot
      * @param file the file, not null
      * @throws FileErrorException
-     * @throws NullPointerException if the file argument is null
      */
     public void writeEmpty(int snapshot, MBSFile file) throws FileErrorException {
         if (file.hasSize() && file.getSize() != 0) {
@@ -132,7 +130,6 @@ public final class LocalFileWriter {
      * @param file the file, not null
      * @param writer the IOWriter, not null
      * @throws FileErrorException
-     * @throws IllegalStateException if a file IOException occurs
      */
     public void write(int snapshot, MBSFile file, IOWriter writer) throws FileErrorException {
         try {

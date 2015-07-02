@@ -23,6 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.keybag;
 
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import static com.github.horrorho.liquiddonkey.util.Bytes.hex;
 import com.google.protobuf.ByteString;
 import java.util.HashMap;
@@ -42,6 +44,17 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class KeyBag {
 
+    /**
+     * Returns a new unlocked KeyBag instance.
+     *
+     * @param keySet the key set, not null
+     * @return a new unlocked KeyBag instance, not null
+     * @throws BadDataException if the KeyBag cannot be unlocked or a data handling error occurred
+     */
+    public static KeyBag from(ICloud.MBSKeySet keySet) throws BadDataException {
+        return new KeyBagFactory().unlock(keySet);
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(KeyBag.class);
 
     private final Map<Integer, Map<String, ByteString>> classKeys;
@@ -49,7 +62,7 @@ public final class KeyBag {
     private final ByteString uuid;
     private final KeyBagType type;
 
-    public KeyBag(
+    KeyBag(
             Map<Integer, Map<String, ByteString>> classKeys,
             Map<String, ByteString> attributes,
             ByteString uuid,
@@ -103,5 +116,15 @@ public final class KeyBag {
 
     public ByteString uuid() {
         return uuid;
+    }
+
+    @Override
+    public String toString() {
+        return "KeyBag{"
+                + "classKeys=" + classKeys
+                + ", attributes=" + attributes
+                + ", uuid=" + uuid
+                + ", type=" + type
+                + '}';
     }
 }

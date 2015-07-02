@@ -46,6 +46,12 @@ public final class KeyBagTools {
 
     private static final Logger logger = LoggerFactory.getLogger(KeyBagTools.class);
 
+    /**
+     * Returns a new instance.
+     *
+     * @param keyBag, not null
+     * @return a new instance, not null
+     */
     public static KeyBagTools newInstance(KeyBag keyBag) {
         return new KeyBagTools(keyBag);
     }
@@ -63,7 +69,6 @@ public final class KeyBagTools {
      *
      * @param file the file
      * @return the file key for the given file or null if unavailable
-     * @throws NullPointerException if the file attribute is null
      */
     public ByteString fileKey(ICloud.MBSFile file) {
         ICloud.MBSFileAttributes attributes = file.getAttributes();

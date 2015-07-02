@@ -23,20 +23,16 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.keybag;
 
-import com.github.horrorho.liquiddonkey.cloud.Backup;
-import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.crypto.AESWrap;
 import com.github.horrorho.liquiddonkey.crypto.PBKDF2;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.data.TagValue;
-import static com.github.horrorho.liquiddonkey.util.Bytes.hex;
-import static com.github.horrorho.liquiddonkey.util.Bytes.integer32;
+import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import net.jcip.annotations.NotThreadSafe;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,11 +42,8 @@ import org.slf4j.LoggerFactory;
  *
  * @author Ahseya
  */
+@NotThreadSafe
 public class KeyBagFactory {
-
-    public static KeyBagFactory newInstance() {
-        return new KeyBagFactory();
-    }
 
     private static final Logger logger = LoggerFactory.getLogger(KeyBagFactory.class);
 
@@ -67,24 +60,13 @@ public class KeyBagFactory {
     KeyBagFactory() {
     }
 
-    /**
-     * Returns a new unlocked KeyBag instance.
-     *
-     * @param keySet the key set, not null
-     * @return a new unlocked KeyBag instance, not null
-     * @throws BadDataException if the KeyBag cannot be unlocked or a data handling error occurred
-     */
-    public KeyBag from(ICloud.MBSKeySet keySet) throws BadDataException {
-        return new KeyBagFactory().unlock(keySet);
-    }
-
     KeyBag unlock(ICloud.MBSKeySet keySet) throws BadDataException {
         parse(keySet);
 
-        iterations = integer32(attribute("ITER"));
+        iterations = Bytes.integer32(attribute("ITER"));
         salt = attribute("SALT");
         uuid = attribute("UUID");
-        type = KeyBagType.from(integer32(attribute("TYPE")));
+        type = KeyBagType.from(Bytes.integer32(attribute("TYPE")));
 
         unlock(keySet.getKey(0).getKeyData());
 
@@ -110,14 +92,14 @@ public class KeyBagFactory {
 
     void sort(Map<String, ByteString> block) throws BadDataException {
         if (block.containsKey("CLAS")) {
-            classKeys.put(integer32(block.get("CLAS")) & 0xF, new HashMap<>(block));
+            classKeys.put(Bytes.integer32(block.get("CLAS")) & 0xF, new HashMap<>(block));
         } else {
             attributes.putAll(block);
         }
     }
 
     void unlock(ByteString passCode) throws BadDataException {
-        logger.trace("-- unlock() < {}", hex(passCode));
+        logger.trace("-- unlock() < {}", Bytes.hex(passCode));
         if (type != KeyBagType.BACKUP && type != KeyBagType.OTA) {
             throw new BadDataException("Not a backup keybag");
         }
@@ -127,7 +109,7 @@ public class KeyBagFactory {
                 salt.toByteArray(),
                 iterations,
                 32);
-        logger.debug("-- unlock() > passCodeKey: {}", hex(passCodeKey));
+        logger.debug("-- unlock() > passCodeKey: {}", Bytes.hex(passCodeKey));
 
         AESWrap aesWrap = AESWrap.newInstance();
 
@@ -138,16 +120,17 @@ public class KeyBagFactory {
                 continue;
             }
 
-            int wrap = integer32(keys.get("WRAP"));
+            int wrap = Bytes.integer32(keys.get("WRAP"));
             if ((wrap & WRAP_DEVICE) == 0 && (wrap & WRAP_PASSCODE) != 0) {
                 byte[] wrappedKey = keys.get("WPKY").toByteArray();
                 try {
                     byte[] unwrappedKey = aesWrap.unwrap(passCodeKey, wrappedKey);
                     keys.put("KEY", ByteString.copyFrom(unwrappedKey));
-                    logger.trace("-- unlock() > key unwrapped: {} class: {}", hex(unwrappedKey), entrySet.getKey());
+                    logger.trace("-- unlock() > key unwrapped: {} class: {}",
+                            Bytes.hex(unwrappedKey), entrySet.getKey());
                 } catch (InvalidCipherTextException ex) {
                     logger.warn("-- unlock() > failed to unwrap key: {} class: {}",
-                            hex(wrappedKey), entrySet.getKey(), ex);
+                            Bytes.hex(wrappedKey), entrySet.getKey(), ex);
                 }
             }
         }
