@@ -38,15 +38,11 @@ import com.google.protobuf.ByteString;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 import java.util.function.UnaryOperator;
-import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -105,7 +101,7 @@ public class Looter implements Closeable {
 
         for (int id : backup.snapshots()) {
             Snapshot snapshot = Snapshot.from(http, backup, id, config.engine());
-            Snapshot filtered = Snapshot.from(snapshot, filter);
+            Snapshot filtered = Snapshot.from(snapshot, filter);            
             ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results
                     = downloader.execute(http, filtered, filtered.signatures());
 

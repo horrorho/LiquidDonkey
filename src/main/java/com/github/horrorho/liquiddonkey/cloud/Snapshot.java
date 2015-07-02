@@ -52,11 +52,15 @@ import org.slf4j.LoggerFactory;
 public final class Snapshot {
 
     public static Snapshot from(Snapshot snapshot, Predicate<ICloud.MBSFile> predicate) {
+        logger.trace("--from() < snapshot: {}", snapshot);
 
-        return new Snapshot(
+        Snapshot filtered = new Snapshot(
                 snapshot.id(),
                 snapshot.backup(),
                 snapshot.files().stream().filter(predicate::test).collect(Collectors.toSet()));
+
+        logger.trace("--from() > filter: {}", filtered);
+        return filtered;
     }
 
     /**
@@ -161,6 +165,6 @@ public final class Snapshot {
 
     @Override
     public String toString() {
-        return "Snapshot{" + "id=" + id + ", backup=" + backup + ", files=" + files.size() + '}';
+        return "Snapshot{" + "id=" + id + ", files=" + files.size() + '}';
     }
 }

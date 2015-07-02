@@ -237,11 +237,11 @@ public final class Backup {
         PrintWriter print = new PrintWriter(stringWriter);
 
         if (dateTimeFormatter.getLocale() == null) {
-            dateTimeFormatter.withLocale(Locale.getDefault());
+            dateTimeFormatter = dateTimeFormatter.withLocale(Locale.getDefault());
         }
 
         if (dateTimeFormatter.getZone() == null) {
-            dateTimeFormatter.withZone(ZoneId.systemDefault());
+            dateTimeFormatter = dateTimeFormatter.withZone(ZoneId.systemDefault());
         }
 
         String lastModifiedStr

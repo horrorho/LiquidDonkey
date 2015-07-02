@@ -85,7 +85,7 @@ public final class DonkeyFactory {
                 : LocalFileFilter.newInstance(
                         directory,
                         snapshot.id(),
-                        engineConfig.toSetLastModifiedTimestamp());
+                        engineConfig.toSetLastModifiedTimestamp()).negate();
 
         Bundler bundler = Bundler.wrap(signatureToFileMap, localFileFilter, engineConfig.batchSizeMinimumBytes());
 

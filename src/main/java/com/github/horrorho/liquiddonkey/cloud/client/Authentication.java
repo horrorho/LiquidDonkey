@@ -102,7 +102,7 @@ public final class Authentication {
             logger.trace("<< authenticate() < id: {} password: {}", appleId, password);
 
             String authBasic = Tokens.getInstance().basic(appleId, password);
-            logger.trace("-- authenticate() > authentication basic token: {}", authBasic);
+            logger.trace("-- authenticate() > token: {}", authBasic);
 
             byte[] data
                     = http.executor("https://setup.icloud.com/setup/authenticate/$APPLE_ID$", byteArrayResponseHandler)

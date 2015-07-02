@@ -23,17 +23,13 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.file.Mode;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CancellationException;
@@ -44,8 +40,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
@@ -102,15 +96,18 @@ public final class SnapshotDownloader {
             ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures
     ) throws AuthenticationException, IOException {
 
-        logger.trace("<< execute()");
+        logger.trace("<< execute() < snapshot: {} signatures: {}", snapshot, signatures.size());
 
         ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results = new ConcurrentHashMap<>();
-
+        results.put(Boolean.TRUE, new ConcurrentHashMap<>());
+        results.put(Boolean.FALSE, new ConcurrentHashMap<>());
+        // TODO empty signatures
         int count = 0;
-        while (count++ < retryCount) {
+        while (count++ < retryCount && !signatures.isEmpty()) {
             logger.debug("-- execute() : count: {}/{} signatures: {}", count, retryCount, signatures.size());
-            signatures.putAll(results.getOrDefault(false, new ConcurrentHashMap<>()));
-            results = doExecute(http, snapshot, signatures, results);
+            signatures.putAll(results.get(false));
+            results.get(false).clear();
+            doExecute(http, snapshot, signatures, results);
         }
 
         logger.trace(">> execute()");
@@ -124,7 +121,7 @@ public final class SnapshotDownloader {
             ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results
     ) throws AuthenticationException, IOException {
 
-        logger.trace("<< doExecute() < snapshot: {}");
+        logger.trace("<< doExecute() < signatures: {}", signatures.size());
 
         ExecutorService executor = Executors.newFixedThreadPool(threads);
 
@@ -156,8 +153,10 @@ public final class SnapshotDownloader {
         try {
             t = future.get();
         } catch (CancellationException ex) {
+            logger.warn("-- error() > exception: {}", ex);
             throw new IllegalStateException("Cancelled");
         } catch (InterruptedException ex) {
+            logger.warn("-- error() > exception: {}", ex);
             throw new IllegalStateException("Interrupted");
         } catch (ExecutionException ex) {
             Throwable cause = ex.getCause();
@@ -166,7 +165,7 @@ public final class SnapshotDownloader {
                         ? (AuthenticationException) cause
                         : (IOException) cause;
             }
-            logger.warn("-- future() > exception: ", ex);
+            logger.warn("-- error() > exception: ", ex);
         }
         return t;
     }
@@ -180,5 +179,5 @@ public final class SnapshotDownloader {
         } catch (InterruptedException ex) {
             throw new IllegalStateException("Interrupted");
         }
-    } 
+    }
 }

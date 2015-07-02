@@ -46,7 +46,7 @@ public class Tokens {
     }
 
     public String basic(String left, String right) {
-        return token("basic", left, right);
+        return token("Basic", left, right);
     }
 
     public String mobilemeAuthToken(String left, String right) {
