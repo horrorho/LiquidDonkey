@@ -63,7 +63,7 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
     }
 
     private static final Logger logger = LoggerFactory.getLogger(BackupSelector.class);
-    
+
     protected final Printer printer;
 
     BackupSelector(Printer printer) {
@@ -71,15 +71,15 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
     }
 
     @Override
-    public List<Backup> apply(List<Backup> availableBackups) {
-        logger.trace("<< apply < available: {}", availableBackups);
-        
-        if (availableBackups.isEmpty()) {
+    public List<Backup> apply(List<Backup> available) {
+        logger.trace("<< apply < available: {}", udids(available));
+
+        if (available.isEmpty()) {
             printer.println(Level.WARN, "No backups available.");
             return new ArrayList<>();
         }
 
-        List<Backup> selected = doApply(availableBackups);
+        List<Backup> selected = doApply(available);
         String selectedStr = selected.isEmpty()
                 ? "None"
                 : selected.stream()
@@ -88,9 +88,15 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
                 .collect(Collectors.joining(" "));
 
         printer.println(Level.V, "Selected backup/s: " + selectedStr);
-        
-        logger.trace(">> apply > selected: {}", selected);
+
+        logger.trace(">> apply > selected: {}", udids(selected));
         return selected;
+    }
+
+    List<String> udids(List<Backup> backups) {
+        return backups == null
+                ? null
+                : backups.stream().map(Backup::udidString).collect(Collectors.toList());
     }
 
     protected abstract List<Backup> doApply(List<Backup> backups);
