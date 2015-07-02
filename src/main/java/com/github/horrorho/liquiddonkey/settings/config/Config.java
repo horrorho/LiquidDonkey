@@ -132,8 +132,15 @@ public final class Config {
 
     @Override
     public String toString() {
-        return "Config{" + "authentication=" + authentication + ", client=" + client + ", engine=" + engine
-                + ", directory=" + file + ", fileFilter=" + fileFilter + ", http=" + http + ", printer=" + printer
-                + ", selection=" + selection + '}';
+        return "Config{"
+                + "authentication=" + authentication
+                + ", client=" + client
+                + ", engine=" + engine
+                + ", directory=" + file
+                + ", fileFilter=" + fileFilter
+                + ", http=" + http
+                + ", printer=" + printer
+                + ", selection=" + selection
+                + '}';
     }
 }

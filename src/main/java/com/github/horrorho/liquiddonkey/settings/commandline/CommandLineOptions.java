@@ -151,7 +151,8 @@ public final class CommandLineOptions {
                 new Option("x", "stack-trace", false, "Prints stack trace on errors, useful for debugging."));
 
         options.put(ENGINE_DUMP_TOKEN,
-                new Option(null, "token", false, "Authenticate appleId/ password, display authorization token and exit."));
+                new Option(null, "token", false,
+                        "Authenticate appleId/ password, display authorization token and exit."));
 
         options.put(COMMAND_LINE_HELP,
                 new Option(null, "help", false, "Display this help and exit."));

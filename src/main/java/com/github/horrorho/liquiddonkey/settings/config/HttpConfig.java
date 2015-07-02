@@ -154,10 +154,16 @@ public final class HttpConfig {
 
     @Override
     public String toString() {
-        return "HttpConfig{" + "isPersistent=" + isPersistent + ", isRelaxedSSL=" + isRelaxedSSL
-                + ", maxConnections=" + maxConnections + ", retryCount=" + retryCount + ", retryDelayMs="
-                + retryDelayMs + ", socketTimeoutRetryCount=" + socketTimeoutRetryCount + ", timeoutMs="
-                + timeoutMs + ", validateAfterInactivityMs=" + validateAfterInactivityMs + ", userAgent="
-                + userAgent + '}';
+        return "HttpConfig{"
+                + "isPersistent=" + isPersistent
+                + ", isRelaxedSSL=" + isRelaxedSSL
+                + ", maxConnections=" + maxConnections
+                + ", retryCount=" + retryCount
+                + ", retryDelayMs=" + retryDelayMs
+                + ", socketTimeoutRetryCount=" + socketTimeoutRetryCount
+                + ", timeoutMs=" + timeoutMs
+                + ", validateAfterInactivityMs=" + validateAfterInactivityMs
+                + ", userAgent=" + userAgent
+                + '}';
     }
 }

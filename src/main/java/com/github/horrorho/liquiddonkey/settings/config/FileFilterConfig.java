@@ -102,14 +102,21 @@ public final class FileFilterConfig {
             long minSize) {
 
         if (minDate > maxDate) {
-            throw new IllegalArgumentException("Bad min/ max timestamp combination. No files will match.");
+            throw new IllegalArgumentException("Bad min/ max timestamp combination, no files will match");
         }
 
         if (minSize > maxSize) {
-            throw new IllegalArgumentException("Bad min/ max size combination. No files will match.");
+            throw new IllegalArgumentException("Bad min/ max size combination, No files will match");
         }
 
-        return new FileFilterConfig(domainContains, relativePathContains, extensions, maxDate, minDate, maxSize, minSize);
+        return new FileFilterConfig(
+                domainContains,
+                relativePathContains,
+                extensions,
+                maxDate,
+                minDate,
+                maxSize,
+                minSize);
     }
 
     private final Set<String> domainContains;
@@ -168,8 +175,14 @@ public final class FileFilterConfig {
 
     @Override
     public String toString() {
-        return "FileFilterConfig{" + "domainContains=" + domainContains + ", relativePathContains="
-                + relativePathContains + ", extensions=" + extensions + ", maxDate=" + maxDate + ", minDate=" + minDate
-                + ", maxSize=" + maxSize + ", minSize=" + minSize + '}';
+        return "FileFilterConfig{"
+                + "domainContains=" + domainContains
+                + ", relativePathContains=" + relativePathContains
+                + ", extensions=" + extensions
+                + ", maxDate=" + maxDate
+                + ", minDate=" + minDate
+                + ", maxSize=" + maxSize
+                + ", minSize=" + minSize
+                + '}';
     }
 }

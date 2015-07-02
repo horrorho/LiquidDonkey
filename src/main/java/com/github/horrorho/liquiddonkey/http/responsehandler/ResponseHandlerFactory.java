@@ -49,7 +49,6 @@ public class ResponseHandlerFactory {
      * @param <R> the function return type, not null
      * @param function the function to apply to the response entity, not null
      * @return an entity to function result response handler, not null
-     * @throw NullPointerException if the function argument is null
      */
     public static <R> ResponseHandler<R> of(IOFunction<InputStream, R> function) {
         Objects.requireNonNull(function);

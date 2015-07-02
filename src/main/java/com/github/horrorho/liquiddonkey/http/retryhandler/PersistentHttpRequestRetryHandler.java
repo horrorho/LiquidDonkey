@@ -108,7 +108,8 @@ public final class PersistentHttpRequestRetryHandler implements HttpRequestRetry
         HttpRequest request = clientContext.getRequest();
 
         if (request instanceof HttpExecutionAware && (((HttpExecutionAware) request).isAborted())) {
-            logger.debug("-- doRetryRequest() > {} {} > false (aborted)", request.getRequestLine(), exception.toString());
+            logger.debug("-- doRetryRequest() > {} {} > false (aborted)",
+                    request.getRequestLine(), exception.toString());
             return false;
         }
 

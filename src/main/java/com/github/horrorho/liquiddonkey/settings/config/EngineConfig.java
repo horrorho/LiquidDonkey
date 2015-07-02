@@ -157,10 +157,16 @@ public final class EngineConfig {
 
     @Override
     public String toString() {
-        return "EngineConfig{" + "isAggressive=" + isAggressive + ", batchSizeMinimumBytes=" + batchSizeMinimumBytes
-                + ", chunkListDownloadRetry=" + retryCount + ", isPersistent=" + isPersistent
-                + ", retryDelay=" + retryDelay + ", threadStaggerDelay=" + threadStaggerDelay
-                + ", threadCount=" + threadCount + ", toForceOverwrite=" + toForceOverwrite
-                + ", toSetLastModifiedTimestamp=" + toSetLastModifiedTimestamp + '}';
+        return "EngineConfig{"
+                + "isAggressive=" + isAggressive
+                + ", batchSizeMinimumBytes=" + batchSizeMinimumBytes
+                + ", chunkListDownloadRetry=" + retryCount
+                + ", isPersistent=" + isPersistent
+                + ", retryDelay=" + retryDelay
+                + ", threadStaggerDelay=" + threadStaggerDelay
+                + ", threadCount=" + threadCount
+                + ", toForceOverwrite=" + toForceOverwrite
+                + ", toSetLastModifiedTimestamp=" + toSetLastModifiedTimestamp
+                + '}';
     }
 }
