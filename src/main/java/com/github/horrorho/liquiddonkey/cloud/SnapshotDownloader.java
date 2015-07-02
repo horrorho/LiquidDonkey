@@ -157,7 +157,7 @@ public final class SnapshotDownloader {
             error(future);
         }
 
-        if (results.containsKey(Boolean.FALSE)) {
+        if (!results.get(Boolean.FALSE).isEmpty()) {
             logger.warn("-- doExecute() > failures: {}", results.get(Boolean.FALSE).size());
         }
 

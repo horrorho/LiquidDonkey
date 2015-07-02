@@ -112,8 +112,8 @@ public class Looter implements Closeable {
             ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results
                     = downloader.execute(http, filtered, filtered.signatures(), printer);
 
-            logger.debug("--backup() > completed: {}", results.get(false).size());
-            logger.debug("--backup() > failed: {}", results.get(true).size());
+            logger.debug("--backup() > completed: {}", results.get(Boolean.TRUE).size());
+            logger.debug("--backup() > failed: {}", results.get(Boolean.FALSE).size());
         }
     }
 
