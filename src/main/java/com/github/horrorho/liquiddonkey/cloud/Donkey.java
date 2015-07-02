@@ -32,6 +32,7 @@ import com.github.horrorho.liquiddonkey.cloud.store.ChunkListStore;
 import com.github.horrorho.liquiddonkey.cloud.store.MemoryStore;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.github.horrorho.liquiddonkey.exception.FileErrorException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -109,11 +110,17 @@ public final class Donkey implements Callable<Boolean> {
                     downloadSignatures(signatures);
                     addAll(true, signatures);
                 }
-            } catch (AuthenticationException ex) {
-                throw ex;
             } catch (HttpResponseException ex) {
                 logger.warn("-- call() > exception: ", ex);
                 addAll(false, signatures);
+
+                if (!isAggressive) {
+                    throw ex;
+                }
+            } catch (BadDataException | IOException ex) {
+                logger.warn("-- call() > exception: ", ex);
+                addAll(false, signatures);
+                throw ex;
             }
         }
         logger.trace(">> call()");
@@ -125,7 +132,7 @@ public final class Donkey implements Callable<Boolean> {
     }
 
     void downloadSignatures(Map<ByteString, Set<ICloud.MBSFile>> signatures)
-            throws AuthenticationException, BadDataException, IOException {
+            throws AuthenticationException, BadDataException, FileErrorException, IOException {
 
         logger.trace("<< download() < {}", signatures.size());
 
@@ -142,23 +149,26 @@ public final class Donkey implements Callable<Boolean> {
     }
 
     void downloadGroups(ChunkServer.FileGroups fileGroups, Map<ByteString, Set<ICloud.MBSFile>> signatureToFileSet)
-            throws AuthenticationException, IOException {
+            throws AuthenticationException, FileErrorException, IOException {
 
         for (ChunkServer.FileChecksumStorageHostChunkLists group : fileGroups.getFileGroupsList()) {
             ChunkListStore store = downloadGroup(group);
 
-            group.getFileChecksumChunkReferencesList().stream().forEach((fileChecksumChunkReference) -> {
-                // Files with identical signatures/ hash.
-                Set<ICloud.MBSFile> files = signatureToFileSet.get(fileChecksumChunkReference.getFileChecksum());
+            for (ChunkServer.FileChecksumChunkReferences references : group.getFileChecksumChunkReferencesList()) {
 
-                // Reassemble the list from the chunk store via the file-chunk references. 
-                files.stream().forEach(file
-                        -> writer.write(
-                                snapshot,
-                                file,
-                                output -> store.write(fileChecksumChunkReference.getChunkReferencesList(), output)));
-                // TODO iTunes flat style.
-            });
+                // Files with identical signatures/ hash.
+                Set<ICloud.MBSFile> files = signatureToFileSet.get(references.getFileChecksum());
+
+                // Reassemble the list from the chunk store via the file-chunk references.  
+                for (ICloud.MBSFile file : files) {
+                    writer.write(
+                            snapshot,
+                            file,
+                            output -> store.write(references.getChunkReferencesList(), output));
+                }
+
+                // TODO iTunes flat style.  
+            }
         }
     }
 
@@ -178,7 +188,9 @@ public final class Donkey implements Callable<Boolean> {
         return storage;
     }
 
-    List<byte[]> downloadChunkList(ChunkServer.StorageHostChunkList chunkList) throws AuthenticationException, IOException {
+    List<byte[]> downloadChunkList(ChunkServer.StorageHostChunkList chunkList)
+            throws AuthenticationException, IOException {
+
         // Recursive.
         return chunkList.getChunkInfoCount() == 0
                 ? new ArrayList<>()
@@ -199,8 +211,16 @@ public final class Donkey implements Callable<Boolean> {
 
     @Override
     public String toString() {
-        return "Donkey{" + "http=" + http + ", client=" + client + ", backupUdid=" + backupUdid + ", snapshot="
-                + snapshot + ", iterator=" + iterator + ", decrypter=" + decrypter + ", writer=" + writer
-                + ", isAggressive=" + isAggressive + ", attempts=" + attempts + '}';
+        return "Donkey{"
+                + "http=" + http
+                + ", client=" + client
+                + ", backupUdid=" + backupUdid
+                + ", snapshot=" + snapshot
+                + ", iterator=" + iterator
+                + ", decrypter=" + decrypter
+                + ", writer=" + writer
+                + ", isAggressive=" + isAggressive
+                + ", attempts=" + attempts
+                + '}';
     }
 }

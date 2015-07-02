@@ -36,7 +36,7 @@ import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
 /**
- * Filters files.
+ * File filter.
  *
  * @author Ahseya
  */
@@ -138,8 +138,13 @@ public final class FileFilter
 
     @Override
     public String toString() {
-        return "FileFilter{" + "domainContains=" + domainContains + ", relativePathContains=" + relativePathContains
-                + ", extensions=" + extensions + ", maxDate=" + maxDate + ", minDate=" + minDate + ", maxSize="
-                + maxSize + ", minSize=" + minSize + '}';
+        return "FileFilter{"
+                + "domainContains=" + domainContains
+                + ", relativePathContains=" + relativePathContains
+                + ", extensions=" + extensions
+                + ", maxDate=" + maxDate
+                + ", minDate=" + minDate + ", maxSize=" + maxSize
+                + ", minSize=" + minSize
+                + '}';
     }
 }

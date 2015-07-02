@@ -25,6 +25,7 @@ package com.github.horrorho.liquiddonkey.cloud.file;
 
 import com.github.horrorho.liquiddonkey.crypto.MessageDigestFactory;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.github.horrorho.liquiddonkey.exception.FileErrorException;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,7 +65,7 @@ public final class LocalFileDecrypter {
     /**
      * Returns a new instance.
      *
-     * @return a new instance
+     * @return a new instance, not null
      */
     public static LocalFileDecrypter newInstance() {
         return LocalFileDecrypter.newInstance(
@@ -101,9 +102,9 @@ public final class LocalFileDecrypter {
      * @param key the file key
      * @param decryptedSize the expected decrypted size, a value of 0 indicates iOS 5 format
      * @throws BadDataException if a cipher exception occurred
-     * @throws IllegalStateException if a file IOException occurs
+     * @throws FileErrorException
      */
-    public void decrypt(Path path, ByteString key, long decryptedSize) throws BadDataException {
+    public void decrypt(Path path, ByteString key, long decryptedSize) throws BadDataException, FileErrorException {
         Path encrypted = null;
         try {
             if (Files.size(path) == 0) {
@@ -141,7 +142,7 @@ public final class LocalFileDecrypter {
         } catch (BufferUnderflowException | DataLengthException ex) {
             throw new BadDataException("Cipher exception", ex);
         } catch (IOException ex) {
-            throw new IllegalStateException("File io error", ex);
+            throw new FileErrorException(ex);
         } finally {
             if (encrypted != null) {
                 try {

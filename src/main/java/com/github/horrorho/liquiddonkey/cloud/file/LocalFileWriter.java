@@ -30,6 +30,7 @@ import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagTools;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
+import com.github.horrorho.liquiddonkey.exception.FileErrorException;
 import com.github.horrorho.liquiddonkey.iofunction.IOWriter;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -113,10 +114,10 @@ public final class LocalFileWriter {
      *
      * @param snapshot the file's snapshot
      * @param file the file, not null
-     * @throws FileHandlingException if an IOException occurred
+     * @throws FileErrorException
      * @throws NullPointerException if the file argument is null
      */
-    public void writeEmpty(int snapshot, MBSFile file) {
+    public void writeEmpty(int snapshot, MBSFile file) throws FileErrorException {
         if (file.hasSize() && file.getSize() != 0) {
             logger.warn("-- writeEmpty() > ignored, file is not empty: {} bytes", file.getSize());
         } else {
@@ -130,10 +131,10 @@ public final class LocalFileWriter {
      * @param snapshot the file's snapshot
      * @param file the file, not null
      * @param writer the IOWriter, not null
-     * @throws NullPointerException if the file or writer arguments are null
+     * @throws FileErrorException
      * @throws IllegalStateException if a file IOException occurs
      */
-    public void write(int snapshot, MBSFile file, IOWriter writer) {
+    public void write(int snapshot, MBSFile file, IOWriter writer) throws FileErrorException {
         try {
             Path path = backupFolder.path(snapshot, file);
 
@@ -157,7 +158,7 @@ public final class LocalFileWriter {
         }
     }
 
-    void decrypt(Path path, MBSFile file) {
+    void decrypt(Path path, MBSFile file) throws FileErrorException {
         ByteString key = keyBagTools.fileKey(file);
         if (key == null) {
             logger.warn("-- write() > failed to derive key: {}", file.getRelativePath());

@@ -43,6 +43,13 @@ import net.jcip.annotations.NotThreadSafe;
 @NotThreadSafe
 public final class Directory {
 
+    /**
+     * Returns a new instance.
+     *
+     * @param backupUdid, not null
+     * @param config, not null
+     * @return new instance, not null
+     */
     public static Directory newInstance(ByteString backupUdid, FileConfig config) {
         return Directory.newInstance(
                 config.base().resolve(Bytes.hex(backupUdid)),
@@ -51,13 +58,12 @@ public final class Directory {
     }
 
     /**
-     * Returns a new Directory instance.
+     * Returns a new instance.
      *
      * @param base the base output folder, not null
      * @param isFlat the iTunes-flat structure switch
      * @param isCombined the combine snapshots switch
-     * @return new IPath instance
-     * @throws NullPointerException if backupUuid or baseFolder are null
+     * @return new instance, not null
      */
     public static Directory newInstance(Path base, boolean isFlat, boolean isCombined) {
         return Directory.newInstance(MessageDigestFactory.SHA1(), base, isFlat, isCombined);
@@ -89,7 +95,6 @@ public final class Directory {
      * @param snapshot the snapshot number
      * @param file the file, not null
      * @return the local path for the specified file
-     * @throws NullPointerException if the file argument is null
      */
     public Path path(int snapshot, ICloud.MBSFile file) {
         Path path;

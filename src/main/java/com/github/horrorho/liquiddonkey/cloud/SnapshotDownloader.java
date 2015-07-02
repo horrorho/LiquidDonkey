@@ -25,6 +25,7 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
+import com.github.horrorho.liquiddonkey.exception.FileErrorException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
@@ -178,11 +179,17 @@ public final class SnapshotDownloader {
         } catch (ExecutionException ex) {
             Throwable cause = ex.getCause();
             if (cause instanceof IOException) {
-                throw cause instanceof AuthenticationException
-                        ? (AuthenticationException) cause
-                        : (IOException) cause;
+                if (cause instanceof AuthenticationException) {
+                    throw (AuthenticationException) cause;
+                }
+
+                if (cause instanceof FileErrorException) {
+                    throw (FileErrorException) cause;
+                }
+
+                throw (IOException) cause;
             }
-            logger.warn("-- error() > exception: ", ex);
+            logger.warn("-- error() > suppressed exception: ", ex);
         }
         return t;
     }

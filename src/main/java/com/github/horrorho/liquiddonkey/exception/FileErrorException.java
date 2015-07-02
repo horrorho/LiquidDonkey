@@ -1,4 +1,4 @@
-/*
+/* 
  * The MIT License
  *
  * Copyright 2015 Ahseya.
@@ -21,45 +21,29 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.cloud.client;
+package com.github.horrorho.liquiddonkey.exception;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import net.jcip.annotations.Immutable;
-import net.jcip.annotations.ThreadSafe;
+import java.io.IOException;
 
 /**
- * Tokens.
+ * File error.
  *
- * @author Ahseya
+ * @author ahseya
  */
-@Immutable
-@ThreadSafe
-public class Tokens {
+public class FileErrorException extends IOException {
 
-    private static final Tokens instance = new Tokens();
-
-    /**
-     * Returns an instance.
-     *
-     * @return instance, not null
-     */
-    public static Tokens getInstance() {
-        return instance;
+    public FileErrorException() {
     }
 
-    Tokens() {
+    public FileErrorException(String message) {
+        super(message);
     }
 
-    public String basic(String left, String right) {
-        return token("Basic", left, right);
+    public FileErrorException(String message, Throwable cause) {
+        super(message, cause);
     }
 
-    public String mobilemeAuthToken(String left, String right) {
-        return token("X-MobileMe-AuthToken", left, right);
-    }
-
-    public String token(String type, String left, String right) {
-        return type + " " + Base64.getEncoder().encodeToString((left + ":" + right).getBytes(StandardCharsets.UTF_8));
+    public FileErrorException(Throwable cause) {
+        super(cause);
     }
 }

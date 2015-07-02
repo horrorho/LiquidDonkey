@@ -34,6 +34,7 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.message.BasicHeader;
 
 /**
+ * Headers.
  *
  * @author ahseya
  */
@@ -41,48 +42,48 @@ import org.apache.http.message.BasicHeader;
 @ThreadSafe
 public final class Headers {
 
-    public static final Header accept
+    static final Header accept
             = new BasicHeader(
                     "Accept",
                     "application/vnd.com.apple.me.ubchunk+protobuf");
-    public static final Header contentType
+    static final Header contentType
             = new BasicHeader(
                     "Content-Type",
                     "application/vnd.com.apple.me.ubchunk+protobuf");
-    public static final Header mbsProtocolVersion
+    static final Header mbsProtocolVersion
             = new BasicHeader(
                     "X-Apple-MBS-Protocol-Version",
                     "1.7");
-    public static final Header mmcsProtocolVersion
+    static final Header mmcsProtocolVersion
             = new BasicHeader(
                     "x-apple-mmcs-proto-version",
                     "3.3");
-    public static final Header mmcsDataClass
+    static final Header mmcsDataClass
             = new BasicHeader(
                     "x-apple-mmcs-dataclass",
                     "com.apple.Dataclass.Backup");
-    public static final Header mmeClientInfo
+    static final Header mmeClientInfo
             = new BasicHeader(
                     "X-MMe-Client-Info",
                     "<iPhone2,1> <iPhone OS;5.1.1;9B206> <com.apple.AppleAccount/1.0 ((null)/(null))>");
-    public static final Header mmeClientInfoBackup
+    static final Header mmeClientInfoBackup
             = new BasicHeader(
                     "X-MMe-Client-Info",
                     "<N88AP> <iPhone OS;5.1.1;9B206> <com.apple.icloud.content/211.1 (com.apple.MobileBackup/9B206)>");
-    public static final Header userAgentBackupd
+    static final Header userAgentBackupd
             = new BasicHeader(
                     HttpHeaders.USER_AGENT,
                     "backupd (unknown version) CFNetwork/548.1.4 Darwin/11.0.0");
-    public static final Header userAgentMobileBackup
+    static final Header userAgentMobileBackup
             = new BasicHeader(
                     HttpHeaders.USER_AGENT,
                     "MobileBackup/5.1.1 (9B206; iPhone3,1)");
-    public static final Header userAgentUbd
+    static final Header userAgentUbd
             = new BasicHeader(
                     HttpHeaders.USER_AGENT,
                     "ubd (unknown version) CFNetwork/548.1.4 Darwin/11.0.0");
 
-    public static List<Header> mobileBackupHeaders(String authMme) {
+    static List<Header> mobileBackupHeaders(String authMme) {
         return Arrays.asList(
                 Headers.authorization(authMme),
                 Headers.mmeClientInfo,
@@ -91,7 +92,7 @@ public final class Headers {
         );
     }
 
-    public static List<Header> contentHeaders(String dsPrsID) {
+    static List<Header> contentHeaders(String dsPrsID) {
         return Arrays.asList(
                 Headers.mmeDsid(dsPrsID),
                 Headers.mmcsProtocolVersion,
@@ -103,23 +104,23 @@ public final class Headers {
         );
     }
 
-    public static Header mmeDsid(String dsPrsID) {
+    static Header mmeDsid(String dsPrsID) {
         return header("x-apple-mme-dsid", dsPrsID);
     }
 
-    public static Header authorization(String token) {
+    static Header authorization(String token) {
         return header("Authorization", token);
     }
 
-    public static Header mmcsAuth(String token) {
+    static Header mmcsAuth(String token) {
         return header("x-apple-mmcs-auth", token);
     }
 
-    public static Header header(String name, String value) {
+    static Header header(String name, String value) {
         return new BasicHeader(name, value);
     }
 
-    public static List<Header> headers(List<ChunkServer.NameValuePair> headers) {
+    static List<Header> headers(List<ChunkServer.NameValuePair> headers) {
         return headers.stream()
                 .map(header -> new BasicHeader(header.getName(), header.getValue()))
                 .collect(Collectors.toList());
