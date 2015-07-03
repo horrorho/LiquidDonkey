@@ -24,6 +24,7 @@
 package com.github.horrorho.liquiddonkey.cloud.store;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
@@ -33,42 +34,42 @@ import java.util.List;
  *
  * @author Ahseya
  */
-public interface ChunkListStore {
+public interface Store {
 
     /**
      * Writes the referenced chunk's data to the specified output stream.
      *
-     * @param chunkReference chunk reference
-     * @param output output stream
-     * @return bytes written or -1 if no such chunk exists
+     * @param chunkReference chunk reference, not null
+     * @param output output stream, not null
+     * @return bytes written
+     * @throws BadDataException if the chunk is not present in this store
      * @throws IOException
      */
-    long write(ChunkServer.ChunkReference chunkReference, OutputStream output) throws IOException;
+    long write(ChunkServer.ChunkReference chunkReference, OutputStream output) throws BadDataException, IOException;
 
     /**
-     * Returns the number of containers present in this ChunkListStore.
+     * Returns whether the referenced chunk is present in this store.
      *
-     * @return the number of containers present in this storage
+     * @param chunkReference, not null
+     * @return true if present, false if not present
      */
-    long size();
+    boolean contains(ChunkServer.ChunkReference chunkReference);
 
     /**
-     * Writes all the referenced chunk data to the specified output stream. Continues until all the chunk data is
-     * written or a null block is encountered.
+     * Writes all the referenced chunk data to the specified output stream.
      *
-     * @param chunkReferences chunk references
-     * @param output output stream
-     * @return bytes written or -1 if a missing chunk was encountered.
+     * @param chunkReferences chunk references, not null
+     * @param output output stream, not null
+     * @return bytes written
+     * @throws BadDataException if all chunks are not present in this store
      * @throws IOException
      */
-    default long write(List<ChunkServer.ChunkReference> chunkReferences, OutputStream output) throws IOException {
+    default long write(List<ChunkServer.ChunkReference> chunkReferences, OutputStream output)
+            throws BadDataException, IOException {
+
         long total = 0;
         for (ChunkServer.ChunkReference reference : chunkReferences) {
-            long written = write(reference, output);
-            if (written == -1) {
-                return -1;
-            }
-            total += written;
+            total += write(reference, output);
         }
         return total;
     }

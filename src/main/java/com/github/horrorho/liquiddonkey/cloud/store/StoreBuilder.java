@@ -26,24 +26,40 @@ package com.github.horrorho.liquiddonkey.cloud.store;
 import java.util.List;
 
 /**
- * ChunkListStore builder.
+ * Store builder.
  *
  * @author Ahseya
  */
-public interface ChunkListStoreBuilder {
+public interface StoreBuilder {
 
     /**
-     * Add a container in sequential order.
+     * Adds chunk data.
      *
-     * @param container the container to be added, not null
+     * @param containerIndex
+     * @param chunkIndex
+     * @param chunkData may be null
      * @return this builder, not null
      */
-    ChunkListStoreBuilder add(List<byte[]> container);
+    StoreBuilder add(long containerIndex, long chunkIndex, byte[] chunkData);
 
     /**
-     * Build the ChunkListStore.
+     * Build the Store.
      *
-     * @return the built ChunkListStore, not null
+     * @return the built Store, not null
      */
-    ChunkListStore build();
+    Store build();
+
+    /**
+     * Add chunk data list.
+     *
+     * @param containerIndex
+     * @param chunkDataList, not null
+     * @return this builder, not null
+     */
+    default StoreBuilder add(long containerIndex, List<byte[]> chunkDataList) {
+        for (int index = 0; index < chunkDataList.size(); index++) {
+            add(containerIndex, index, chunkDataList.get(index));
+        }
+        return this;
+    }
 }

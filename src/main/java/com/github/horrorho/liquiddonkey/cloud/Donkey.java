@@ -28,7 +28,7 @@ import com.github.horrorho.liquiddonkey.cloud.file.LocalFileWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.cloud.store.ChunkListStore;
+import com.github.horrorho.liquiddonkey.cloud.store.Store;
 import com.github.horrorho.liquiddonkey.cloud.store.MemoryStore;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
@@ -153,7 +153,7 @@ public final class Donkey implements Callable<Boolean> {
             throws AuthenticationException, FileErrorException, IOException {
 
         for (ChunkServer.FileChecksumStorageHostChunkLists group : fileGroups.getFileGroupsList()) {
-            ChunkListStore store = downloadGroup(group);
+            Store store = downloadGroup(group);
 
             for (ChunkServer.FileChecksumChunkReferences references : group.getFileChecksumChunkReferencesList()) {
 
@@ -173,7 +173,7 @@ public final class Donkey implements Callable<Boolean> {
         }
     }
 
-    ChunkListStore downloadGroup(ChunkServer.FileChecksumStorageHostChunkLists group)
+    Store downloadGroup(ChunkServer.FileChecksumStorageHostChunkLists group)
             throws AuthenticationException, IOException {
 
         logger.trace("<< download() < group count : {}", group.getStorageHostChunkListCount());
@@ -183,7 +183,7 @@ public final class Donkey implements Callable<Boolean> {
         for (ChunkServer.StorageHostChunkList chunkList : group.getStorageHostChunkListList()) {
             builder.add(downloadChunkList(chunkList));
         }
-        ChunkListStore storage = builder.build();
+        Store storage = builder.build();
 
         logger.trace(">> download() > container count : {}", storage.size());
         return storage;

@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.file;
 
-import com.github.horrorho.liquiddonkey.cloud.store.ChunkListStore;
+import com.github.horrorho.liquiddonkey.cloud.store.Store;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagTools;
@@ -50,7 +50,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Writes files.
  *
- * Writes out files from the specified {@link ChunkListStore} and
+ * Writes out files from the specified {@link Store} and
  * {@link com.cain.donkeylooter.protobuf.ICloud.ChunkReference} lists.
  *
  * @author ahseya

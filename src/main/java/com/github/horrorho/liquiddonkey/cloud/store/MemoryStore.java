@@ -24,82 +24,86 @@
 package com.github.horrorho.liquiddonkey.cloud.store;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
+import net.jcip.annotations.NotThreadSafe;
 import net.jcip.annotations.ThreadSafe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Memory based ChunkListStore.
+ * Memory based Store.
  *
  * @author Ahseya
  */
 @Immutable
 @ThreadSafe
-public final class MemoryStore implements ChunkListStore {
+public final class MemoryStore implements Store {
 
     public static MemoryStore.Builder builder() {
         return new Builder();
     }
 
-    private final List<List<byte[]>> containers;
+    private final Map<Long, Map<Long, byte[]>> containers;
 
-    MemoryStore(List<List<byte[]>> containers) {
+    MemoryStore(Map<Long, Map<Long, byte[]>> containers) {
         this.containers = Objects.requireNonNull(containers);
     }
 
     @Override
-    public long write(ChunkServer.ChunkReference chunkReference, OutputStream output) throws IOException {
-        if (chunkReference == null) {
-            return -1;
+    public long write(ChunkServer.ChunkReference chunkReference, OutputStream output)
+            throws BadDataException, IOException {
+
+        long container = chunkReference.getContainerIndex();
+        long index = chunkReference.getContainerIndex();
+
+        if (!contains(chunkReference)) {
+            throw new BadDataException("Missing chunk");
         }
 
-        int containerIndex = (int) chunkReference.getContainerIndex();
-        int chunkIndex = (int) chunkReference.getChunkIndex();
-
-        byte[] chunk = (containerIndex < 0 || containerIndex >= containers.size())
-                ? null
-                : (chunkIndex < 0 || chunkIndex >= containers.get(containerIndex).size())
-                        ? null
-                        : containers.get(containerIndex).get(chunkIndex);
-
-        if (chunk == null) {
-            return -1;
-        }
-
+        byte[] chunk = containers.get(container).get(index);
         output.write(chunk);
         return chunk.length;
     }
 
     @Override
-    public long size() {
-        return containers.size();
+    public boolean contains(ChunkServer.ChunkReference chunkReference) {
+        long container = chunkReference.getContainerIndex();
+        long index = chunkReference.getContainerIndex();
+
+        return containers.containsKey(container)
+                ? containers.get(container).containsKey(index)
+                : false;
     }
 
-    public static class Builder implements ChunkListStoreBuilder {
+    @NotThreadSafe
+    public static class Builder implements StoreBuilder {
 
-        List<List<byte[]>> containers = new ArrayList<>();
+        private static final Logger logger = LoggerFactory.getLogger(Builder.class);
+
+        private final Map<Long, Map<Long, byte[]>> containers = new HashMap<>();
 
         @Override
-        public Builder add(List<byte[]> container) {
-            Objects.requireNonNull(container);
-
-            List<byte[]> copy = container.stream()
-                    .map(bytes -> Arrays.copyOf(bytes, bytes.length))
-                    .collect(Collectors.toList());
-
-            containers.add(copy);
-            return this;
+        public Store build() {
+            return new MemoryStore(containers);
         }
 
         @Override
-        public ChunkListStore build() {
-            return new MemoryStore(containers);
+        public StoreBuilder add(long containerIndex, long chunkIndex, byte[] chunkData) {
+            if (chunkData == null) {
+                logger.warn("-- add() > null chunkData. containerIndex: {}, chunkIndex: {}",
+                        containerIndex, chunkIndex);
+            } else {
+                byte[] copy = Arrays.copyOf(chunkData, chunkData.length);
+                containers.computeIfAbsent(containerIndex, key -> new HashMap<>()).put(chunkIndex, copy);
+            }
+            return this;
         }
     }
 }
