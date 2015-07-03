@@ -115,7 +115,7 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
             return availableBackups.stream().filter(this::matches).collect(Collectors.toList());
         }
 
-        private boolean matches(Backup backup) {
+        boolean matches(Backup backup) {
             return commandLineUdids.stream()
                     .anyMatch(udid -> backup.udidString().toLowerCase(Locale.US).contains(udid));
         }

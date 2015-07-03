@@ -86,8 +86,11 @@ public class Main {
 
         try (Looter looter = Looter.newInstance(config, printer)) {
             looter.loot();
+        } catch (RuntimeException ex) {
+            logger.warn("-- main() > exception", ex);
+            printer.println(Level.ERROR, ex);
         } catch (Exception ex) {
-            logger.warn("-- main() > Exception", ex);
+            logger.warn("-- main() > exception", ex);
             printer.println(Level.ERROR, ex);
         }
 

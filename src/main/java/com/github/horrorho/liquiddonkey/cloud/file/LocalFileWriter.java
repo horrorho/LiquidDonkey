@@ -186,7 +186,7 @@ public final class LocalFileWriter {
     }
 
     void setLastModifiedTime(Path path, MBSFile file) throws IOException {
-        if (setLastModifiedTime & Files.exists(path)) {
+        if (setLastModifiedTime && Files.exists(path)) {
             // Default to 0 timestamp if non existant.
             long lastModifiedTimestamp = file.hasAttributes() && file.getAttributes().hasLastModified()
                     ? file.getAttributes().getLastModified()

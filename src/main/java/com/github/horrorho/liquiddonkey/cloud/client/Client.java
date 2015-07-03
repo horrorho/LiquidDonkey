@@ -83,7 +83,7 @@ public final class Client {
 
         logger.trace("<< from() < authentication: {} config: {}", authentication, config);
 
-        String auth = Tokens.getInstance().basic(authentication.dsPrsID(), authentication.mmeAuthToken());
+        String auth = Tokens.getInstance().basic(authentication.dsPrsId(), authentication.mmeAuthToken());
         logger.trace("-- from() >  authentication token: {}", auth);
 
         byte[] data
@@ -143,7 +143,7 @@ public final class Client {
     private final SimplePropertyList settings;
     private final List<Header> mobileBackupHeaders;
     private final List<Header> contentHeaders;
-    private final String dsPrsID;
+    private final String dsPrsId;
     private final String contentUrl;
     private final String mobileBackupUrl;
     private final int listFilesLimit;
@@ -160,7 +160,7 @@ public final class Client {
         this.settings = Objects.requireNonNull(settings);
         this.mobileBackupHeaders = Objects.requireNonNull(mobileBackupHeaders);
         this.contentHeaders = Objects.requireNonNull(contentHeaders);
-        this.dsPrsID = Objects.requireNonNull(dsPrsID);
+        this.dsPrsId = Objects.requireNonNull(dsPrsID);
         this.contentUrl = Objects.requireNonNull(contentUrl);
         this.mobileBackupUrl = Objects.requireNonNull(mobileBackupUrl);
         this.listFilesLimit = listFilesLimit;
@@ -197,7 +197,7 @@ public final class Client {
                 = mobileBackupGet(
                         http,
                         mbsaAccountResponseHandler,
-                        path("mbs", dsPrsID));
+                        path("mbs", dsPrsId));
 
         logger.trace(">> account() > {}", account);
         return account;
@@ -218,7 +218,7 @@ public final class Client {
                 = mobileBackupGet(
                         http,
                         mbsaBackupResponseHandler,
-                        path("mbs", dsPrsID, hex(backupUDID)));
+                        path("mbs", dsPrsId, hex(backupUDID)));
 
         logger.trace(">> backup() > {}", backup);
         return backup;
@@ -239,7 +239,7 @@ public final class Client {
                 = mobileBackupGet(
                         http,
                         mbsaKeySetResponseHandler,
-                        path("mbs", dsPrsID, hex(backupUDID), "getKeys"));
+                        path("mbs", dsPrsId, hex(backupUDID), "getKeys"));
 
         logger.trace(CLIENT, ">> getKeys() > {}", keys);
         return keys;
@@ -267,7 +267,7 @@ public final class Client {
             data = mobileBackupGet(
                     http,
                     mbsFileListHandler,
-                    path("mbs", dsPrsID, hex(backupUDID), Integer.toString(snapshotId), "listFiles"),
+                    path("mbs", dsPrsId, hex(backupUDID), Integer.toString(snapshotId), "listFiles"),
                     parameter("offset", offset), limitParameter);
 
             files.addAll(data);
@@ -325,7 +325,7 @@ public final class Client {
                     .map(file -> MBSFile.newBuilder().setFileID(file.getFileID()).build())
                     .collect(Collectors.toList());
 
-            String uri = path("mbs", dsPrsID, hex(backupUdid), Integer.toString(snapshotId), "getFiles");
+            String uri = path("mbs", dsPrsId, hex(backupUdid), Integer.toString(snapshotId), "getFiles");
 
             byte[] encoded;
             try {
@@ -355,7 +355,7 @@ public final class Client {
             Header mmcsAuth
                     = Headers.mmcsAuth(hex(tokens.getTokens(0).getFileID()) + " " + tokens.getTokens(0).getAuthToken());
 
-            groups = http.executor(path(contentUrl, dsPrsID, "authorizeGet"), filesGroupsHandler)
+            groups = http.executor(path(contentUrl, dsPrsId, "authorizeGet"), filesGroupsHandler)
                     .headers(mmcsAuth)
                     .headers(contentHeaders)
                     .post(tokens.toByteArray());
@@ -408,8 +408,8 @@ public final class Client {
         return data;
     }
 
-    public String dsPrsID() {
-        return dsPrsID;
+    public String dsPrsId() {
+        return dsPrsId;
     }
 
     public SimplePropertyList settings() {
@@ -429,7 +429,7 @@ public final class Client {
         return "Client{"
                 + "mobileBackupHeaders=" + mobileBackupHeaders
                 + ", contentHeaders=" + contentHeaders
-                + ", dsPrsID=" + dsPrsID
+                + ", dsPrsID=" + dsPrsId
                 + ", contentUrl=" + contentUrl
                 + ", mobileBackupUrl=" + mobileBackupUrl
                 + ", listFilesLimit=" + listFilesLimit

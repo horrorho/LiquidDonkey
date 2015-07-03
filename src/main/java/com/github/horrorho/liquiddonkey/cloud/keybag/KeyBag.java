@@ -121,8 +121,6 @@ public final class KeyBag {
     @Override
     public String toString() {
         return "KeyBag{"
-                + "classKeys=" + classKeys
-                + ", attributes=" + attributes
                 + ", uuid=" + uuid
                 + ", type=" + type
                 + '}';

@@ -149,11 +149,11 @@ public final class Authentication {
     // Thread safe.
     private static final ResponseHandler<byte[]> byteArrayResponseHandler = ResponseHandlerFactory.toByteArray();
 
-    private final String dsPrsID;
+    private final String dsPrsId;
     private final String mmeAuthToken;
 
     Authentication(String dsPrsID, String mmeAuthToken) {
-        this.dsPrsID = Objects.requireNonNull(dsPrsID);
+        this.dsPrsId = Objects.requireNonNull(dsPrsID);
         this.mmeAuthToken = Objects.requireNonNull(mmeAuthToken);
     }
 
@@ -161,16 +161,16 @@ public final class Authentication {
         return mmeAuthToken;
     }
 
-    public String dsPrsID() {
-        return dsPrsID;
+    public String dsPrsId() {
+        return dsPrsId;
     }
 
     public String token() {
-        return dsPrsID + ":" + mmeAuthToken;
+        return dsPrsId + ":" + mmeAuthToken;
     }
 
     @Override
     public String toString() {
-        return "Authentication{" + "dsPrsID=" + dsPrsID + ", mmeAuthToken=" + mmeAuthToken + '}';
+        return "Authentication{" + "dsPrsID=" + dsPrsId + ", mmeAuthToken=" + mmeAuthToken + '}';
     }
 }

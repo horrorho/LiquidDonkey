@@ -48,7 +48,6 @@ public final class ItemTypes {
     }
 
     static Map<String, Set<String>> itemTypeToPaths(Props<Property> props) {
-        Parsers parsers = Property.parsers();
         String itemTypePrefix = props.get(Property.CONFIG_PREFIX_ITEM_TYPE);
         int prefixLength = itemTypePrefix.length();
 
