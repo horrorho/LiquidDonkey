@@ -39,7 +39,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.UnaryOperator;
@@ -55,27 +54,45 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public class Looter implements Closeable {
 
+    public static Looter from(Config config, Printer printer) {
+        logger.trace("<< from()");
+
+        Looter looter = new Looter(
+                config,
+                HttpFactory.from(config.http()).newInstance(printer),
+                printer,
+                FileFilter.getInstance(config.fileFilter()),
+                SnapshotDownloader.newInstance(
+                        DonkeyFactory.newInstance(config.engine(), config.file()), config.engine()));
+
+        logger.trace(">> from()");
+        return looter;
+    }
+
+    public Looter(
+            Config config,
+            Http http,
+            Printer printer,
+            FileFilter filter,
+            SnapshotDownloader downloader) {
+        this.config = config;
+        this.http = http;
+        this.printer = printer;
+        this.filter = filter;
+        this.downloader = downloader;
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(Looter.class);
 
     private final Config config;
     private final Http http;
     private final Printer printer;
-
-    public static Looter newInstance(Config config, Printer printer) {
-        return new Looter(
-                config,
-                HttpFactory.from(config.http()).newInstance(printer),
-                printer
-        );
-    }
-
-    public Looter(Config config, Http http, Printer printer) {
-        this.config = Objects.requireNonNull(config);
-        this.http = Objects.requireNonNull(http);
-        this.printer = Objects.requireNonNull(printer);
-    }
+    private final FileFilter filter;
+    private final SnapshotDownloader downloader;
 
     public void loot() throws AuthenticationException, BadDataException, IOException {
+        logger.trace("<< loot()");
+
         printer.println(Level.VV, "Authenticating.");
         Authentication authentication = Authentication.authenticate(http, config.authentication());
 
@@ -98,13 +115,11 @@ public class Looter implements Closeable {
         for (Backup backup : backupSelector.apply(backups)) {
             backup(http, client, backup);
         }
+
+        logger.trace(">> loot()");
     }
 
     void backup(Http http, Client client, Backup backup) throws AuthenticationException, IOException {
-
-        FileFilter filter = FileFilter.getInstance(config.fileFilter());
-        DonkeyFactory factory = DonkeyFactory.newInstance(config.engine(), config.file());
-        SnapshotDownloader downloader = SnapshotDownloader.newInstance(factory, config.engine());
 
         for (int id : backup.snapshots()) {
             Snapshot snapshot = Snapshot.from(http, backup, id, config.engine());
