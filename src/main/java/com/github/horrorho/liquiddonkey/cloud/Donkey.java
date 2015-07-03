@@ -36,6 +36,7 @@ import com.github.horrorho.liquiddonkey.exception.FileErrorException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -110,7 +111,7 @@ public final class Donkey implements Callable<Boolean> {
                     downloadSignatures(signatures);
                     addAll(true, signatures);
                 }
-            } catch (HttpResponseException ex) {
+            } catch (HttpResponseException | UnknownHostException ex) {
                 logger.warn("-- call() > exception: ", ex);
                 addAll(false, signatures);
 

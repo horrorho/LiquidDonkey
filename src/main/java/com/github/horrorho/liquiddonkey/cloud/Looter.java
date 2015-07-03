@@ -69,7 +69,7 @@ public class Looter implements Closeable {
         return looter;
     }
 
-    public Looter(
+    Looter(
             Config config,
             Http http,
             Printer printer,
