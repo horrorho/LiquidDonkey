@@ -151,18 +151,23 @@ public final class ChunkManager {
             return;
         }
 
-        // Completed.
+        // Completed. We won't retry on writer failure.
         completed.add(signature);
-
-        // Remove container references to this signature.
-        signatureToContainers.get(signature).stream()
-                .forEach(index -> containerToSignatures.get(index).remove(signature));
 
         // Writer.
         try {
             writer.accept(signature, output -> store.write(references, output));
         } catch (IOException ex) {
-            logger.warn("--put () > exception: ", ex);
+            logger.warn("--process() > exception: ", ex);
         }
+
+        // Remove obsolete references and chunk data.
+        signatureToContainers.get(signature).forEach(containerIndex -> {
+            if (containerToSignatures.get(containerIndex).isEmpty()) {
+                store.destroy(containerIndex);
+            }            
+        });
+        
+        signatureToContainers.remove(signature);
     }
 }

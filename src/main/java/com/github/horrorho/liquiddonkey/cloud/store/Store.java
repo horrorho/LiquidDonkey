@@ -53,6 +53,14 @@ public interface Store {
     void put(ChunkServer.ChunkReference chunkReference, byte[] chunkData);
 
     /**
+     * Destroys the referenced container, removing all chunk data.
+     *
+     * @param containerIndex
+     * @throws IllegalStateException if the referenced container does not exist.
+     */
+    void destroy(long containerIndex);
+
+    /**
      * Writes the referenced chunk's data to the specified output stream.
      *
      * @param chunkReference chunk reference, not null

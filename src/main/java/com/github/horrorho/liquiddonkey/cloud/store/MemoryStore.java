@@ -65,6 +65,13 @@ public final class MemoryStore implements Store {
     }
 
     @Override
+    public void destroy(long containerIndex) {
+        if (!containers.containsKey(containerIndex)) {
+            throw new IllegalStateException("No such container: " + containerIndex);
+        }
+    }
+
+    @Override
     public void put(ChunkServer.ChunkReference chunkReference, byte[] chunkData) {
         long containerIndex = chunkReference.getContainerIndex();
         long chunkIndex = chunkReference.getChunkIndex();
@@ -73,7 +80,8 @@ public final class MemoryStore implements Store {
                 = containers.computeIfAbsent(containerIndex, key -> new ConcurrentHashMap<>());
 
         if (container.containsKey(chunkIndex)) {
-            throw new IllegalStateException("Put to an non-empty chunklocation");
+            throw new IllegalStateException(
+                    "Put to an non-empty chunklocation, container: " + containerIndex + " chunk: " + chunkIndex);
         }
 
         if (chunkData == null) {
