@@ -24,7 +24,6 @@
 package com.github.horrorho.liquiddonkey.cloud.store;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
@@ -37,17 +36,6 @@ import java.util.List;
 public interface Store {
 
     /**
-     * Writes the referenced chunk's data to the specified output stream.
-     *
-     * @param chunkReference chunk reference, not null
-     * @param output output stream, not null
-     * @return bytes written
-     * @throws BadDataException if the chunk is not present in this store
-     * @throws IOException
-     */
-    long write(ChunkServer.ChunkReference chunkReference, OutputStream output) throws BadDataException, IOException;
-
-    /**
      * Returns whether the referenced chunk is present in this store.
      *
      * @param chunkReference, not null
@@ -56,17 +44,45 @@ public interface Store {
     boolean contains(ChunkServer.ChunkReference chunkReference);
 
     /**
+     * Puts the specified data into the store at the the chunk reference location.
+     *
+     * @param chunkReference, not null
+     * @param chunkData, not null
+     * @throws IllegalStateException if the referenced location is not empty
+     */
+    void put(ChunkServer.ChunkReference chunkReference, byte[] chunkData);
+
+    /**
+     * Writes the referenced chunk's data to the specified output stream.
+     *
+     * @param chunkReference chunk reference, not null
+     * @param output output stream, not null
+     * @return bytes written
+     * @throws IOException
+     * @throws IllegalStateException if the chunk is not present in this store
+     */
+    long write(ChunkServer.ChunkReference chunkReference, OutputStream output) throws IOException;
+
+    /**
+     * Returns whether all the referenced chunks are present in this store.
+     *
+     * @param chunkReferences chunk references, not null
+     * @return true if all present, false if not all present
+     */
+    default boolean contains(List<ChunkServer.ChunkReference> chunkReferences) {
+        return chunkReferences.stream().allMatch(this::contains);
+    }
+
+    /**
      * Writes all the referenced chunk data to the specified output stream.
      *
      * @param chunkReferences chunk references, not null
      * @param output output stream, not null
      * @return bytes written
-     * @throws BadDataException if all chunks are not present in this store
      * @throws IOException
+     * @throws IllegalStateException if all chunks are not present in this store
      */
-    default long write(List<ChunkServer.ChunkReference> chunkReferences, OutputStream output)
-            throws BadDataException, IOException {
-
+    default long write(List<ChunkServer.ChunkReference> chunkReferences, OutputStream output) throws IOException {
         long total = 0;
         for (ChunkServer.ChunkReference reference : chunkReferences) {
             total += write(reference, output);

@@ -29,10 +29,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import net.jcip.annotations.Immutable;
-import net.jcip.annotations.NotThreadSafe;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,30 +47,12 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class MemoryStore implements Store {
 
-    public static MemoryStore.Builder builder() {
-        return new Builder();
-    }
+    private static final Logger logger = LoggerFactory.getLogger(MemoryStore.class);
 
-    private final Map<Long, Map<Long, byte[]>> containers;
+    private final ConcurrentMap<Long, ConcurrentMap<Long, byte[]>> containers;
 
-    MemoryStore(Map<Long, Map<Long, byte[]>> containers) {
+    MemoryStore(ConcurrentMap<Long, ConcurrentMap<Long, byte[]>> containers) {
         this.containers = Objects.requireNonNull(containers);
-    }
-
-    @Override
-    public long write(ChunkServer.ChunkReference chunkReference, OutputStream output)
-            throws BadDataException, IOException {
-
-        long container = chunkReference.getContainerIndex();
-        long index = chunkReference.getContainerIndex();
-
-        if (!contains(chunkReference)) {
-            throw new BadDataException("Missing chunk");
-        }
-
-        byte[] chunk = containers.get(container).get(index);
-        output.write(chunk);
-        return chunk.length;
     }
 
     @Override
@@ -82,28 +65,37 @@ public final class MemoryStore implements Store {
                 : false;
     }
 
-    @NotThreadSafe
-    public static class Builder implements StoreBuilder {
+    @Override
+    public void put(ChunkServer.ChunkReference chunkReference, byte[] chunkData) {
+        long containerIndex = chunkReference.getContainerIndex();
+        long chunkIndex = chunkReference.getChunkIndex();
 
-        private static final Logger logger = LoggerFactory.getLogger(Builder.class);
+        ConcurrentMap<Long, byte[]> container
+                = containers.computeIfAbsent(containerIndex, key -> new ConcurrentHashMap<>());
 
-        private final Map<Long, Map<Long, byte[]>> containers = new HashMap<>();
-
-        @Override
-        public Store build() {
-            return new MemoryStore(containers);
+        if (container.containsKey(chunkIndex)) {
+            throw new IllegalStateException("Put to an non-empty chunklocation");
         }
 
-        @Override
-        public StoreBuilder add(long containerIndex, long chunkIndex, byte[] chunkData) {
-            if (chunkData == null) {
-                logger.warn("-- add() > null chunkData. containerIndex: {}, chunkIndex: {}",
-                        containerIndex, chunkIndex);
-            } else {
-                byte[] copy = Arrays.copyOf(chunkData, chunkData.length);
-                containers.computeIfAbsent(containerIndex, key -> new HashMap<>()).put(chunkIndex, copy);
-            }
-            return this;
+        if (chunkData == null) {
+            logger.warn("-- put() > null chunkData. containerIndex: {}, chunkIndex: {}", containerIndex, chunkIndex);
+        } else {
+            byte[] copy = Arrays.copyOf(chunkData, chunkData.length);
+            container.put(chunkIndex, copy);
         }
+    }
+
+    @Override
+    public long write(ChunkServer.ChunkReference chunkReference, OutputStream output) throws IOException {
+        long container = chunkReference.getContainerIndex();
+        long index = chunkReference.getContainerIndex();
+
+        if (!contains(chunkReference)) {
+            throw new IllegalStateException("Missing chunk");
+        }
+
+        byte[] chunk = containers.get(container).get(index);
+        output.write(chunk);
+        return chunk.length;
     }
 }
