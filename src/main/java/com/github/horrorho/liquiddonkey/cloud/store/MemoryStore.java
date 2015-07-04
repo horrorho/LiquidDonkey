@@ -55,12 +55,9 @@ public final class MemoryStore implements Store {
     }
 
     @Override
-    public boolean contains(ChunkServer.ChunkReference chunkReference) {
-        long container = chunkReference.getContainerIndex();
-        long index = chunkReference.getContainerIndex();
-
-        return containers.containsKey(container)
-                ? containers.get(container).containsKey(index)
+    public boolean contains(long containerIndex, long chunkIndex) {
+        return containers.containsKey(containerIndex)
+                ? containers.get(containerIndex).containsKey(chunkIndex)
                 : false;
     }
 
@@ -72,10 +69,7 @@ public final class MemoryStore implements Store {
     }
 
     @Override
-    public void put(ChunkServer.ChunkReference chunkReference, byte[] chunkData) {
-        long containerIndex = chunkReference.getContainerIndex();
-        long chunkIndex = chunkReference.getChunkIndex();
-
+    public void put(long containerIndex, long chunkIndex, byte[] chunkData) {
         ConcurrentMap<Long, byte[]> container
                 = containers.computeIfAbsent(containerIndex, key -> new ConcurrentHashMap<>());
 
@@ -93,15 +87,12 @@ public final class MemoryStore implements Store {
     }
 
     @Override
-    public long write(ChunkServer.ChunkReference chunkReference, OutputStream output) throws IOException {
-        long container = chunkReference.getContainerIndex();
-        long index = chunkReference.getContainerIndex();
-
-        if (!contains(chunkReference)) {
+    public long write(long containerIndex, long chunkIndex, OutputStream output) throws IOException {
+        if (!contains(containerIndex, chunkIndex)) {
             throw new IllegalStateException("Missing chunk");
         }
 
-        byte[] chunk = containers.get(container).get(index);
+        byte[] chunk = containers.get(containerIndex).get(chunkIndex);
         output.write(chunk);
         return chunk.length;
     }

@@ -76,6 +76,7 @@ public final class ChunkDecrypter {
      * @param data the chunk data, not null
      * @return the decrypted chunk list or null if an error occurred
      */
+    // TODO redo to exception
     public List<byte[]> decrypt(ChunkServer.StorageHostChunkList chunks, byte[] data) {
         List<byte[]> decrypted = new ArrayList<>();
         int offset = 0;

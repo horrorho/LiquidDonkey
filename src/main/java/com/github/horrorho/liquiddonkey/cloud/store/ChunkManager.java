@@ -25,18 +25,20 @@ package com.github.horrorho.liquiddonkey.cloud.store;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.ChunkReference;
-import com.github.horrorho.liquiddonkey.iofunction.IOBiConsumer;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import static com.github.horrorho.liquiddonkey.settings.Markers.CLOUD;
 import com.google.protobuf.ByteString;
-import java.io.IOException;
 import java.io.OutputStream;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,18 +50,15 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class ChunkManager {
 
-    public static ChunkManager from(
-            ChunkServer.FileChecksumStorageHostChunkLists fileChecksumStorageHostChunkLists,
-            IOBiConsumer<ByteString, IOFunction<OutputStream, Long>> writer) {
-
+    public static ChunkManager from(ChunkServer.FileChecksumStorageHostChunkLists fileGroup) {
         logger.trace("<< from()");
-        logger.debug(CLOUD, "-- from() > fileChecksumStorageHostChunkLists: {}", fileChecksumStorageHostChunkLists);
+        logger.debug(CLOUD, "-- from() > fileGroup: {}", fileGroup);
 
         ConcurrentMap<ByteString, List<ChunkReference>> signatureToChunkReferences = new ConcurrentHashMap<>();
         ConcurrentMap<ByteString, Set<Long>> signatureToContainers = new ConcurrentHashMap<>(); // Concurrent Set
         ConcurrentMap<Long, Set<ByteString>> containerToSignatures = new ConcurrentHashMap<>(); // Concurrent Set
 
-        fileChecksumStorageHostChunkLists.getFileChecksumChunkReferencesList().parallelStream().forEach(references -> {
+        fileGroup.getFileChecksumChunkReferencesList().parallelStream().forEach(references -> {
             ByteString signature = references.getFileChecksum();
             List<ChunkReference> list = references.getChunkReferencesList();
 
@@ -90,8 +89,7 @@ public final class ChunkManager {
                 containerToSignatures,
                 signatureToContainers,
                 signatureToChunkReferences,
-                completed,
-                writer);
+                completed);
 
         logger.trace(">> from()");
         return chunkManager;
@@ -104,70 +102,79 @@ public final class ChunkManager {
     private final ConcurrentMap<ByteString, Set<Long>> signatureToContainers;
     private final ConcurrentMap<ByteString, List<ChunkReference>> signatureToChunkReferences;
     private final Set<ByteString> completed;    // Concurrent set required
-    private final IOBiConsumer<ByteString, IOFunction<OutputStream, Long>> writer;
 
     ChunkManager(
             Store store,
             ConcurrentMap<Long, Set<ByteString>> containerToSignatures,
             ConcurrentMap<ByteString, Set<Long>> signatureToContainers,
             ConcurrentMap<ByteString, List<ChunkReference>> signatureToChunkReferences,
-            Set<ByteString> completed,
-            IOBiConsumer<ByteString, IOFunction<OutputStream, Long>> writer) {
+            Set<ByteString> completed) {
 
         this.store = Objects.requireNonNull(store);
         this.containerToSignatures = Objects.requireNonNull(containerToSignatures);
         this.signatureToContainers = Objects.requireNonNull(signatureToContainers);
         this.signatureToChunkReferences = Objects.requireNonNull(signatureToChunkReferences);
         this.completed = Objects.requireNonNull(completed);
-        this.writer = writer;
     }
 
-    void put(ChunkServer.ChunkReference chunkReference, byte[] chunkData) {
-        if (store.contains(chunkReference)) {
-            logger.warn("--put () > duplicate chunkData ignored. chunkReference: ", chunkReference);
-            return;
+    public Map<ByteString, IOFunction<OutputStream, Long>> put(long containerIndex, List<byte[]> data) {
+
+        logger.trace("<< put() < containerIndex: {} chunkDataSize: {}", containerIndex, data.size());
+
+        for (int chunkIndex = 0; chunkIndex < data.size(); chunkIndex++) {
+            if (store.contains(containerIndex, chunkIndex)) {
+                logger.warn("--put () > duplicate data ignored, containerIndex: {} chunkIndex: {}",
+                        containerIndex, chunkIndex);
+            } else {
+                store.put(containerIndex, chunkIndex, data.get(chunkIndex));
+            }
         }
 
-        store.put(chunkReference, chunkData);
-        ChunkManager.this.process(chunkReference.getContainerIndex());
+        Map<ByteString, IOFunction<OutputStream, Long>> writers = process(containerIndex);
+
+        logger.trace(">> put() > writers: {}", writers);
+        return writers;
     }
 
-    void process(long containerIndex) {
-        for (ByteString signature : containerToSignatures.get(containerIndex)) {
-            ChunkManager.this.process(signature);
-        }
+    Map<ByteString, IOFunction<OutputStream, Long>> process(long containerIndex) {
+        return containerToSignatures.get(containerIndex).stream()
+                .map(signature -> new SimpleEntry<>(signature, process(signature)))
+                .filter(entry -> entry.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    void process(ByteString signature) {
+    IOFunction<OutputStream, Long> process(ByteString signature) {
         List<ChunkReference> references = signatureToChunkReferences.get(signature);
 
         // Exit if already completed or not all chunks references are available.
         if (references == null || !store.contains(references)) {
-            return;
+            return null;
         }
 
         // Remove chunk references. Null if another thread beat us to it.
         if (signatureToChunkReferences.remove(signature) == null) {
-            return;
+            return null;
         }
 
         // Completed. We won't retry on writer failure.
         completed.add(signature);
 
         // Writer.
-        try {
-            writer.accept(signature, output -> store.write(references, output));
-        } catch (IOException ex) {
-            logger.warn("--process() > exception: ", ex);
-        }
+        return output -> store.write(references, output);
+    }
 
-        // Remove obsolete references and chunk data.
+    public void destroy(ByteString signature) {
+        logger.trace("<< destroy() < signature: {}", signature);
+
+        // Destroy unreferenced data (or risk leaking memory).
         signatureToContainers.get(signature).forEach(containerIndex -> {
             if (containerToSignatures.get(containerIndex).isEmpty()) {
                 store.destroy(containerIndex);
-            }            
+            }
         });
-        
+
         signatureToContainers.remove(signature);
+
+        logger.trace(">> destroy()");
     }
 }

@@ -133,7 +133,7 @@ public class Looter implements Closeable {
                 logger.debug("-- back() > fileErrorList: {}", fileGroups.getFileErrorList());
 
                 for (ChunkServer.FileChecksumStorageHostChunkLists group : fileGroups.getFileGroupsList()) {
-                    ChunkManager manager = ChunkManager.from(group, null);
+                    ChunkManager manager = ChunkManager.from(group);
                 }
 
             } catch (BadDataException ex) {
