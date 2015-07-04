@@ -24,16 +24,12 @@
 package com.github.horrorho.liquiddonkey.cloud.store;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,9 +39,12 @@ import org.slf4j.LoggerFactory;
  *
  * @author Ahseya
  */
-@Immutable
 @ThreadSafe
 public final class MemoryStore implements Store {
+
+    public static MemoryStore newInstance() {
+        return new MemoryStore(new ConcurrentHashMap<>());
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(MemoryStore.class);
 
