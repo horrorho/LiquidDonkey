@@ -26,7 +26,9 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.github.horrorho.liquiddonkey.cloud.client.Authentication;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.cloud.store.ChunkManager;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
@@ -124,6 +126,21 @@ public class Looter implements Closeable {
         for (int id : backup.snapshots()) {
             Snapshot snapshot = Snapshot.from(http, backup, id, config.engine());
             Snapshot filtered = Snapshot.from(snapshot, filter);
+
+            try {
+                ChunkServer.FileGroups fileGroups = client.getFileGroups(http, backup.udid(), id, filtered.files());
+                logger.debug("-- back() > fileChunkErrorList: {}", fileGroups.getFileChunkErrorList());
+                logger.debug("-- back() > fileErrorList: {}", fileGroups.getFileErrorList());
+
+                for (ChunkServer.FileChecksumStorageHostChunkLists group : fileGroups.getFileGroupsList()) {
+                    ChunkManager manager = ChunkManager.from(group, null);
+                }
+
+            } catch (BadDataException ex) {
+                logger.warn("-- backup() > exception: ", ex);
+            }
+
+            System.exit(0);
             ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results
                     = downloader.execute(http, filtered, filtered.signatures(), printer);
 

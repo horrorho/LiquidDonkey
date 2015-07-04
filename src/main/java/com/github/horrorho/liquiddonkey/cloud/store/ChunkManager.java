@@ -27,6 +27,7 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.ChunkReference;
 import com.github.horrorho.liquiddonkey.iofunction.IOBiConsumer;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
+import static com.github.horrorho.liquiddonkey.settings.Markers.CLOUD;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -47,12 +48,16 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class ChunkManager {
 
-    public static ChunkManager newInstance(
+    public static ChunkManager from(
             ChunkServer.FileChecksumStorageHostChunkLists fileChecksumStorageHostChunkLists,
             IOBiConsumer<ByteString, IOFunction<OutputStream, Long>> writer) {
 
+        logger.trace("<< from()");
+        logger.debug(CLOUD, "-- from() > fileChecksumStorageHostChunkLists: {}", fileChecksumStorageHostChunkLists);
+
         ConcurrentMap<ByteString, List<ChunkReference>> signatureToChunkReferences = new ConcurrentHashMap<>();
-        ConcurrentMap<Long, Set<ByteString>> containerToSignatures = new ConcurrentHashMap<>();
+        ConcurrentMap<ByteString, Set<Long>> signatureToContainers = new ConcurrentHashMap<>(); // Concurrent Set
+        ConcurrentMap<Long, Set<ByteString>> containerToSignatures = new ConcurrentHashMap<>(); // Concurrent Set
 
         fileChecksumStorageHostChunkLists.getFileChecksumChunkReferencesList().parallelStream().forEach(references -> {
             ByteString signature = references.getFileChecksum();
@@ -63,33 +68,57 @@ public final class ChunkManager {
             list.stream().forEach(reference -> {
                 long containerIndex = reference.getContainerIndex();
 
-                containerToSignatures.putIfAbsent(
-                        containerIndex,
-                        Collections.<ByteString>newSetFromMap(new ConcurrentHashMap<>())); // Concurrent Set
+                signatureToContainers
+                        .putIfAbsent(signature, Collections.<Long>newSetFromMap(new ConcurrentHashMap<>()));
+                signatureToContainers.get(signature).add(containerIndex);
 
+                containerToSignatures
+                        .putIfAbsent(containerIndex, Collections.<ByteString>newSetFromMap(new ConcurrentHashMap<>()));
                 containerToSignatures.get(containerIndex).add(signature);
             });
         });
 
-        return new ChunkManager(MemoryStore.newInstance(), containerToSignatures, signatureToChunkReferences, writer);
+        // Concurrent Set
+        Set<ByteString> completed = Collections.<ByteString>newSetFromMap(new ConcurrentHashMap<>());
+
+        logger.debug(CLOUD, "-- from() > signatureToChunkReferences: {}", signatureToChunkReferences);
+        logger.debug(CLOUD, "-- from() > signatureToContainers: {}", signatureToContainers);
+        logger.debug(CLOUD, "-- from() > containerToSignatures: {}", containerToSignatures);
+
+        ChunkManager chunkManager = new ChunkManager(
+                MemoryStore.newInstance(),
+                containerToSignatures,
+                signatureToContainers,
+                signatureToChunkReferences,
+                completed,
+                writer);
+
+        logger.trace(">> from()");
+        return chunkManager;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(ChunkManager.class);
 
     private final Store store;
     private final ConcurrentMap<Long, Set<ByteString>> containerToSignatures;
+    private final ConcurrentMap<ByteString, Set<Long>> signatureToContainers;
     private final ConcurrentMap<ByteString, List<ChunkReference>> signatureToChunkReferences;
+    private final Set<ByteString> completed;    // Concurrent set required
     private final IOBiConsumer<ByteString, IOFunction<OutputStream, Long>> writer;
 
     ChunkManager(
             Store store,
             ConcurrentMap<Long, Set<ByteString>> containerToSignatures,
+            ConcurrentMap<ByteString, Set<Long>> signatureToContainers,
             ConcurrentMap<ByteString, List<ChunkReference>> signatureToChunkReferences,
+            Set<ByteString> completed,
             IOBiConsumer<ByteString, IOFunction<OutputStream, Long>> writer) {
 
         this.store = Objects.requireNonNull(store);
         this.containerToSignatures = Objects.requireNonNull(containerToSignatures);
+        this.signatureToContainers = Objects.requireNonNull(signatureToContainers);
         this.signatureToChunkReferences = Objects.requireNonNull(signatureToChunkReferences);
+        this.completed = Objects.requireNonNull(completed);
         this.writer = writer;
     }
 
@@ -100,28 +129,40 @@ public final class ChunkManager {
         }
 
         store.put(chunkReference, chunkData);
-        moo(chunkReference.getContainerIndex());
+        ChunkManager.this.process(chunkReference.getContainerIndex());
     }
 
-    void moo(long containerIndex) {
+    void process(long containerIndex) {
         for (ByteString signature : containerToSignatures.get(containerIndex)) {
-            List<ChunkReference> chunkReferences = signatureToChunkReferences.get(signature);
+            ChunkManager.this.process(signature);
+        }
+    }
 
-            // Are all the chunks available?
-            if (!store.contains(chunkReferences)) {
-                continue;
-            }
+    void process(ByteString signature) {
+        List<ChunkReference> references = signatureToChunkReferences.get(signature);
 
-            // Remove, if false another thread beat us to it.
-            if (!containerToSignatures.get(containerIndex).remove(signature)) {
-                continue;
-            }
+        // Exit if already completed or not all chunks references are available.
+        if (references == null || !store.contains(references)) {
+            return;
+        }
 
-            try {
-                writer.accept(signature, output -> store.write(chunkReferences, output));
-            } catch (IOException ex) {
-                logger.warn("--put () > exception: ", ex);
-            }
+        // Remove chunk references. Null if another thread beat us to it.
+        if (signatureToChunkReferences.remove(signature) == null) {
+            return;
+        }
+
+        // Completed.
+        completed.add(signature);
+
+        // Remove container references to this signature.
+        signatureToContainers.get(signature).stream()
+                .forEach(index -> containerToSignatures.get(index).remove(signature));
+
+        // Writer.
+        try {
+            writer.accept(signature, output -> store.write(references, output));
+        } catch (IOException ex) {
+            logger.warn("--put () > exception: ", ex);
         }
     }
 }

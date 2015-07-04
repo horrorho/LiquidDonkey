@@ -29,7 +29,6 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.Store;
-import com.github.horrorho.liquiddonkey.cloud.store.MemoryStore;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.exception.FileErrorException;
@@ -136,15 +135,15 @@ public final class Donkey implements Callable<Boolean> {
             throws AuthenticationException, BadDataException, FileErrorException, IOException {
 
         logger.trace("<< download() < {}", signatures.size());
-
-        List<ICloud.MBSFile> files = signatures.entrySet().stream()
-                .map(Map.Entry::getValue)
-                .flatMap(Set::stream)
-                .collect(Collectors.toList());
-
-        FileGroups fileGroups = client.getFileGroups(http, backupUdid, snapshot, files);
-
-        downloadGroups(fileGroups, signatures);
+//
+//        List<ICloud.MBSFile> files = signatures.entrySet().stream()
+//                .map(Map.Entry::getValue)
+//                .flatMap(Set::stream)
+//                .collect(Collectors.toList());
+//
+//        FileGroups fileGroups = client.getFileGroups(http, backupUdid, snapshot, files);
+//
+//        downloadGroups(fileGroups, signatures);
 
         logger.trace(">> download()");
     }
@@ -176,17 +175,18 @@ public final class Donkey implements Callable<Boolean> {
     Store downloadGroup(ChunkServer.FileChecksumStorageHostChunkLists group)
             throws AuthenticationException, IOException {
 
-        logger.trace("<< download() < group count : {}", group.getStorageHostChunkListCount());
-
-        // TODO memory or disk based depending on size
-        MemoryStore.Builder builder = MemoryStore.builder();
-        for (ChunkServer.StorageHostChunkList chunkList : group.getStorageHostChunkListList()) {
-            builder.add(downloadChunkList(chunkList));
-        }
-        Store storage = builder.build();
-
-        logger.trace(">> download() > container count : {}", storage.size());
-        return storage;
+//        logger.trace("<< download() < group count : {}", group.getStorageHostChunkListCount());
+//
+//        // TODO memory or disk based depending on size
+//        MemoryStore.Builder builder = MemoryStore.builder();
+//        for (ChunkServer.StorageHostChunkList chunkList : group.getStorageHostChunkListList()) {
+//            builder.add(downloadChunkList(chunkList));
+//        }
+//        Store storage = builder.build();
+//
+//        logger.trace(">> download() > container count : {}", storage.size());
+//        return storage;
+        throw new IllegalStateException("bad");
     }
 
     List<byte[]> downloadChunkList(ChunkServer.StorageHostChunkList chunkList)

@@ -50,6 +50,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -118,7 +119,7 @@ public final class Client {
                 contentUrl,
                 mobileBackupUrl,
                 listLimit);
-        
+
         logger.trace(">> newInstance() > client: {}", client);
         return client;
     }
@@ -291,7 +292,7 @@ public final class Client {
      * @throws BadDataException
      * @throws IOException
      */
-    public FileGroups getFileGroups(Http http, ByteString backupUdid, int snapshotId, List<MBSFile> files)
+    public FileGroups getFileGroups(Http http, ByteString backupUdid, int snapshotId, Set<MBSFile> files)
             throws AuthenticationException, BadDataException, IOException {
 
         logger.trace("<< getFilesGroups() < backupUdid: {} snapshot: {} files: {}",
@@ -311,7 +312,7 @@ public final class Client {
         return fileGroups;
     }
 
-    List<MBSFileAuthToken> getFiles(Http http, ByteString backupUdid, int snapshotId, List<MBSFile> files)
+    List<MBSFileAuthToken> getFiles(Http http, ByteString backupUdid, int snapshotId, Set<MBSFile> files)
             throws AuthenticationException, BadDataException, IOException {
 
         logger.trace("<< getFiles() < backupUdid: {} snapshot: {} files: {}",
@@ -341,7 +342,7 @@ public final class Client {
         return tokens;
     }
 
-    FileGroups authorizeGet(Http http, List<ICloud.MBSFile> files, List<MBSFileAuthToken> fileIdAuthTokens)
+    FileGroups authorizeGet(Http http, Set<ICloud.MBSFile> files, List<MBSFileAuthToken> fileIdAuthTokens)
             throws AuthenticationException, IOException {
 
         logger.trace("<< authorizeGet() < tokens: {} files: {}", fileIdAuthTokens.size(), files.size());
@@ -368,7 +369,7 @@ public final class Client {
     }
 
     ICloud.MBSFileAuthTokens fileIdToSignatureAuthTokens(
-            List<ICloud.MBSFile> files,
+            Set<ICloud.MBSFile> files,
             List<ICloud.MBSFileAuthToken> fileIdAuthTokens) {
 
         Map<ByteString, ByteString> fileIdToSignature = files.stream()
