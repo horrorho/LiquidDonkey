@@ -58,23 +58,23 @@ import org.slf4j.LoggerFactory;
  * @author Ahseya
  */
 @NotThreadSafe
-public final class LocalFileDecrypter {
+public final class FileDecrypter {
 
-    private static final Logger logger = LoggerFactory.getLogger(LocalFileDecrypter.class);
+    private static final Logger logger = LoggerFactory.getLogger(FileDecrypter.class);
 
     /**
      * Returns a new instance.
      *
      * @return a new instance, not null
      */
-    public static LocalFileDecrypter newInstance() {
-        return LocalFileDecrypter.newInstance(
+    public static FileDecrypter newInstance() {
+        return FileDecrypter.newInstance(
                 new BufferedBlockCipher(new CBCBlockCipher(new AESEngine())),
                 MessageDigestFactory.getInstance().SHA1());
     }
 
-    static LocalFileDecrypter newInstance(BufferedBlockCipher cbcAes, MessageDigest sha1) {
-        return new LocalFileDecrypter(cbcAes, sha1);
+    static FileDecrypter newInstance(BufferedBlockCipher cbcAes, MessageDigest sha1) {
+        return new FileDecrypter(cbcAes, sha1);
     }
 
     private final BufferedBlockCipher cbcAes;
@@ -82,7 +82,7 @@ public final class LocalFileDecrypter {
     private final byte[] in = new byte[0x1000];
     private final byte[] out = new byte[0x1000];
 
-    LocalFileDecrypter(BufferedBlockCipher cbcAes, MessageDigest sha1) {
+    FileDecrypter(BufferedBlockCipher cbcAes, MessageDigest sha1) {
         this.cbcAes = cbcAes;
         this.sha1 = sha1;
     }

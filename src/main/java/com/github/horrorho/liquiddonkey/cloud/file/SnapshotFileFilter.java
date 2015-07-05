@@ -45,9 +45,9 @@ import org.slf4j.LoggerFactory;
  * @author Ahseya
  */
 @NotThreadSafe
-public final class LocalFileFilter implements Predicate<ICloud.MBSFile> {
+public final class SnapshotFileFilter implements Predicate<ICloud.MBSFile> {
 
-    private static final Logger logger = LoggerFactory.getLogger(LocalFileFilter.class);
+    private static final Logger logger = LoggerFactory.getLogger(SnapshotFileFilter.class);
 
     /**
      * Returns a new instance.
@@ -57,21 +57,18 @@ public final class LocalFileFilter implements Predicate<ICloud.MBSFile> {
      * @param toCheckLastModifiedTimestamp to test the last modified timestamp
      * @return a new instance
      */
-    public static LocalFileFilter newInstance(
+    public static SnapshotFileFilter newInstance(
             SnapshotDirectory directory,
-            int snapshot,
             boolean toCheckLastModifiedTimestamp) {
 
-        return new LocalFileFilter(directory, snapshot, toCheckLastModifiedTimestamp);
+        return new SnapshotFileFilter(directory, toCheckLastModifiedTimestamp);
     }
 
     private final SnapshotDirectory directory;
-    private final int snapshot;
     private final boolean toCheckLastModifiedTimestamp;
 
-    LocalFileFilter(SnapshotDirectory directory, int snapshot, boolean toCheckLastModifiedTimestamp) {
+    SnapshotFileFilter(SnapshotDirectory directory, boolean toCheckLastModifiedTimestamp) {
         this.directory = Objects.requireNonNull(directory);
-        this.snapshot = snapshot;
         this.toCheckLastModifiedTimestamp = toCheckLastModifiedTimestamp;
     }
 
@@ -80,7 +77,7 @@ public final class LocalFileFilter implements Predicate<ICloud.MBSFile> {
         try {
             logger.trace("<< test() < {}", remote.getRelativePath());
 
-            Path local = directory.path(snapshot, remote);
+            Path local = directory.apply(remote);
 
             if (!Files.exists(local)) {
                 logger.trace(">> test() < doesn't exist: {}, false", remote.getRelativePath());

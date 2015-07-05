@@ -94,6 +94,7 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
         return string.replaceAll(FILTER, REPLACE);
     }
 
+    @NotThreadSafe
     public static final class NonFlatSnapshotDirectory extends SnapshotDirectory {
 
         NonFlatSnapshotDirectory(Path folder, MessageDigest messageDigest) {
@@ -108,6 +109,7 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
         }
     }
 
+    @NotThreadSafe
     public static final class FlatSnapshotDirectory extends SnapshotDirectory {
 
         FlatSnapshotDirectory(Path folder, MessageDigest messageDigest) {

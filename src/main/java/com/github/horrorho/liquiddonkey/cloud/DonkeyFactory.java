@@ -25,7 +25,7 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.file.SnapshotDirectory;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileWriter;
-import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
+import com.github.horrorho.liquiddonkey.cloud.file.SnapshotFileFilter;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagTools;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
@@ -102,7 +102,7 @@ public final class DonkeyFactory {
 
         Predicate<ICloud.MBSFile> localFileFilter = engineConfig.toForceOverwrite()
                 ? (file) -> false
-                : LocalFileFilter.newInstance(
+                : SnapshotFileFilter.newInstance(
                         directory,
                         snapshot.id(),
                         engineConfig.toSetLastModifiedTimestamp()).negate();

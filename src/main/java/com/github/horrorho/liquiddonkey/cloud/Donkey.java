@@ -24,17 +24,17 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
-import com.github.horrorho.liquiddonkey.cloud.file.LocalFileWriter;
+import com.github.horrorho.liquiddonkey.cloud.file.SnapshotFileWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.cloud.store.Store;
+import com.github.horrorho.liquiddonkey.cloud.store.ChunkManager;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
-import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.exception.FileErrorException;
 import com.github.horrorho.liquiddonkey.http.Http;
+import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
+import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -43,9 +43,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
+import java.util.function.Supplier;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
@@ -57,69 +56,55 @@ import org.slf4j.LoggerFactory;
  * @author ahseya
  */
 @NotThreadSafe
-public final class Donkey implements Callable<Boolean> {
+public final class Donkey implements Supplier<Map<ByteString, IOFunction<OutputStream, Long>>>{
 
     private static final Logger logger = LoggerFactory.getLogger(Donkey.class);
 
     private final Http http;
     private final Client client;
-    private final ByteString backupUdid;
-    private final int snapshot;
-    private final Iterator<Map<ByteString, Set<ICloud.MBSFile>>> iterator;
-    private final ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results;
-    private final ChunkDecrypter decrypter;
-    private final LocalFileWriter writer;
-    private final boolean isAggressive;
+    private final ChunkManager manager;
+    private final long containerIndex;
     private final int attempts;
 
-    Donkey(
-            Http http,
-            Client client,
-            ByteString backupUdid,
-            int snapshot,
-            Iterator<Map<ByteString, Set<ICloud.MBSFile>>> iterator,
-            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results,
-            ChunkDecrypter decrypter,
-            LocalFileWriter writer,
-            boolean isAggressive,
-            int attempts) {
-
+    public Donkey(Http http, Client client, ChunkManager manager, long containerIndex, int attempts) {
         this.http = Objects.requireNonNull(http);
         this.client = Objects.requireNonNull(client);
-        this.backupUdid = Objects.requireNonNull(backupUdid);
-        this.snapshot = snapshot;
-        this.iterator = Objects.requireNonNull(iterator);
-        this.results = Objects.requireNonNull(results);
-        this.decrypter = Objects.requireNonNull(decrypter);
-        this.writer = Objects.requireNonNull(writer);
-        this.isAggressive = isAggressive;
+        this.manager = Objects.requireNonNull(manager);
+        this.containerIndex = containerIndex;
         this.attempts = attempts;
     }
 
+
+    @Override
+    public Map<ByteString, IOFunction<OutputStream, Long>> get() {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
     @Override
     public Boolean call() throws Exception {
         logger.trace("<< call() < {}");
 
         while (iterator.hasNext()) {
-            Map<ByteString, Set<ICloud.MBSFile>> signatures = iterator.next();
+            Long containerIndex = iterator.next();
 
             try {
-                if (signatures.isEmpty()) {
-                    logger.warn("-- call() > empty signature list");
-                } else {
-                    downloadSignatures(signatures);
-                    addAll(true, signatures);
+
+                List<byte[]> data = downloadChunkList(manager.storageHostChunkList(containerIndex));
+                Map<ByteString, IOFunction<OutputStream, Long>> writers = manager.put(containerIndex, data);
+                if (writers == null || writers.isEmpty()) {
+                    download(writers);
                 }
+
             } catch (HttpResponseException | UnknownHostException ex) {
                 logger.warn("-- call() > exception: ", ex);
-                addAll(false, signatures);
+                failures.add(containerIndex);
 
                 if (!isAggressive) {
                     throw ex;
                 }
-            } catch (BadDataException | IOException ex) {
+            } catch (IOException ex) {
                 logger.warn("-- call() > exception: ", ex);
-                addAll(false, signatures);
+                failures.add(containerIndex);
+
                 throw ex;
             }
         }
@@ -127,66 +112,23 @@ public final class Donkey implements Callable<Boolean> {
         return true;
     }
 
-    void addAll(boolean key, Map<ByteString, Set<ICloud.MBSFile>> signatures) {
-        results.computeIfAbsent(key, k -> new ConcurrentHashMap<>()).putAll(signatures);
-    }
-
-    void downloadSignatures(Map<ByteString, Set<ICloud.MBSFile>> signatures)
-            throws AuthenticationException, BadDataException, FileErrorException, IOException {
-
-        logger.trace("<< download() < {}", signatures.size());
-//
-//        List<ICloud.MBSFile> files = signatures.entrySet().stream()
-//                .map(Map.Entry::getValue)
-//                .flatMap(Set::stream)
-//                .collect(Collectors.toList());
-//
-//        FileGroups fileGroups = client.getFileGroups(http, backupUdid, snapshot, files);
-//
-//        downloadGroups(fileGroups, signatures);
-
-        logger.trace(">> download()");
-    }
-
-    void downloadGroups(ChunkServer.FileGroups fileGroups, Map<ByteString, Set<ICloud.MBSFile>> signatureToFileSet)
-            throws AuthenticationException, FileErrorException, IOException {
-
-        for (ChunkServer.FileChecksumStorageHostChunkLists group : fileGroups.getFileGroupsList()) {
-            Store store = downloadGroup(group);
-
-            for (ChunkServer.FileChecksumChunkReferences references : group.getFileChecksumChunkReferencesList()) {
-
-                // Files with identical signatures/ hash.
-                Set<ICloud.MBSFile> files = signatureToFileSet.get(references.getFileChecksum());
-
-                // Reassemble the list from the chunk store via the file-chunk references.  
-                for (ICloud.MBSFile file : files) {
-                    writer.write(
-                            snapshot,
-                            file,
-                            output -> store.write(references.getChunkReferencesList(), output));
+    void download(Map<ByteString, IOFunction<OutputStream, Long>> writers) throws IOException {
+        try {
+            for (ByteString signature : writers.keySet()) {
+                Set<ICloud.MBSFile> fileSet = signatureToFileSet.remove(signature);
+                if (signature == null) {
+                    logger.warn("-- download() > null signature: {}", Bytes.hex(signature));
+                } else {
+                    IOFunction<OutputStream, Long> writer = writers.get(signature);
+                    for (ICloud.MBSFile file : fileSet) {
+                        fileWriter.write(file, writer);
+                    }
                 }
-
-                // TODO iTunes flat style.  
             }
+        } finally {
+            // Destroy containers.
+            writers.keySet().stream().forEach(manager::destroy);
         }
-    }
-
-    Store downloadGroup(ChunkServer.FileChecksumStorageHostChunkLists group)
-            throws AuthenticationException, IOException {
-
-//        logger.trace("<< download() < group count : {}", group.getStorageHostChunkListCount());
-//
-//        // TODO memory or disk based depending on size
-//        MemoryStore.Builder builder = MemoryStore.builder();
-//        for (ChunkServer.StorageHostChunkList chunkList : group.getStorageHostChunkListList()) {
-//            builder.add(downloadChunkList(chunkList));
-//        }
-//        Store storage = builder.build();
-//
-//        logger.trace(">> download() > container count : {}", storage.size());
-//        return storage;
-        throw new IllegalStateException("bad");
     }
 
     List<byte[]> downloadChunkList(ChunkServer.StorageHostChunkList chunkList)
@@ -195,7 +137,7 @@ public final class Donkey implements Callable<Boolean> {
         // Recursive.
         return chunkList.getChunkInfoCount() == 0
                 ? new ArrayList<>()
-                : Donkey.this.downloadChunkList(chunkList, 0);
+                : downloadChunkList(chunkList, 0);
     }
 
     List<byte[]> downloadChunkList(ChunkServer.StorageHostChunkList chunkList, int attempt)
@@ -206,22 +148,8 @@ public final class Donkey implements Callable<Boolean> {
                 : decrypter.decrypt(chunkList, client.chunks(http, chunkList));
 
         return decrypted == null
-                ? Donkey.this.downloadChunkList(chunkList, attempt)
+                ? downloadChunkList(chunkList, attempt)
                 : decrypted;
     }
-
-    @Override
-    public String toString() {
-        return "Donkey{"
-                + "http=" + http
-                + ", client=" + client
-                + ", backupUdid=" + backupUdid
-                + ", snapshot=" + snapshot
-                + ", iterator=" + iterator
-                + ", decrypter=" + decrypter
-                + ", writer=" + writer
-                + ", isAggressive=" + isAggressive
-                + ", attempts=" + attempts
-                + '}';
-    }
 }
+// TODO async decryption file writing

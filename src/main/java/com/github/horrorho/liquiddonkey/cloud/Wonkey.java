@@ -24,13 +24,14 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
-import com.github.horrorho.liquiddonkey.cloud.file.LocalFileWriter;
+import com.github.horrorho.liquiddonkey.cloud.file.SnapshotFileWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.ChunkManager;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
-import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
+import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -42,6 +43,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
@@ -59,38 +61,35 @@ public final class Wonkey implements Callable<Boolean> {
 
     private final Http http;
     private final Client client;
-    private final ByteString backupUdid;
-    private final int snapshot;
     private final Iterator<Long> iterator;
     private final Set<Long> failures;
     private final ChunkManager manager;
     private final ChunkDecrypter decrypter;
-    private final LocalFileWriter writer;
+    private final ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileSet;
+    private final SnapshotFileWriter fileWriter;
     private final boolean isAggressive;
     private final int attempts;
 
     Wonkey(
             Http http,
             Client client,
-            ByteString backupUdid,
-            int snapshot,
             Iterator<Long> iterator,
             Set<Long> failures,
             ChunkManager manager,
             ChunkDecrypter decrypter,
-            LocalFileWriter writer,
+            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileSet,
+            SnapshotFileWriter fileWriter,
             boolean isAggressive,
             int attempts) {
 
         this.http = Objects.requireNonNull(http);
         this.client = Objects.requireNonNull(client);
-        this.backupUdid = Objects.requireNonNull(backupUdid);
-        this.snapshot = snapshot;
         this.iterator = Objects.requireNonNull(iterator);
         this.failures = Objects.requireNonNull(failures);
         this.manager = Objects.requireNonNull(manager);
         this.decrypter = Objects.requireNonNull(decrypter);
-        this.writer = Objects.requireNonNull(writer);
+        this.signatureToFileSet = Objects.requireNonNull(signatureToFileSet);
+        this.fileWriter = Objects.requireNonNull(fileWriter);
         this.isAggressive = isAggressive;
         this.attempts = attempts;
     }
@@ -104,7 +103,11 @@ public final class Wonkey implements Callable<Boolean> {
 
             try {
 
-                downloadContainer(containerIndex);
+                List<byte[]> data = downloadChunkList(manager.storageHostChunkList(containerIndex));
+                Map<ByteString, IOFunction<OutputStream, Long>> writers = manager.put(containerIndex, data);
+                if (writers == null || writers.isEmpty()) {
+                    download(writers);
+                }
 
             } catch (HttpResponseException | UnknownHostException ex) {
                 logger.warn("-- call() > exception: ", ex);
@@ -113,7 +116,7 @@ public final class Wonkey implements Callable<Boolean> {
                 if (!isAggressive) {
                     throw ex;
                 }
-            } catch (BadDataException | IOException ex) {
+            } catch (IOException ex) {
                 logger.warn("-- call() > exception: ", ex);
                 failures.add(containerIndex);
 
@@ -124,13 +127,23 @@ public final class Wonkey implements Callable<Boolean> {
         return true;
     }
 
-    void downloadContainer(long containerIndex)
-            throws AuthenticationException, IOException {
-
-        List<byte[]> data = downloadChunkList(manager.storageHostChunkList(containerIndex));
-        Map<ByteString, IOFunction<OutputStream, Long>> writers = manager.put(containerIndex, data);
-
-        // TODO destroy
+    void download(Map<ByteString, IOFunction<OutputStream, Long>> writers) throws IOException {
+        try {
+            for (ByteString signature : writers.keySet()) {
+                Set<ICloud.MBSFile> fileSet = signatureToFileSet.remove(signature);
+                if (signature == null) {
+                    logger.warn("-- download() > null signature: {}", Bytes.hex(signature));
+                } else {
+                    IOFunction<OutputStream, Long> writer = writers.get(signature);
+                    for (ICloud.MBSFile file : fileSet) {
+                        fileWriter.write(file, writer);
+                    }
+                }
+            }
+        } finally {
+            // Destroy containers.
+            writers.keySet().stream().forEach(manager::destroy);
+        }
     }
 
     List<byte[]> downloadChunkList(ChunkServer.StorageHostChunkList chunkList)

@@ -27,11 +27,11 @@ import com.github.horrorho.liquiddonkey.cloud.store.Store;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagTools;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
 import com.github.horrorho.liquiddonkey.exception.FileErrorException;
-import com.github.horrorho.liquiddonkey.iofunction.IOWriter;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -50,60 +50,56 @@ import org.slf4j.LoggerFactory;
 /**
  * Writes files.
  *
- * Writes out files from the specified {@link Store} and
- * {@link com.cain.donkeylooter.protobuf.ICloud.ChunkReference} lists.
+ * Writes out files from the specified {@link Store} and {@link com.cain.donkeylooter.protobuf.ICloud.ChunkReference}
+ * lists.
  *
  * @author ahseya
  */
 @NotThreadSafe
-public final class LocalFileWriter {
+public final class SnapshotFileWriter {
 
-    private static final Logger logger = LoggerFactory.getLogger(LocalFileWriter.class);
+    private static final Logger logger = LoggerFactory.getLogger(SnapshotFileWriter.class);
 
     /**
      * Returns a new instance.
      *
-     * @param keyBagTools a KeyBagTools instance, not null
-     * @param backupFolder the backup folder, not null
-     * @param print the output for messages, not null
+     * @param keyBagTools not null
+     * @param directory not null
+     * @param printer not null
      * @param setLastModifiedTime true if last-modified timestamps should be set
      * @return a new instance, not null
      */
-    public static LocalFileWriter newInstance(
+    // TODO rework this
+    public static SnapshotFileWriter newInstance(
             KeyBagTools keyBagTools,
-            SnapshotDirectory backupFolder,
-            Printer print,
+            SnapshotDirectory directory,
+            Printer printer,
             boolean setLastModifiedTime) {
 
-        return new LocalFileWriter(LocalFileDecrypter.newInstance(), keyBagTools, backupFolder, print, setLastModifiedTime);
+        return new SnapshotFileWriter(
+                FileDecrypter.newInstance(),
+                keyBagTools,
+                directory,
+                printer,
+                setLastModifiedTime);
     }
 
-    static LocalFileWriter newInstance(
-            LocalFileDecrypter decrypter,
-            KeyBagTools keyBagTools,
-            SnapshotDirectory backupFolder,
-            Printer print,
-            boolean setLastModifiedTime) {
-
-        return new LocalFileWriter(decrypter, keyBagTools, backupFolder, print, setLastModifiedTime);
-    }
-
-    private final LocalFileDecrypter decrypter;
+    private final FileDecrypter decrypter;
     private final KeyBagTools keyBagTools;
-    private final SnapshotDirectory backupFolder;
+    private final SnapshotDirectory directory;
     private final Printer print;
     private final boolean setLastModifiedTime;
 
-    LocalFileWriter(
-            LocalFileDecrypter decrypter,
+    SnapshotFileWriter(
+            FileDecrypter decrypter,
             KeyBagTools keyBagTools,
-            SnapshotDirectory backupFolder,
+            SnapshotDirectory directory,
             Printer print,
             boolean setLastModifiedTime) {
 
         this.decrypter = Objects.requireNonNull(decrypter);
         this.keyBagTools = Objects.requireNonNull(keyBagTools);
-        this.backupFolder = Objects.requireNonNull(backupFolder);
+        this.directory = Objects.requireNonNull(directory);
         this.print = Objects.requireNonNull(print);
         this.setLastModifiedTime = setLastModifiedTime;
     }
@@ -111,54 +107,53 @@ public final class LocalFileWriter {
     /**
      * Writes an empty file. Optionally set's the last-modified timestamp.
      *
-     * @param snapshot the file's snapshot
      * @param file the file, not null
-     * @throws FileErrorException
+     * @throws IOException
      */
-    public void writeEmpty(int snapshot, MBSFile file) throws FileErrorException {
+    public void writeEmpty(MBSFile file) throws IOException {
         if (file.hasSize() && file.getSize() != 0) {
             logger.warn("-- writeEmpty() > ignored, file is not empty: {} bytes", file.getSize());
-        } else {
-            write(snapshot, file, outputStream -> 0L);
+            return;
         }
+
+        write(file, outputStream -> 0L);
     }
 
     /**
-     * Writes a file. If encrypted, attempts to decrypt the file. Optionally set's the last-modified timestamp.
+     * Writes a file.
+     * <p>
+     * If encrypted, attempts to decrypt the file. Optionally set's the last-modified timestamp.
      *
-     * @param snapshot the file's snapshot
-     * @param file the file, not null
-     * @param writer the IOWriter, not null
-     * @throws FileErrorException
+     * @param file not null
+     * @param writer not null
+     * @return bytes written
+     * @throws IOException
      */
-    public void write(int snapshot, MBSFile file, IOWriter writer) throws FileErrorException {
-        try {
-            Path path = backupFolder.path(snapshot, file);
+    public long write(ICloud.MBSFile file, IOFunction<OutputStream, Long> writer) throws IOException {
+        logger.trace("<< write() < file: {}", file.getRelativePath());
 
-            if (writeFile(path, writer) == -1) {
-                logger.warn("-- write() > missing data: {}", file.getRelativePath());
-                print.println(
-                        Level.VV, "\t" + file.getDomain() + " " + file.getRelativePath() + " Failed. Missing data.");
-                return;
-            }
+        Path path = directory.apply(file);
 
-            if (file.hasAttributes() && file.getAttributes().hasEncryptionKey()) {
-                decrypt(path, file);
-            } else {
-                logger.debug("-- write() > success: {}", file.getRelativePath());
-                print.println(Level.VV, "\t" + file.getDomain() + " " + file.getRelativePath());
-            }
+        long written = writeFile(path, writer);
+        logger.debug("-- write() > path: {} written: {}", path, written);
 
-            setLastModifiedTime(path, file);
-        } catch (IOException ex) {
-            throw new IllegalStateException("File io error", ex);
+        if (file.hasAttributes() && file.getAttributes().hasEncryptionKey()) {
+            decrypt(path, file);
+        } else {
+            logger.debug("-- write() > success: {}", file.getRelativePath());
+            print.println(Level.VV, "\t" + file.getDomain() + " " + file.getRelativePath());
         }
+
+        setLastModifiedTime(path, file);
+
+        logger.trace(">> write() > written: {}", written);
+        return written;
     }
 
     void decrypt(Path path, MBSFile file) throws FileErrorException {
         ByteString key = keyBagTools.fileKey(file);
         if (key == null) {
-            logger.warn("-- write() > failed to derive key: {}", file.getRelativePath());
+            logger.warn("-- decrypt() > failed to derive key: {}", file.getRelativePath());
             print.println(Level.VV, "\t" + file.getDomain() + " " + file.getRelativePath() + " Failed. No key.");
             return;
         }
@@ -181,13 +176,15 @@ public final class LocalFileWriter {
         }
     }
 
-    boolean exists(int snapshot, MBSFile file) {
-        return Files.exists(backupFolder.path(snapshot, file));
+    boolean exists(MBSFile file
+    ) {
+        return Files.exists(directory.apply(file));
     }
 
     void setLastModifiedTime(Path path, MBSFile file) throws IOException {
         if (setLastModifiedTime && Files.exists(path)) {
             // Default to 0 timestamp if non existant.
+            // TODO simplify
             long lastModifiedTimestamp = file.hasAttributes() && file.getAttributes().hasLastModified()
                     ? file.getAttributes().getLastModified()
                     : 0;
@@ -200,3 +197,5 @@ public final class LocalFileWriter {
         }
     }
 }
+// TODO simply protobufs
+// Path checks
