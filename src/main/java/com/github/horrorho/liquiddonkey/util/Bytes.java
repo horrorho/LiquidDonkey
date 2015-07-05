@@ -56,14 +56,14 @@ public final class Bytes {
         if (byteString == null) {
             return "null";
         }
-        return Hex.encodeHexString(byteString.toByteArray()).toLowerCase(Locale.getDefault());
+        return Hex.encodeHexString(byteString.toByteArray()).toLowerCase(Locale.US);
     }
 
     public static String hex(byte[] bytes) {
         if (bytes == null) {
             return "null";
         }
-        return Hex.encodeHexString(bytes).toLowerCase(Locale.getDefault());
+        return Hex.encodeHexString(bytes).toLowerCase(Locale.US);
     }
 
     public static String humanize(long bytes) {

@@ -27,6 +27,7 @@ import com.github.horrorho.liquiddonkey.cloud.store.Store;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagTools;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
@@ -42,6 +43,8 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import java.nio.file.attribute.FileTime;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
@@ -50,60 +53,62 @@ import org.slf4j.LoggerFactory;
 /**
  * Writes files.
  *
- * Writes out files from the specified {@link Store} and
- * {@link com.cain.donkeylooter.protobuf.ICloud.ChunkReference} lists.
+ * Writes out files from the specified {@link Store} and {@link com.cain.donkeylooter.protobuf.ICloud.ChunkReference}
+ * lists.
  *
  * @author ahseya
  */
 @NotThreadSafe
-public final class LocalFileWriter {
+public final class SignatureFileWriter {
 
-    private static final Logger logger = LoggerFactory.getLogger(LocalFileWriter.class);
+    private static final Logger logger = LoggerFactory.getLogger(SignatureFileWriter.class);
 
     /**
      * Returns a new instance.
      *
-     * @param keyBagTools a KeyBagTools instance, not null
-     * @param backupFolder the backup folder, not null
-     * @param print the output for messages, not null
+     * @param signatureToFileSet the concurrent backing map, not null
+     * @param keyBagTools not null
+     * @param directory not null
+     * @param printer not null
      * @param setLastModifiedTime true if last-modified timestamps should be set
      * @return a new instance, not null
      */
-    public static LocalFileWriter newInstance(
+    // TODO rework this
+    public static SignatureFileWriter newInstance(
+            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileSet,
             KeyBagTools keyBagTools,
-            SnapshotDirectory backupFolder,
-            Printer print,
+            SnapshotDirectory directory,
+            Printer printer,
             boolean setLastModifiedTime) {
 
-        return new LocalFileWriter(LocalFileDecrypter.newInstance(), keyBagTools, backupFolder, print, setLastModifiedTime);
+        return new SignatureFileWriter(
+                signatureToFileSet,
+                LocalFileDecrypter.newInstance(),
+                keyBagTools,
+                directory,
+                printer,
+                setLastModifiedTime);
     }
 
-    static LocalFileWriter newInstance(
-            LocalFileDecrypter decrypter,
-            KeyBagTools keyBagTools,
-            SnapshotDirectory backupFolder,
-            Printer print,
-            boolean setLastModifiedTime) {
-
-        return new LocalFileWriter(decrypter, keyBagTools, backupFolder, print, setLastModifiedTime);
-    }
-
+    private final ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileSet;
     private final LocalFileDecrypter decrypter;
     private final KeyBagTools keyBagTools;
-    private final SnapshotDirectory backupFolder;
+    private final SnapshotDirectory directory;
     private final Printer print;
     private final boolean setLastModifiedTime;
 
-    LocalFileWriter(
+    SignatureFileWriter(
+            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileSet,
             LocalFileDecrypter decrypter,
             KeyBagTools keyBagTools,
             SnapshotDirectory backupFolder,
             Printer print,
             boolean setLastModifiedTime) {
 
+        this.signatureToFileSet = signatureToFileSet;
         this.decrypter = Objects.requireNonNull(decrypter);
         this.keyBagTools = Objects.requireNonNull(keyBagTools);
-        this.backupFolder = Objects.requireNonNull(backupFolder);
+        this.directory = Objects.requireNonNull(backupFolder);
         this.print = Objects.requireNonNull(print);
         this.setLastModifiedTime = setLastModifiedTime;
     }
@@ -133,7 +138,7 @@ public final class LocalFileWriter {
      */
     public void write(int snapshot, MBSFile file, IOWriter writer) throws FileErrorException {
         try {
-            Path path = backupFolder.path(snapshot, file);
+            Path path = directory.path(snapshot, file);
 
             if (writeFile(path, writer) == -1) {
                 logger.warn("-- write() > missing data: {}", file.getRelativePath());
@@ -182,7 +187,7 @@ public final class LocalFileWriter {
     }
 
     boolean exists(int snapshot, MBSFile file) {
-        return Files.exists(backupFolder.path(snapshot, file));
+        return Files.exists(directory.path(snapshot, file));
     }
 
     void setLastModifiedTime(Path path, MBSFile file) throws IOException {

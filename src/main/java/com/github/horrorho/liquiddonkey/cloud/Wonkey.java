@@ -27,8 +27,6 @@ import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.store.ChunkManager;
-import com.github.horrorho.liquiddonkey.cloud.store.MemoryStore;
-import com.github.horrorho.liquiddonkey.cloud.store.Store;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
@@ -37,12 +35,12 @@ import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.UnknownHostException;
-import java.security.Signature;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.http.client.HttpResponseException;
@@ -63,8 +61,8 @@ public final class Wonkey implements Callable<Boolean> {
     private final Client client;
     private final ByteString backupUdid;
     private final int snapshot;
-    private final Iterator<Map<Long, ChunkServer.StorageHostChunkList>> iterator;
-    private final Outcomes outcomes;
+    private final Iterator<Long> iterator;
+    private final Set<Long> failures;
     private final ChunkManager manager;
     private final ChunkDecrypter decrypter;
     private final LocalFileWriter writer;
@@ -76,8 +74,8 @@ public final class Wonkey implements Callable<Boolean> {
             Client client,
             ByteString backupUdid,
             int snapshot,
-            Iterator<Map<Long, ChunkServer.StorageHostChunkList>> iterator,
-            Outcomes outcomes,
+            Iterator<Long> iterator,
+            Set<Long> failures,
             ChunkManager manager,
             ChunkDecrypter decrypter,
             LocalFileWriter writer,
@@ -89,7 +87,7 @@ public final class Wonkey implements Callable<Boolean> {
         this.backupUdid = Objects.requireNonNull(backupUdid);
         this.snapshot = snapshot;
         this.iterator = Objects.requireNonNull(iterator);
-        this.outcomes = Objects.requireNonNull(outcomes);
+        this.failures = Objects.requireNonNull(failures);
         this.manager = Objects.requireNonNull(manager);
         this.decrypter = Objects.requireNonNull(decrypter);
         this.writer = Objects.requireNonNull(writer);
@@ -102,25 +100,23 @@ public final class Wonkey implements Callable<Boolean> {
         logger.trace("<< call() < {}");
 
         while (iterator.hasNext()) {
-            Map<Long, ChunkServer.StorageHostChunkList> signatureToChunkList = iterator.next();
+            Long containerIndex = iterator.next();
 
             try {
-                if (signatureToChunkList.isEmpty()) {
-                    logger.warn("-- call() > empty signature/ chunk list map");
-                } else {
-                    downloadSignature(signature);
-                    outcomes.completed(signature);
-                }
+
+                downloadContainer(containerIndex);
+
             } catch (HttpResponseException | UnknownHostException ex) {
                 logger.warn("-- call() > exception: ", ex);
-                outcomes.serverError(signature);
+                failures.add(containerIndex);
 
                 if (!isAggressive) {
                     throw ex;
                 }
             } catch (BadDataException | IOException ex) {
                 logger.warn("-- call() > exception: ", ex);
-                outcomes.failed(signature);
+                failures.add(containerIndex);
+
                 throw ex;
             }
         }
@@ -128,34 +124,10 @@ public final class Wonkey implements Callable<Boolean> {
         return true;
     }
 
-    
-    public void download(long containerIndex, ChunkServer.StorageHostChunkList chunkList) throws Exception {
-
-
-            try {
-
-                    doDownload(containerIndex, chunkList);
-                    outcomes.completed(signature);
-
-            } catch (HttpResponseException | UnknownHostException ex) {
-                logger.warn("-- call() > exception: ", ex);
-                outcomes.serverError(signature);
-
-                if (!isAggressive) {
-                    throw ex;
-                }
-            } catch (BadDataException | IOException ex) {
-                logger.warn("-- call() > exception: ", ex);
-                outcomes.failed(signature);
-                throw ex;
-            }
-        
-    }
-    
-    List<ByteString> doDownload(long containerIndex, ChunkServer.StorageHostChunkList chunkList)
+    void downloadContainer(long containerIndex)
             throws AuthenticationException, IOException {
 
-        List<byte[]> data = downloadChunkList(chunkList);
+        List<byte[]> data = downloadChunkList(manager.storageHostChunkList(containerIndex));
         Map<ByteString, IOFunction<OutputStream, Long>> writers = manager.put(containerIndex, data);
 
         // TODO destroy

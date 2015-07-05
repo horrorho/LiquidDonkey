@@ -38,6 +38,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
@@ -55,8 +56,9 @@ public final class ChunkManager {
         logger.debug(CLOUD, "-- from() > fileGroup: {}", fileGroup);
 
         ConcurrentMap<ByteString, List<ChunkReference>> signatureToChunkReferences = new ConcurrentHashMap<>();
-        ConcurrentMap<ByteString, Set<Long>> signatureToContainers = new ConcurrentHashMap<>(); // Concurrent Set
-        ConcurrentMap<Long, Set<ByteString>> containerToSignatures = new ConcurrentHashMap<>(); // Concurrent Set
+        ConcurrentMap<ByteString, Set<Long>> signatureToContainers = new ConcurrentHashMap<>(); // Concurrent Map/ Set
+        ConcurrentMap<Long, Set<ByteString>> containerToSignatures = new ConcurrentHashMap<>(); // Concurrent Map/ Set
+        ConcurrentMap<Long, ChunkServer.StorageHostChunkList> containerToStorageHost = new ConcurrentHashMap<>();
 
         fileGroup.getFileChecksumChunkReferencesList().parallelStream().forEach(references -> {
             ByteString signature = references.getFileChecksum();
@@ -77,19 +79,23 @@ public final class ChunkManager {
             });
         });
 
-        // Concurrent Set
-        Set<ByteString> completed = Collections.<ByteString>newSetFromMap(new ConcurrentHashMap<>());
+        List<ChunkServer.StorageHostChunkList> list = fileGroup.getStorageHostChunkListList();
+        for (int index = 0; index < list.size(); index++) {
+            containerToStorageHost.put(Long.valueOf(index), list.get(index));
+        }
 
+        //Set<ByteString> completed = Collections.<ByteString>newSetFromMap(new ConcurrentHashMap<>()); // Concurrent Set
         logger.debug(CLOUD, "-- from() > signatureToChunkReferences: {}", signatureToChunkReferences);
         logger.debug(CLOUD, "-- from() > signatureToContainers: {}", signatureToContainers);
         logger.debug(CLOUD, "-- from() > containerToSignatures: {}", containerToSignatures);
+        logger.debug(CLOUD, "-- from() > containerToStorageHost: {}", containerToStorageHost);
 
         ChunkManager chunkManager = new ChunkManager(
                 MemoryStore.newInstance(),
                 containerToSignatures,
                 signatureToContainers,
                 signatureToChunkReferences,
-                completed);
+                containerToStorageHost);
 
         logger.trace(">> from()");
         return chunkManager;
@@ -98,23 +104,23 @@ public final class ChunkManager {
     private static final Logger logger = LoggerFactory.getLogger(ChunkManager.class);
 
     private final Store store;
-    private final ConcurrentMap<Long, Set<ByteString>> containerToSignatures;
-    private final ConcurrentMap<ByteString, Set<Long>> signatureToContainers;
+    private final ConcurrentMap<Long, Set<ByteString>> containerToSignatures;   // Requires concurrent Set
+    private final ConcurrentMap<ByteString, Set<Long>> signatureToContainers;   // Requires concurrent Set
     private final ConcurrentMap<ByteString, List<ChunkReference>> signatureToChunkReferences;
-    private final Set<ByteString> completed;    // Concurrent set required
+    private final ConcurrentMap<Long, ChunkServer.StorageHostChunkList> containerToStorageHost;
 
     ChunkManager(
             Store store,
             ConcurrentMap<Long, Set<ByteString>> containerToSignatures,
             ConcurrentMap<ByteString, Set<Long>> signatureToContainers,
             ConcurrentMap<ByteString, List<ChunkReference>> signatureToChunkReferences,
-            Set<ByteString> completed) {
+            ConcurrentMap<Long, ChunkServer.StorageHostChunkList> containerToStorageHost) {
 
         this.store = Objects.requireNonNull(store);
         this.containerToSignatures = Objects.requireNonNull(containerToSignatures);
         this.signatureToContainers = Objects.requireNonNull(signatureToContainers);
         this.signatureToChunkReferences = Objects.requireNonNull(signatureToChunkReferences);
-        this.completed = Objects.requireNonNull(completed);
+        this.containerToStorageHost = Objects.requireNonNull(containerToStorageHost);
     }
 
     public Map<ByteString, IOFunction<OutputStream, Long>> put(long containerIndex, List<byte[]> data) {
@@ -157,8 +163,7 @@ public final class ChunkManager {
         }
 
         // Completed. We won't retry on writer failure.
-        completed.add(signature);
-
+        //completed.add(signature);
         // Writer.
         return output -> store.write(references, output);
     }
@@ -168,8 +173,10 @@ public final class ChunkManager {
 
         // Destroy unreferenced data (or risk leaking memory).
         signatureToContainers.get(signature).forEach(containerIndex -> {
-            if (containerToSignatures.get(containerIndex).isEmpty()) {
+            if (containerToSignatures.get(containerIndex).isEmpty()) { // null check
                 store.destroy(containerIndex);
+                containerToStorageHost.remove(containerIndex);
+                // TODO remove containerToSignatures
             }
         });
 
@@ -177,4 +184,9 @@ public final class ChunkManager {
 
         logger.trace(">> destroy()");
     }
+
+    public ChunkServer.StorageHostChunkList storageHostChunkList(long containerIndex) {
+        return containerToStorageHost.get(containerIndex);
+    }
 }
+// illegal states, catch in donkey

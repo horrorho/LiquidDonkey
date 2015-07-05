@@ -52,24 +52,24 @@ public final class LocalFileFilter implements Predicate<ICloud.MBSFile> {
     /**
      * Returns a new instance.
      *
-     * @param directory the Directory referencing the local files, not null
+     * @param directory the SnapshotDirectory referencing the local files, not null
      * @param snapshot the snapshot id
      * @param toCheckLastModifiedTimestamp to test the last modified timestamp
      * @return a new instance
      */
     public static LocalFileFilter newInstance(
-            Directory directory,
+            SnapshotDirectory directory,
             int snapshot,
             boolean toCheckLastModifiedTimestamp) {
 
         return new LocalFileFilter(directory, snapshot, toCheckLastModifiedTimestamp);
     }
 
-    private final Directory directory;
+    private final SnapshotDirectory directory;
     private final int snapshot;
     private final boolean toCheckLastModifiedTimestamp;
 
-    LocalFileFilter(Directory directory, int snapshot, boolean toCheckLastModifiedTimestamp) {
+    LocalFileFilter(SnapshotDirectory directory, int snapshot, boolean toCheckLastModifiedTimestamp) {
         this.directory = Objects.requireNonNull(directory);
         this.snapshot = snapshot;
         this.toCheckLastModifiedTimestamp = toCheckLastModifiedTimestamp;
