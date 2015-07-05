@@ -23,8 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.store;
 
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import java.io.IOException;
+import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Objects;
@@ -62,10 +61,11 @@ public final class MemoryStore implements Store {
     }
 
     @Override
-    public void destroy(long containerIndex) {
+    public void remove(long containerIndex) {
         if (!containers.containsKey(containerIndex)) {
             throw new IllegalStateException("No such container: " + containerIndex);
         }
+        containers.remove(containerIndex);
     }
 
     @Override
@@ -87,13 +87,15 @@ public final class MemoryStore implements Store {
     }
 
     @Override
-    public long write(long containerIndex, long chunkIndex, OutputStream output) throws IOException {
+    public IOFunction<OutputStream, Long> writer(long containerIndex, long chunkIndex) {
         if (!contains(containerIndex, chunkIndex)) {
-            throw new IllegalStateException("Missing chunk");
+            throw new IllegalStateException("Missing chunk, container: " + containerIndex + " chunk: " + chunkIndex);
         }
 
         byte[] chunk = containers.get(containerIndex).get(chunkIndex);
-        output.write(chunk);
-        return chunk.length;
+        return outputStream -> {
+            outputStream.write(chunk);
+            return (long) chunk.length;
+        };
     }
 }

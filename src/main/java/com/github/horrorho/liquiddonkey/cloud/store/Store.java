@@ -24,9 +24,10 @@
 package com.github.horrorho.liquiddonkey.cloud.store;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import java.io.IOException;
+import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Container store.
@@ -36,7 +37,7 @@ import java.util.List;
 public interface Store {
 
     /**
-     * Returns whether the referenced chunk is present in this store.
+     * Returns whether the referenced chunk is present in this Store.
      *
      * @param containerIndex
      * @param chunkIndex
@@ -45,12 +46,12 @@ public interface Store {
     boolean contains(long containerIndex, long chunkIndex);
 
     /**
-     * Destroys the referenced container, removing all chunk data.
+     * Removes the referenced container from the Store.
      *
      * @param containerIndex
      * @throws IllegalStateException if the referenced container does not exist.
      */
-    void destroy(long containerIndex);
+    void remove(long containerIndex);
 
     /**
      * Puts the specified data into the store at the the chunk reference location.
@@ -63,16 +64,16 @@ public interface Store {
     void put(long containerIndex, long chunkIndex, byte[] chunkData);
 
     /**
-     * Writes the referenced chunk's data to the specified output stream.
+     * Returns an IOFUnction that writes the referenced chunk's data to the specified output stream.
+     * <p>
+     * Subsequent modifications to the Store will not alter its output.
      *
      * @param containerIndex
      * @param chunkIndex
-     * @param output output stream, not null
      * @return bytes written
-     * @throws IOException
-     * @throws IllegalStateException if the chunk is not present in this store
+     * @throws IllegalStateException if the chunk is not present in this Store
      */
-    long write(long containerIndex, long chunkIndex, OutputStream output) throws IOException;
+    IOFunction<OutputStream, Long> writer(long containerIndex, long chunkIndex);
 
     /**
      * Puts the specified data into the store at the the chunk reference location.
@@ -100,7 +101,7 @@ public interface Store {
     }
 
     /**
-     * Returns whether all the referenced chunks are present in this store.
+     * Returns whether all the referenced chunks are present in this Store.
      *
      * @param chunkReferences chunk references, not null
      * @return true if all present, false if not all present
@@ -110,34 +111,40 @@ public interface Store {
     }
 
     /**
-     * Writes the referenced chunk's data to the specified output stream.
+     * Returns an IOFunction that writes the referenced chunk's data to the specified output stream.
+     * <p>
+     * Subsequent modifications to the Store will not alter its output.
      *
      * @param chunkReference chunk reference, not null
-     * @param output output stream, not null
      * @return bytes written
-     * @throws IOException
-     * @throws IllegalStateException if the chunk is not present in this store
+     * @throws IllegalStateException if the chunk is not present in this Store
      */
-    default long write(ChunkServer.ChunkReference chunkReference, OutputStream output) throws IOException {
+    default IOFunction<OutputStream, Long> writer(ChunkServer.ChunkReference chunkReference) {
         long containerIndex = chunkReference.getContainerIndex();
         long chunkIndex = chunkReference.getContainerIndex();
-        return write(containerIndex, chunkIndex, output);
+        return writer(containerIndex, chunkIndex);
     }
 
     /**
-     * Writes all the referenced chunk data to the specified output stream.
+     * Returns an IOFunction that in order writes the referenced chunk data to the specified output stream.
+     * <p>
+     * Subsequent modifications to the Store will not alter its output.
      *
      * @param chunkReferences chunk references, not null
-     * @param output output stream, not null
      * @return bytes written
-     * @throws IOException
-     * @throws IllegalStateException if all chunks are not present in this store
+     * @throws IllegalStateException if any chunks are missing from this Store
      */
-    default long write(List<ChunkServer.ChunkReference> chunkReferences, OutputStream output) throws IOException {
-        long total = 0;
-        for (ChunkServer.ChunkReference reference : chunkReferences) {
-            total += write(reference, output);
-        }
-        return total;
+    default IOFunction<OutputStream, Long> writer(List<ChunkServer.ChunkReference> chunkReferences) {
+        List<IOFunction<OutputStream, Long>> writers = chunkReferences.stream()
+                .map(this::writer)
+                .collect(Collectors.toList());
+
+        return outputStream -> {
+            long total = 0;
+            for (IOFunction<OutputStream, Long> writer : writers) {
+                total += writer.apply(outputStream);
+            }
+            return total;
+        };
     }
 }

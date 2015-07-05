@@ -31,6 +31,7 @@ import com.google.protobuf.ByteString;
 import java.io.OutputStream;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -82,7 +83,6 @@ public final class ChunkManager {
             containerToStorageHost.put(Long.valueOf(index), list.get(index));
         }
 
-        //Set<ByteString> completed = Collections.<ByteString>newSetFromMap(new ConcurrentHashMap<>()); // Concurrent Set
         logger.debug(CLOUD, "-- from() > signatureToChunkReferences: {}", signatureToChunkReferences);
         logger.debug(CLOUD, "-- from() > signatureToContainers: {}", signatureToContainers);
         logger.debug(CLOUD, "-- from() > containerToSignatures: {}", containerToSignatures);
@@ -141,46 +141,43 @@ public final class ChunkManager {
     }
 
     Map<ByteString, IOFunction<OutputStream, Long>> process(long containerIndex) {
-        return containerToSignatures.get(containerIndex).stream()
+        containerToStorageHost.remove(containerIndex);
+        
+        Map<ByteString, IOFunction<OutputStream, Long>> writers = containerToSignatures.get(containerIndex).stream()
                 .map(signature -> new SimpleEntry<>(signature, process(signature)))
                 .filter(entry -> entry.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        writers.keySet().stream().forEach(signature -> {
+            signatureToContainers.get(signature).stream().forEach(index -> {
+                containerToSignatures.get(index).remove(signature);
+
+                if (containerToSignatures.get(index).isEmpty()) {
+                    containerToSignatures.remove(index);
+                    store.remove(index);
+                }
+            });
+            signatureToContainers.remove(signature);
+        });
+
+        return writers;
     }
 
     IOFunction<OutputStream, Long> process(ByteString signature) {
         List<ChunkReference> references = signatureToChunkReferences.get(signature);
 
-        // Exit if already completed or not all chunks references are available.
-        if (references == null || !store.contains(references)) {
+        // Exit if any chunks are missing.
+        if (!store.contains(references)) {
             return null;
         }
 
-        // Remove chunk references. Null if another thread beat us to it.
+        // We have all the chunks, remove reference. Null if another thread beat us to it.
         if (signatureToChunkReferences.remove(signature) == null) {
             return null;
         }
 
-        // Completed. We won't retry on writer failure.
-        //completed.add(signature);
         // Writer.
-        return output -> store.write(references, output);
-    }
-
-    public void destroy(ByteString signature) {
-        logger.trace("<< destroy() < signature: {}", signature);
-
-        // Destroy unreferenced data (or risk leaking memory).
-        signatureToContainers.get(signature).forEach(containerIndex -> {
-            if (containerToSignatures.get(containerIndex).isEmpty()) { // null check
-                store.destroy(containerIndex);
-                containerToStorageHost.remove(containerIndex);
-                // TODO remove containerToSignatures
-            }
-        });
-
-        signatureToContainers.remove(signature);
-
-        logger.trace(">> destroy()");
+        return store.writer(references);
     }
 
     public ChunkServer.StorageHostChunkList storageHostChunkList(long containerIndex) {
