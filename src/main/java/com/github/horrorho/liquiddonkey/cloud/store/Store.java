@@ -27,7 +27,6 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import java.io.OutputStream;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Container store.
@@ -37,114 +36,55 @@ import java.util.stream.Collectors;
 public interface Store {
 
     /**
-     * Returns whether the referenced chunk is present in this Store.
+     * Returns the size of the specified container.
      *
      * @param containerIndex
-     * @param chunkIndex
-     * @return true if present, false if not present
+     * @return size of the container, or -1 if no such container exists
      */
-    boolean contains(long containerIndex, long chunkIndex);
+    int size(long containerIndex);
 
     /**
-     * Removes the referenced container from the Store.
+     * Removes the specified container from the Store.
      *
      * @param containerIndex
-     * @throws IllegalStateException if the referenced container does not exist.
+     * @return true if the Store contained the specified element
      */
-    void remove(long containerIndex);
+    boolean remove(long containerIndex);
 
     /**
-     * Puts the specified data into the store at the the chunk reference location.
+     * Creates the specified container and copies over the specified data.
      *
      * @param containerIndex
-     * @param chunkIndex
      * @param chunkData, not null
-     * @throws IllegalStateException if the referenced location is not empty
+     * @return true if the Store did not already contain the specified container
      */
-    void put(long containerIndex, long chunkIndex, byte[] chunkData);
+    boolean put(long containerIndex, List<byte[]> chunkData);
 
     /**
-     * Returns an IOFUnction that writes the referenced chunk's data to the specified output stream.
-     * <p>
-     * Subsequent modifications to the Store will not alter its output.
-     *
-     * @param containerIndex
-     * @param chunkIndex
-     * @return bytes written
-     * @throws IllegalStateException if the chunk is not present in this Store
-     */
-    IOFunction<OutputStream, Long> writer(long containerIndex, long chunkIndex);
-
-    /**
-     * Puts the specified data into the store at the the chunk reference location.
-     *
-     * @param chunkReference, not null
-     * @param chunkData, not null
-     * @throws IllegalStateException if the referenced location is not empty
-     */
-    default void put(ChunkServer.ChunkReference chunkReference, byte[] chunkData) {
-        long containerIndex = chunkReference.getContainerIndex();
-        long chunkIndex = chunkReference.getChunkIndex();
-        put(containerIndex, chunkIndex, chunkData);
-    }
-
-    /**
-     * Returns whether the referenced chunk is present in this store.
-     *
-     * @param chunkReference, not null
-     * @return true if present, false if not present
-     */
-    default boolean contains(ChunkServer.ChunkReference chunkReference) {
-        long containerIndex = chunkReference.getContainerIndex();
-        long chunkIndex = chunkReference.getContainerIndex();
-        return contains(containerIndex, chunkIndex);
-    }
-
-    /**
-     * Returns whether all the referenced chunks are present in this Store.
+     * Returns an IOFunction that writes the referenced containers data to the specified output stream. Subsequent
+     * modifications to the Store will not alter its output.
      *
      * @param chunkReferences chunk references, not null
-     * @return true if all present, false if not all present
+     * @return immutable writer, not null
+     * @throws NullPointerException if the specified container is not present in the Store
      */
-    default boolean contains(List<ChunkServer.ChunkReference> chunkReferences) {
-        return chunkReferences.stream().allMatch(this::contains);
-    }
+    IOFunction<OutputStream, Long> writer(List<ChunkServer.ChunkReference> chunkReferences);
 
     /**
-     * Returns an IOFunction that writes the referenced chunk's data to the specified output stream.
-     * <p>
-     * Subsequent modifications to the Store will not alter its output.
-     *
-     * @param chunkReference chunk reference, not null
-     * @return bytes written
-     * @throws IllegalStateException if the chunk is not present in this Store
-     */
-    default IOFunction<OutputStream, Long> writer(ChunkServer.ChunkReference chunkReference) {
-        long containerIndex = chunkReference.getContainerIndex();
-        long chunkIndex = chunkReference.getContainerIndex();
-        return writer(containerIndex, chunkIndex);
-    }
-
-    /**
-     * Returns an IOFunction that in order writes the referenced chunk data to the specified output stream.
-     * <p>
-     * Subsequent modifications to the Store will not alter its output.
+     * Returns whether the referenced chunks are present in this Store.
      *
      * @param chunkReferences chunk references, not null
-     * @return bytes written
-     * @throws IllegalStateException if any chunks are missing from this Store
+     * @return true if all present
      */
-    default IOFunction<OutputStream, Long> writer(List<ChunkServer.ChunkReference> chunkReferences) {
-        List<IOFunction<OutputStream, Long>> writers = chunkReferences.stream()
-                .map(this::writer)
-                .collect(Collectors.toList());
+    boolean contains(List<ChunkServer.ChunkReference> chunkReferences);
 
-        return outputStream -> {
-            long total = 0;
-            for (IOFunction<OutputStream, Long> writer : writers) {
-                total += writer.apply(outputStream);
-            }
-            return total;
-        };
+    /**
+     * Returns whether the specified container is present in the Store.
+     *
+     * @param containerIndex
+     * @return true if present
+     */
+    default boolean contains(long containerIndex) {
+        return size(containerIndex) != -1;
     }
 }
