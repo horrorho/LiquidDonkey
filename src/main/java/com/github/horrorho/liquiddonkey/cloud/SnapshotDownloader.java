@@ -23,29 +23,20 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.cloud.client.Client;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
-import com.github.horrorho.liquiddonkey.exception.FileErrorException;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.printer.Printer;
-import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
-import com.google.protobuf.ByteString;
 import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
+import java.util.Iterator;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import net.jcip.annotations.Immutable;
-import net.jcip.annotations.ThreadSafe;
+import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,152 +47,136 @@ import org.slf4j.LoggerFactory;
  *
  * @author Ahseya
  */
-@Immutable
-@ThreadSafe
 public final class SnapshotDownloader {
-
-    /**
-     * Returns a new instance.
-     *
-     * @param factory not null
-     * @param config not null
-     * @return new instance, not null
-     */
-    public static SnapshotDownloader newInstance(
-            DonkeyFactory factory,
-            EngineConfig config) {
-
-        return new SnapshotDownloader(
-                factory,
-                config.threadCount(),
-                config.threadStaggerDelay(),
-                config.retryCount());
-    }
 
     private static final Logger logger = LoggerFactory.getLogger(SnapshotDownloader.class);
 
-    private final DonkeyFactory factory;
-    private final int threads;
-    private final int staggerDelayMs;
-    private final int retryCount;
+    private final Http http;
+    private final Client client;
+    private final ChunkDataFetcher chunkDataFetcher;
+    private final int threads = 4;
+    private final int retryCount = 3;
+    private final boolean isAggressive = false;
 
-    SnapshotDownloader(DonkeyFactory factory, int threads, int staggerDelayMs, int retryCount) {
-        this.factory = Objects.requireNonNull(factory);
-        this.threads = threads;
-        this.staggerDelayMs = staggerDelayMs;
-        this.retryCount = retryCount;
+    public SnapshotDownloader(Http http, Client client) {
+        this.http = http;
+        this.client = client;
+        chunkDataFetcher = ChunkDataFetcher.newInstance(http, client);
     }
 
-    /**
-     * Executes donkeys.
-     * <p>
-     * Downloads the specified snapshot concurrently. Entries are removed from signatures as the execution proceeds.
-     * Results are return as a boolean signature map: true for success, false for fail.
-     *
-     * @param http, not null
-     * @param snapshot, not null
-     * @param signatures, not null
-     * @param printer, not null
-     * @return results, not null
-     * @throws AuthenticationException
-     * @throws IOException
-     */
-    public ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> execute(
-            Http http,
-            Snapshot snapshot,
-            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures,
-            Printer printer
-    ) throws AuthenticationException, IOException {
+    public void moo(Snapshot snapshot)
+            throws AuthenticationException, BadDataException, IOException, InterruptedException {
 
-        logger.trace("<< execute() < snapshot: {} signatures: {}", snapshot, signatures.size());
-
-        ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results = new ConcurrentHashMap<>();
-        results.put(Boolean.TRUE, new ConcurrentHashMap<>());
-        results.put(Boolean.FALSE, new ConcurrentHashMap<>());
-        // TODO empty signatures
-        int count = 0;
-        while (count++ < retryCount && !signatures.isEmpty()) {
-            logger.debug("-- execute() : count: {}/{} signatures: {}", count, retryCount, signatures.size());
-            signatures.putAll(results.get(false));
-            results.get(false).clear();
-            doExecute(http, snapshot, signatures, results, printer);
-        }
-
-        logger.trace(">> execute()");
-        return results;
+        ChunkServer.FileGroups fileGroups = fetchFileGroups(snapshot);
+        downloadFileGroups(fileGroups);
     }
 
-    ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> doExecute(
-            Http http,
-            Snapshot snapshot,
-            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures,
-            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results,
-            Printer printer
-    ) throws AuthenticationException, IOException {
+    ChunkServer.FileGroups fetchFileGroups(Snapshot snapshot)
+            throws AuthenticationException, BadDataException, IOException, InterruptedException {
 
-        logger.trace("<< doExecute() < signatures: {}", signatures.size());
+        logger.trace("<< fetchFileGroups() < snapshot: {}", snapshot.id());
 
-        ExecutorService executor = Executors.newFixedThreadPool(threads);
+        int count = retryCount;
+        while (true) {
+            try {
+                ChunkServer.FileGroups fileGroups
+                        = client.getFileGroups(http, snapshot.backup().udid(), snapshot.id(), snapshot.files());
 
-        List<Future<Boolean>> futures
-                = Stream.generate(() -> factory.from(http, snapshot, signatures, results, printer))
-                .limit(threads)
-                .map(executor::submit)
-                .peek(this::stagger)
-                .collect(Collectors.toList());
-        // Threads all fired up.
-        executor.shutdown();
+                logger.debug("-- fetchFileGroups() > fileChunkErrorList: {}", fileGroups.getFileChunkErrorList());
+                logger.debug("-- fetchFileGroups() > fileErrorList: {}", fileGroups.getFileErrorList());
+                logger.trace(">> fetchFileGroups()");
+                return fileGroups;
 
-        // All done.
-        for (Future<Boolean> future : futures) {
-            error(future);
-        }
-
-        if (!results.get(Boolean.FALSE).isEmpty()) {
-            logger.warn("-- doExecute() > failures: {}", results.get(Boolean.FALSE).size());
-        }
-
-        logger.trace(">> doExecute()");
-        return results;
-    }
-
-    <T> T error(Future<T> future) throws AuthenticationException, IOException {
-        T t = null;
-        // Exception handling.
-        try {
-            t = future.get();
-        } catch (CancellationException ex) {
-            logger.warn("-- error() > exception: {}", ex);
-            throw new IllegalStateException("Cancelled");
-        } catch (InterruptedException ex) {
-            logger.warn("-- error() > exception: {}", ex);
-            throw new IllegalStateException("Interrupted");
-        } catch (ExecutionException ex) {
-            Throwable cause = ex.getCause();
-            if (cause instanceof IOException) {
-                if (cause instanceof AuthenticationException) {
-                    throw (AuthenticationException) cause;
+            } catch (BadDataException | HttpResponseException ex) {
+                if (count-- > 0) {
+                    logger.warn("-- fetchFileGroups() > exception: {}", ex);
+                } else {
+                    throw ex;
                 }
-
-                if (cause instanceof FileErrorException) {
-                    throw (FileErrorException) cause;
-                }
-
-                throw (IOException) cause;
             }
-            logger.warn("-- error() > suppressed exception: ", ex);
         }
-        return t;
     }
 
-    <T> T stagger(T t) {
-        try {
-            // Stagger to avoid triggering sensitive anti-flood protection with high thread counts,
-            // or to disrupt the initial coinciding download/ decrypt phases between threads.
-            TimeUnit.MILLISECONDS.sleep(staggerDelayMs);
-            return t;
-        } catch (InterruptedException ex) {
-            throw new IllegalStateException("Interrupted");
+    void downloadFileGroups(ChunkServer.FileGroups fileGroups)
+            throws AuthenticationException, BadDataException, IOException, InterruptedException {
+
+        logger.trace("<< downloadFileGroups()");
+        int count = retryCount;
+        for (ChunkServer.FileChecksumStorageHostChunkLists fileGroup : fileGroups.getFileGroupsList()) {
+            while (true) {
+                try {
+                    downloadFileGroup(fileGroup);
+                    break;
+                } catch (BadDataException | HttpResponseException ex) {
+                    if (count-- > 0) {
+                        logger.warn("-- downloadFileGroups() > exception: {}", ex);
+                    } else {
+                        throw ex;
+                    }
+                }
+            }
         }
+        logger.trace(">> downloadFileGroups()");
     }
+
+    void downloadFileGroup(ChunkServer.FileChecksumStorageHostChunkLists fileGroup)
+            throws AuthenticationException, BadDataException, IOException, InterruptedException {
+
+        logger.trace("<< downloadFileGroup()");
+        StoreManager storeManager = StoreManager.from(fileGroup);
+        HostManager hostManager = HostManager.from(fileGroup);
+
+        while (!hostManager.isEmpty()) {
+            ExecutorService fetchExecutor = Executors.newFixedThreadPool(threads);
+            ExecutorService writerExecutor = Executors.newFixedThreadPool(threads);
+            Iterator<Long> iterator = hostManager.iterator();
+
+            logger.trace("-- downloadFileGroup() > iterate");
+            while (iterator.hasNext()) {
+                async(hostManager, iterator.next(), fetchExecutor, writerExecutor);
+            }
+
+            fetchExecutor.shutdown();
+            logger.trace("-- downloadFileGroup() > await termination");
+            fetchExecutor.awaitTermination(30, TimeUnit.MINUTES); // TODO 30 min timeout and reacquire files?
+            logger.trace("-- downloadFileGroup() > terminated");
+        }
+
+        // clean up interrupted exceptions?
+        logger.trace(">> downloadFileGroup()");
+    }
+
+    void async(HostManager hostManager, Long container, Executor fetchExecutor, Executor writerExecutor) {
+        logger.trace("<< async() < container: {}", container);
+
+        if (container == null) {
+            logger.warn("<< async() < null container");
+        }
+
+        CompletableFuture<Void> a = CompletableFuture.<byte[]>supplyAsync(() -> {
+            logger.trace("<< async() < container: {}", container);
+
+            ChunkServer.StorageHostChunkList chunksList = hostManager.storageHostChunkList(container);
+            byte[] chunkData = chunkDataFetcher.apply(chunksList);
+
+            logger.trace("<< async() > chunk data size: {}", chunkData.length);
+            return chunkData;
+        }, fetchExecutor).<byte[]>thenAcceptAsync(chunkData -> {
+            logger.debug("<< async() < chunk data size: {}", chunkData.length);
+
+            hostManager.success(container);
+
+        }, writerExecutor).exceptionally(throwable -> {
+            logger.warn("<< main() < throwable : {}", throwable.getLocalizedMessage());
+            return null;
+        });
+
+        logger.trace(">> async()");
+    }
+
+    
+    
+    
+    
 }
+// do all filegroups!

@@ -28,7 +28,7 @@ import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.cloud.store.ChunkManager;
+import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
@@ -63,9 +63,7 @@ public class Looter implements Closeable {
                 config,
                 HttpFactory.from(config.http()).newInstance(printer),
                 printer,
-                FileFilter.getInstance(config.fileFilter()),
-                SnapshotDownloader.newInstance(
-                        DonkeyFactory.newInstance(config.engine(), config.file()), config.engine()));
+                FileFilter.getInstance(config.fileFilter()));
 
         logger.trace(">> from()");
         return looter;
@@ -75,13 +73,11 @@ public class Looter implements Closeable {
             Config config,
             Http http,
             Printer printer,
-            FileFilter filter,
-            SnapshotDownloader downloader) {
+            FileFilter filter) {
         this.config = config;
         this.http = http;
         this.printer = printer;
         this.filter = filter;
-        this.downloader = downloader;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Looter.class);
@@ -90,9 +86,8 @@ public class Looter implements Closeable {
     private final Http http;
     private final Printer printer;
     private final FileFilter filter;
-    private final SnapshotDownloader downloader;
 
-    public void loot() throws AuthenticationException, BadDataException, IOException {
+    public void loot() throws AuthenticationException, BadDataException, IOException, InterruptedException {
         logger.trace("<< loot()");
 
         printer.println(Level.VV, "Authenticating.");
@@ -121,31 +116,41 @@ public class Looter implements Closeable {
         logger.trace(">> loot()");
     }
 
-    void backup(Http http, Client client, Backup backup) throws AuthenticationException, IOException {
+    void backup(Http http, Client client, Backup backup) throws AuthenticationException, IOException, InterruptedException {
 
         for (int id : backup.snapshots()) {
             Snapshot snapshot = Snapshot.from(http, backup, id, config.engine());
             Snapshot filtered = Snapshot.from(snapshot, filter);
 
+            
+            SnapshotDownloader sd = new SnapshotDownloader(http, client);
             try {
-                ChunkServer.FileGroups fileGroups = client.getFileGroups(http, backup.udid(), id, filtered.files());
-                logger.debug("-- back() > fileChunkErrorList: {}", fileGroups.getFileChunkErrorList());
-                logger.debug("-- back() > fileErrorList: {}", fileGroups.getFileErrorList());
+                sd.moo(filtered);
+                
+                System.exit(0);
+                
+//            try {
+//                ChunkServer.FileGroups fetchFileGroups = client.fetchFileGroups(http, backup.udid(), id, filtered.files());
+//                logger.debug("-- back() > fileChunkErrorList: {}", fetchFileGroups.getFileChunkErrorList());
+//                logger.debug("-- back() > fileErrorList: {}", fetchFileGroups.getFileErrorList());
+//
+//                for (ChunkServer.FileChecksumStorageHostChunkLists group : fetchFileGroups.getFileGroupsList()) {
+//                    StoreManager manager = StoreManager.from(group);
+//                }
+//
+//            } catch (BadDataException ex) {
+//                logger.warn("-- backup() > exception: ", ex);
+//            }
+//
+//            System.exit(0);
+//            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results
+//                    = downloader.execute(http, filtered, filtered.signatures(), printer);
 
-                for (ChunkServer.FileChecksumStorageHostChunkLists group : fileGroups.getFileGroupsList()) {
-                    ChunkManager manager = ChunkManager.from(group);
-                }
-
+//            logger.debug("--backup() > completed: {}", results.get(Boolean.TRUE).size());
+//            logger.debug("--backup() > failed: {}", results.get(Boolean.FALSE).size());
             } catch (BadDataException ex) {
-                logger.warn("-- backup() > exception: ", ex);
+                ex.printStackTrace();
             }
-
-            System.exit(0);
-            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results
-                    = downloader.execute(http, filtered, filtered.signatures(), printer);
-
-            logger.debug("--backup() > completed: {}", results.get(Boolean.TRUE).size());
-            logger.debug("--backup() > failed: {}", results.get(Boolean.FALSE).size());
         }
     }
 

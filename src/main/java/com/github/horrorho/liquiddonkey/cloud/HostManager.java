@@ -24,12 +24,13 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import static com.github.horrorho.liquiddonkey.settings.Markers.CLOUD;
+import static com.github.horrorho.liquiddonkey.settings.Markers.HOST;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import net.jcip.annotations.ThreadSafe;
@@ -45,23 +46,25 @@ public class HostManager {
 
     public static HostManager from(ChunkServer.FileChecksumStorageHostChunkLists fileGroup) {
         logger.trace("<< from()");
-        logger.debug(CLOUD, "-- from() > fileGroup: {}", fileGroup);
+        logger.debug(HOST, "-- from() > fileGroup: {}", fileGroup);
 
         List<ChunkServer.StorageHostChunkList> list = fileGroup.getStorageHostChunkListList();
 
         ConcurrentMap<Long, ChunkServer.StorageHostChunkList> containerToStorageHost = new ConcurrentHashMap<>();
+        Set<Long> containers = Collections.<Long>newSetFromMap(new ConcurrentHashMap<>());
         for (int index = 0; index < list.size(); index++) {
             containerToStorageHost.put(Long.valueOf(index), list.get(index));
+            containers.add((long) index);
         }
 
-        ArrayBlockingQueue containers = new ArrayBlockingQueue(list.size(), true, list);
+        logger.debug(HOST, "-- from() > containerToStorageHost: {}", containerToStorageHost);
+        logger.debug(HOST, "-- from() > containers: {}", containers);
 
         HostManager instance = new HostManager(
-                containers,
                 containerToStorageHost,
                 new ConcurrentHashMap<>(),
                 new ConcurrentHashMap<>(),
-                Collections.<Long>newSetFromMap(new ConcurrentHashMap<>()),
+                containers,
                 Collections.<Long>newSetFromMap(new ConcurrentHashMap<>()));
 
         logger.trace(">> from()");
@@ -70,71 +73,69 @@ public class HostManager {
 
     private static final Logger logger = LoggerFactory.getLogger(HostManager.class);
 
-    private final ArrayBlockingQueue<Long> containers;
     private final ConcurrentMap<Long, ChunkServer.StorageHostChunkList> containerToStorageHost;
     private final ConcurrentMap<Long, Integer> containerToRetryCount;
     private final ConcurrentMap<Long, List<Exception>> containerToExceptions;   // Collections#synchronizedList
-    private final Set<Long> success;                                            // Concurrent Set
-    private final Set<Long> cancelled;
+    private final Set<Long> containers;                                         // Concurrent Set
+    private final Set<Long> success;                                            // Concurrent Set 
 
     HostManager(
-            ArrayBlockingQueue<Long> containers,
             ConcurrentMap<Long, ChunkServer.StorageHostChunkList> containerToStorageHost,
             ConcurrentMap<Long, Integer> containerToRetryCount,
             ConcurrentMap<Long, List<Exception>> containerToExceptions,
-            Set<Long> success,
-            Set<Long> cancelled) {
+            Set<Long> containers,
+            Set<Long> success) {
 
-        if (containers.size() == 0) {
-            throw new IllegalArgumentException("Empty blocking queue");
-        }
-
-        this.containers = containers;
-        this.containerToStorageHost = containerToStorageHost;
+        this.containerToStorageHost = Objects.requireNonNull(containerToStorageHost);
         this.containerToRetryCount = containerToRetryCount;
         this.containerToExceptions = containerToExceptions;
+        this.containers = containers;
         this.success = success;
-        this.cancelled = cancelled;
     }
 
     public ChunkServer.StorageHostChunkList storageHostChunkList(long container) {
         if (success.contains(container)) {
-            throw new IllegalStateException("Bad request: " + container);
+            logger.warn("-- storageHostChunkList() > bad state, duplicated container: {}", container);
         }
         return containerToStorageHost.get(container);
     }
 
-    public Long next() throws InterruptedException {
-        Long next = containers.take();
-        if (next == null) {
-            // Clear all waiting threads with propagating nulls
-            if (!containers.contains(null)) {
-                containers.add(null);
-            }
-        }
-        return next;
+    public Iterator<Long> iterator() {
+        logger.trace("<< iterator()");
+        logger.debug("-- iterator() > containers size: {}", containers.size());
+        logger.debug(HOST, "-- iterator() > containers: {}", containers);
+        Iterator<Long> iterator = containers.iterator();
+
+        logger.trace(">> iterator()");
+        return iterator;
     }
 
-    public void failed(Exception ex, Long container) {
+    public void failed(Long container, Exception ex) {
+        logger.trace("<< failed() < container: {} exception: {}", container, ex.getMessage());
+
         // TODO handle retry policy
         containerToExceptions
                 .computeIfAbsent(container, c -> Collections.synchronizedList(new ArrayList<>()))
                 .add(ex);
+
+        logger.trace(">> failed");
     }
 
     public void success(Long container) {
-        if (!success.add(container)) {
+        logger.trace("<< success() < container: {}", container);
 
+        if (!success.add(container)) {
+            logger.warn("-- success() -> bad state, duplicated success: {}", container);
         }
+        if (!containers.remove(container)) {
+            logger.warn("-- success() -> bad state, duplicated container: {}", container);
+        }
+
+        logger.trace(">> success()");
     }
 
-    public synchronized void drain() {
-        logger.trace("<< drain()");
-        containers.drainTo(cancelled);
-        if (!containers.contains(null)) {
-            containers.add(null);
-        }
-        logger.trace(">> drain()");
+    public boolean isEmpty() {
+        return containers.isEmpty();
     }
 
     // TODO retrieval methods

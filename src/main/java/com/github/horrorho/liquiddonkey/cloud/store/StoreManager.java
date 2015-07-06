@@ -26,7 +26,7 @@ package com.github.horrorho.liquiddonkey.cloud.store;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.ChunkReference;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
-import static com.github.horrorho.liquiddonkey.settings.Markers.CLOUD;
+import static com.github.horrorho.liquiddonkey.settings.Markers.STORE;
 import com.google.protobuf.ByteString;
 import java.io.OutputStream;
 import java.util.AbstractMap.SimpleEntry;
@@ -52,7 +52,7 @@ public final class StoreManager {
 
     public static StoreManager from(ChunkServer.FileChecksumStorageHostChunkLists fileGroup) {
         logger.trace("<< from()");
-        logger.debug(CLOUD, "-- from() > fileGroup: {}", fileGroup);
+        logger.debug(STORE, "-- from() > fileGroup: {}", fileGroup);
 
         ConcurrentMap<ByteString, List<ChunkReference>> signatureToChunkReferences = new ConcurrentHashMap<>();
         ConcurrentMap<ByteString, Set<Long>> signatureToContainers = new ConcurrentHashMap<>(); // Concurrent Map/ Set
@@ -87,9 +87,9 @@ public final class StoreManager {
             });
         });
 
-        logger.debug(CLOUD, "-- from() > signatureToChunkReferences: {}", signatureToChunkReferences);
-        logger.debug(CLOUD, "-- from() > signatureToContainers: {}", signatureToContainers);
-        logger.debug(CLOUD, "-- from() > containerToSignatures: {}", containerToSignatures);
+        logger.debug(STORE, "-- from() > signatureToChunkReferences: {}", signatureToChunkReferences);
+        logger.debug(STORE, "-- from() > signatureToContainers: {}", signatureToContainers);
+        logger.debug(STORE, "-- from() > containerToSignatures: {}", containerToSignatures);
 
         StoreManager chunkManager = new StoreManager(
                 MemoryStore.newInstance(),

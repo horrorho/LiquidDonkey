@@ -35,8 +35,9 @@ import org.slf4j.MarkerFactory;
 public final class Markers {
 
     public static final Marker CLIENT = MarkerFactory.getMarker("CLIENT");
+    public static final Marker HOST = MarkerFactory.getMarker("HOST");
     public static final Marker HTTP = MarkerFactory.getMarker("HTTP");
-    public static final Marker CLOUD = MarkerFactory.getMarker("LIST");
+    public static final Marker STORE = MarkerFactory.getMarker("STORE");
     public static final Marker PROPS = MarkerFactory.getMarker("PROPS");
 
 }

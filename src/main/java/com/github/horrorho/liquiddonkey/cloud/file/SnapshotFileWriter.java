@@ -149,7 +149,7 @@ public final class SnapshotFileWriter {
         return written;
     }
 
-    void decrypt(Path path, MBSFile file) {
+    void decrypt(Path path, MBSFile file) throws IOException {
         ByteString key = keyBagTools.fileKey(file);
         if (key == null) {
             logger.warn("-- decrypt() > failed to derive key: {}", file.getRelativePath());
