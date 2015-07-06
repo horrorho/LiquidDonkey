@@ -25,7 +25,6 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import static com.github.horrorho.liquiddonkey.settings.Markers.CLOUD;
-import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -117,7 +116,7 @@ public class HostManager {
     }
 
     public void failed(Exception ex, Long container) {
-        // handle retry policy
+        // TODO handle retry policy
         containerToExceptions
                 .computeIfAbsent(container, c -> Collections.synchronizedList(new ArrayList<>()))
                 .add(ex);
@@ -137,4 +136,6 @@ public class HostManager {
         }
         logger.trace(">> drain()");
     }
+
+    // TODO retrieval methods
 }
