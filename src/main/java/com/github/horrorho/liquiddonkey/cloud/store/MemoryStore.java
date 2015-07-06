@@ -23,12 +23,15 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.store;
 
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,60 +45,72 @@ import org.slf4j.LoggerFactory;
 public final class MemoryStore implements Store {
 
     public static MemoryStore newInstance() {
-        return new MemoryStore(new ConcurrentHashMap<>());
+        logger.trace("<< newInstance()");
+        MemoryStore instance = new MemoryStore(new ConcurrentHashMap<>());
+        logger.trace(">> newInstance()");
+        return instance;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(MemoryStore.class);
 
-    private final ConcurrentMap<Long, ConcurrentMap<Long, byte[]>> containers;
+    private final ConcurrentMap<Long, List<byte[]>> containers;
 
-    MemoryStore(ConcurrentMap<Long, ConcurrentMap<Long, byte[]>> containers) {
+    MemoryStore(ConcurrentMap<Long, List<byte[]>> containers) {
         this.containers = Objects.requireNonNull(containers);
     }
 
     @Override
-    public boolean contains(long containerIndex, long chunkIndex) {
+    public boolean contains(List<ChunkServer.ChunkReference> chunkReferences) {
+        return chunkReferences.stream().allMatch(this::contains);
+    }
+
+    boolean contains(ChunkServer.ChunkReference chunkReference) {
+        long containerIndex = chunkReference.getContainerIndex();
+        long chunkIndex = chunkReference.getChunkIndex();
+
         return containers.containsKey(containerIndex)
-                ? containers.get(containerIndex).containsKey(chunkIndex)
+                ? containers.get(containerIndex).size() > chunkIndex
                 : false;
     }
 
     @Override
-    public void remove(long containerIndex) {
-        if (!containers.containsKey(containerIndex)) {
-            throw new IllegalStateException("No such container: " + containerIndex);
-        }
-        containers.remove(containerIndex);
+    public boolean put(long containerIndex, List<byte[]> chunkData) {
+        List<byte[]> copy = chunkData.stream()
+                .map(data -> Arrays.copyOf(data, data.length))
+                .collect(Collectors.toList());
+
+        return containers.put(containerIndex, copy) == null;
     }
 
     @Override
-    public void put(long containerIndex, long chunkIndex, byte[] chunkData) {
-        ConcurrentMap<Long, byte[]> container
-                = containers.computeIfAbsent(containerIndex, key -> new ConcurrentHashMap<>());
-
-        if (container.containsKey(chunkIndex)) {
-            throw new IllegalStateException(
-                    "Put to an non-empty chunklocation, container: " + containerIndex + " chunk: " + chunkIndex);
-        }
-
-        if (chunkData == null) {
-            logger.warn("-- put() > null chunkData. containerIndex: {}, chunkIndex: {}", containerIndex, chunkIndex);
-        } else {
-            byte[] copy = Arrays.copyOf(chunkData, chunkData.length);
-            container.put(chunkIndex, copy);
-        }
+    public boolean remove(long containerIndex) {
+        return containers.remove(containerIndex) != null;
     }
 
     @Override
-    public IOFunction<OutputStream, Long> writer(long containerIndex, long chunkIndex) {
-        if (!contains(containerIndex, chunkIndex)) {
-            throw new IllegalStateException("Missing chunk, container: " + containerIndex + " chunk: " + chunkIndex);
+    public int size(long containerIndex) {
+        return containers.containsKey(containerIndex)
+                ? containers.get(containerIndex).size()
+                : -1;
+    }
+
+    @Override
+    public IOFunction<OutputStream, Long> writer(List<ChunkServer.ChunkReference> chunkReferences) {
+        if (!contains(chunkReferences)) {
+            throw new NullPointerException("Missing chunk references");
         }
 
-        byte[] chunk = containers.get(containerIndex).get(chunkIndex);
+        List<byte[]> chunks = chunkReferences.stream()
+                .map(reference -> containers.get(reference.getContainerIndex()).get((int) reference.getChunkIndex()))
+                .collect(Collectors.toList());
+
         return outputStream -> {
-            outputStream.write(chunk);
-            return (long) chunk.length;
+            long total = 0;
+            for (byte[] chunk : chunks) {
+                outputStream.write(chunk);
+                total += chunk.length;
+            }
+            return total;
         };
     }
 }
