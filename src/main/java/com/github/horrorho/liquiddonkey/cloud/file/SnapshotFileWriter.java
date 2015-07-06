@@ -31,7 +31,6 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
-import com.github.horrorho.liquiddonkey.exception.FileErrorException;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -150,7 +149,7 @@ public final class SnapshotFileWriter {
         return written;
     }
 
-    void decrypt(Path path, MBSFile file) throws FileErrorException {
+    void decrypt(Path path, MBSFile file) {
         ByteString key = keyBagTools.fileKey(file);
         if (key == null) {
             logger.warn("-- decrypt() > failed to derive key: {}", file.getRelativePath());
