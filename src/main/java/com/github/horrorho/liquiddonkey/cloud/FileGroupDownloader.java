@@ -24,17 +24,24 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
+import com.github.horrorho.liquiddonkey.cloud.file.WriterResult;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
+import com.github.horrorho.liquiddonkey.printer.Level;
+import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -56,7 +63,8 @@ public class FileGroupDownloader {
             ChunkServer.FileChecksumStorageHostChunkLists fileGroup,
             ChunkDataFetcher chunkDataFetcher,
             SignatureWriter signatureWriter,
-            int threads) {
+            int threads,
+            Printer printer) {
 
         StoreManager storeManager = StoreManager.from(fileGroup);
         HostManager hostManager = HostManager.from(fileGroup);
@@ -67,7 +75,8 @@ public class FileGroupDownloader {
                 hostManager,
                 storeManager,
                 threads,
-                new AtomicBoolean(false));
+                new AtomicBoolean(false),
+                printer);
     }
 
     private final SignatureWriter signatureWriter;
@@ -75,7 +84,8 @@ public class FileGroupDownloader {
     private final HostManager hostManager;
     private final StoreManager storeManager;
     private final int threads;
-    private final AtomicBoolean isFatality;
+    private final AtomicBoolean isFileIOError;
+    private final Printer printer;
     private volatile Thread executorThread = null;
 
     FileGroupDownloader(
@@ -84,39 +94,44 @@ public class FileGroupDownloader {
             HostManager hostManager,
             StoreManager storeManager,
             int threads,
-            AtomicBoolean isFatality) {
+            AtomicBoolean isFileIOError,
+            Printer printer) {
 
-        this.signatureWriter = signatureWriter;
-        this.chunkDataFetcher = chunkDataFetcher;
-        this.hostManager = hostManager;
-        this.storeManager = storeManager;
+        this.signatureWriter = Objects.requireNonNull(signatureWriter);
+        this.chunkDataFetcher = Objects.requireNonNull(chunkDataFetcher);
+        this.hostManager = Objects.requireNonNull(hostManager);
+        this.storeManager = Objects.requireNonNull(storeManager);
         this.threads = threads;
-        this.isFatality = isFatality;
+        this.isFileIOError = Objects.requireNonNull(isFileIOError);
+        this.printer = Objects.requireNonNull(printer);
     }
 
     void download() throws AuthenticationException, BadDataException, IOException, InterruptedException {
 
-        logger.trace("<< downloadFileGroup()");
+        logger.trace("<< download()");
 
         executorThread = Thread.currentThread();
         ExecutorService fetchExecutor = Executors.newFixedThreadPool(threads);
         ExecutorService writerExecutor = Executors.newFixedThreadPool(threads);
         Iterator<Long> iterator = hostManager.iterator();
 
-        logger.trace("-- downloadFileGroup() > iterate");
+        logger.trace("-- download() > iterate");
+
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
         while (iterator.hasNext()) {
             async(iterator.next(), fetchExecutor, writerExecutor);
         }
 
         fetchExecutor.shutdown();
-        logger.trace("-- downloadFileGroup() > await termination");
+        logger.trace("-- download() > await termination");
         fetchExecutor.awaitTermination(30, TimeUnit.MINUTES); // TODO 30 min timeout and reacquire files?
+        logger.trace("-- download() > fetchExecutor terminated.");
         writerExecutor.shutdown();
         writerExecutor.awaitTermination(30, TimeUnit.SECONDS); // TODO figure
-        logger.trace("-- downloadFileGroup() > terminated");
+        logger.trace("-- download() > writerExecutor terminated.");
 
         // clean up interrupted exceptions?
-        logger.trace(">> downloadFileGroup()");
+        logger.trace(">> download()");
 
         // multiple interrupts? uncleared?
     }
@@ -130,15 +145,10 @@ public class FileGroupDownloader {
         ChunkServer.StorageHostChunkList chunkList = hostManager.storageHostChunkList(container);
 
         CompletableFuture<Void> async
-                = CompletableFuture.<byte[]>supplyAsync(
-                        () -> fetch(chunkList, container), fetchExecutor)
-                .<byte[]>thenAcceptAsync(
-                        chunkData -> process(chunkList, chunkData, container), writerExecutor)
-                .exceptionally(throwable -> {
-                    //TODO rework
-                    logger.warn("<< main() < throwable : {}", throwable.getLocalizedMessage());
-                    return null;
-                });
+                = CompletableFuture.<byte[]>supplyAsync(() -> fetch(chunkList, container), fetchExecutor)
+                .<byte[]>thenAcceptAsync(chunkData -> process(chunkList, chunkData, container), writerExecutor)
+                // TODO remove exceptionally
+                .exceptionally(throwable -> throwable(container, throwable)).toCompletableFuture();
 
         logger.trace(">> async()");
         return async;
@@ -162,20 +172,15 @@ public class FileGroupDownloader {
         }
     }
 
-    void process(
-            ChunkServer.StorageHostChunkList chunkList,
-            byte[] chunkData,
-            Long container) {
-
-        logger.trace("<< process() < chunkData length: {}", chunkData == null ? null : chunkData.length);
+    void process(ChunkServer.StorageHostChunkList chunkList, byte[] chunkData, Long container) {
+        logger.trace("<< process() < container: {} chunkData length: {}",
+                container, chunkData == null ? null : chunkData.length);
 
         if (chunkData == null) {
-            logger.warn("-- process() > null chunkData");
             return;
         }
 
         ChunkDecrypter chunkDecrypter = ChunkDecrypter.newInstance();
-
         Map<ByteString, IOFunction<OutputStream, Long>> writers
                 = storeManager.put(container, chunkDecrypter.decrypt(chunkList, chunkData));
 
@@ -184,21 +189,33 @@ public class FileGroupDownloader {
         } else {
             try {
                 for (ByteString signature : writers.keySet()) {
-                    signatureWriter.write(signature, writers.get(signature));
+                    Map<ICloud.MBSFile, WriterResult> map = signatureWriter.write(signature, writers.get(signature));
+                    map.keySet().stream().forEach(
+                            file -> printer.println(Level.VV,
+                                    "\t" + file.getDomain() + " " + file.getRelativePath() + " " + map.get(file)));
                 }
+                // TEST
+                //fileIoError(new IOException("test"));
                 hostManager.success(container);
             } catch (IOException ex) {
+                hostManager.failed(container, ex);
                 fileIoError(ex);
             }
         }
 
-        logger.trace(">> process() > chunk data size: {}", chunkData.length);
+        logger.trace(">> process() > container: {}", container);
+    }
+
+    Void throwable(Long container, Throwable th) {
+        logger.warn("-- throwable() > container: {} throwable: {}", container, th);
+        return null;
     }
 
     boolean fileIoError(IOException ex) {
         logger.trace("<< fileIoError() < exception: {}", ex);
 
-        kill();
+        isFileIOError.set(true);
+        interrupt();
 
         logger.trace(">> fileIoError()");
         return true;
@@ -207,13 +224,13 @@ public class FileGroupDownloader {
     boolean ioError(IOException ex) {
         logger.trace("<< ioError() < exception: {}", ex);
 
-        kill();
+        interrupt();
 
         logger.trace(">> ioError()");
         return true;
     }
 
-    void kill() {
+    void interrupt() {
         logger.trace("<< kill()");
 
         if (executorThread == null) {

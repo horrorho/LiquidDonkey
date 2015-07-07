@@ -95,7 +95,7 @@ public class Looter implements Closeable {
         Authentication authentication = Authentication.authenticate(http, config.authentication());
 
         Client client = Client.from(http, authentication, config.client());
-        
+
         if (config.engine().toDumpToken()) {
             printer.println(Level.V, "Authorization token: " + authentication.token());
             return;
@@ -127,8 +127,8 @@ public class Looter implements Closeable {
                     http,
                     client,
                     ChunkDataFetcher.newInstance(http, client),
-                    SignatureWriter.from(snapshot, config.file(), printer)
-            );
+                    SignatureWriter.from(snapshot, config.file()),
+                    printer);
             try {
                 sd.moo(filtered);
 

@@ -29,6 +29,7 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
+import com.github.horrorho.liquiddonkey.printer.Printer;
 import java.io.IOException;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.http.client.HttpResponseException;
@@ -51,15 +52,17 @@ public final class SnapshotDownloader {
     private final Client client;
     private final ChunkDataFetcher chunkDataFetcher;
     private final SignatureWriter signatureWriter;
+    private final Printer printer;
     private final int threads = 4;
     private final int retryCount = 3;
     private final boolean isAggressive = false;
 
-    public SnapshotDownloader(Http http, Client client, ChunkDataFetcher chunkDataFetcher, SignatureWriter signatureWriter) {
+    public SnapshotDownloader(Http http, Client client, ChunkDataFetcher chunkDataFetcher, SignatureWriter signatureWriter, Printer printer) {
         this.http = http;
         this.client = client;
         this.chunkDataFetcher = chunkDataFetcher;
         this.signatureWriter = signatureWriter;
+        this.printer = printer;
     }
 
     public void moo(Snapshot snapshot)
@@ -102,7 +105,7 @@ public final class SnapshotDownloader {
         for (ChunkServer.FileChecksumStorageHostChunkLists fileGroup : fileGroups.getFileGroupsList()) {
 
             FileGroupDownloader downloader
-                    = FileGroupDownloader.from(fileGroup, chunkDataFetcher, signatureWriter, threads);
+                    = FileGroupDownloader.from(fileGroup, chunkDataFetcher, signatureWriter, threads, printer);
             downloader.download();
 
         }

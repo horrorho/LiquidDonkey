@@ -114,6 +114,7 @@ public class HostManager {
         logger.trace("<< failed() < container: {} exception: {}", container, ex.getMessage());
 
         // TODO handle retry policy
+        // IllegalStateException also
         containerToExceptions
                 .computeIfAbsent(container, c -> Collections.synchronizedList(new ArrayList<>()))
                 .add(ex);

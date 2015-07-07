@@ -108,6 +108,7 @@ public final class FileDecrypter {
         try {
             if (Files.size(path) == 0) {
                 logger.warn("--decrypt() > cannot decrypt an empty file: {}", path);
+                return;
             }
 
             ParametersWithIV ivKey = deriveIvKey(key);
