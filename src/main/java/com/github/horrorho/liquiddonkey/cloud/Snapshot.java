@@ -169,6 +169,7 @@ public final class Snapshot {
     }
 
     public ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures() {
+        // ConcurrentMap, non-concurrent Set
         return files().stream()
                 .collect(Collectors.groupingByConcurrent(ICloud.MBSFile::getSignature, Collectors.toSet()));
     }

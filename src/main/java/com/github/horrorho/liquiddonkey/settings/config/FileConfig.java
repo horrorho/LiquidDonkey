@@ -46,30 +46,37 @@ public final class FileConfig {
         return newInstance(
                 Paths.get(props.get(Property.FILE_OUTPUT_DIRECTORY)).toAbsolutePath(),
                 props.get(Property.FILE_COMBINED, parsers::asBoolean),
-                props.get(Property.FILE_FLAT, parsers::asBoolean));
+                props.get(Property.FILE_FLAT, parsers::asBoolean),
+                props.get(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, parsers::asBoolean));
     }
 
     public static FileConfig newInstance(
             Path base,
             boolean isCombined,
-            boolean isFlat) {
+            boolean isFlat,
+            boolean setLastModifiedTimestamp) {
 
         return new FileConfig(base,
                 isCombined,
-                isFlat);
+                isFlat,
+                setLastModifiedTimestamp);
     }
 
     private final Path base;
     private final boolean isCombined;
     private final boolean isFlat;
+    private final boolean setLastModifiedTimestamp;
 
-    FileConfig(Path base,
+    FileConfig(
+            Path base,
             boolean isCombined,
-            boolean isFlat) {
+            boolean isFlat,
+            boolean setLastModifiedTimestamp) {
 
         this.base = base;
         this.isCombined = isCombined;
         this.isFlat = isFlat;
+        this.setLastModifiedTimestamp = setLastModifiedTimestamp;
     }
 
     public Path base() {
@@ -84,8 +91,17 @@ public final class FileConfig {
         return isFlat;
     }
 
+    public boolean setLastModifiedTimestamp() {
+        return setLastModifiedTimestamp;
+    }
+
     @Override
     public String toString() {
-        return "FileConfig{" + "base=" + base + ", isCombined=" + isCombined + ", isFlat=" + isFlat + '}';
+        return "FileConfig{"
+                + "base=" + base
+                + ", isCombined=" + isCombined
+                + ", isFlat=" + isFlat
+                + ", setLastModifiedTimestamp=" + setLastModifiedTimestamp
+                + '}';
     }
 }

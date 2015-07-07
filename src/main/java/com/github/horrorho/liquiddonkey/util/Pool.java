@@ -62,6 +62,10 @@ public class Pool<T> {
     }
 
     public void recycle(T item) {
-        queue.add(item);
+        if (item != null) {
+            queue.add(item);
+        } else {
+            logger.warn("-- recycle() > null item");
+        }
     }
 }

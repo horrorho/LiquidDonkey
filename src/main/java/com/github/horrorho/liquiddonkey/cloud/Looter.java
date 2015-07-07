@@ -26,6 +26,7 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.github.horrorho.liquiddonkey.cloud.client.Authentication;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
+import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
@@ -94,7 +95,7 @@ public class Looter implements Closeable {
         Authentication authentication = Authentication.authenticate(http, config.authentication());
 
         Client client = Client.from(http, authentication, config.client());
-
+        
         if (config.engine().toDumpToken()) {
             printer.println(Level.V, "Authorization token: " + authentication.token());
             return;
@@ -122,13 +123,17 @@ public class Looter implements Closeable {
             Snapshot snapshot = Snapshot.from(http, backup, id, config.engine());
             Snapshot filtered = Snapshot.from(snapshot, filter);
 
-            
-            SnapshotDownloader sd = new SnapshotDownloader(http, client);
+            SnapshotDownloader sd = new SnapshotDownloader(
+                    http,
+                    client,
+                    ChunkDataFetcher.newInstance(http, client),
+                    SignatureWriter.from(snapshot, config.file(), printer)
+            );
             try {
                 sd.moo(filtered);
-                
+
                 System.exit(0);
-                
+
 //            try {
 //                ChunkServer.FileGroups fetchFileGroups = client.fetchFileGroups(http, backup.udid(), id, filtered.files());
 //                logger.debug("-- back() > fileChunkErrorList: {}", fetchFileGroups.getFileChunkErrorList());
@@ -145,7 +150,6 @@ public class Looter implements Closeable {
 //            System.exit(0);
 //            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results
 //                    = downloader.execute(http, filtered, filtered.signatures(), printer);
-
 //            logger.debug("--backup() > completed: {}", results.get(Boolean.TRUE).size());
 //            logger.debug("--backup() > failed: {}", results.get(Boolean.FALSE).size());
             } catch (BadDataException ex) {

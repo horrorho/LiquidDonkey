@@ -23,6 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.file;
 
+import com.github.horrorho.liquiddonkey.cloud.Snapshot;
+import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
 import com.github.horrorho.liquiddonkey.cloud.store.Store;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
@@ -31,6 +33,8 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
+import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
+import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -40,7 +44,9 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import java.nio.file.attribute.FileTime;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
@@ -55,47 +61,49 @@ import org.slf4j.LoggerFactory;
  * @author ahseya
  */
 @NotThreadSafe
-public final class SnapshotFileWriter {
+public final class SignatureWriter {
 
-    private static final Logger logger = LoggerFactory.getLogger(SnapshotFileWriter.class);
+    private static final Logger logger = LoggerFactory.getLogger(SignatureWriter.class);
 
     /**
      * Returns a new instance.
      *
-     * @param keyBagTools not null
-     * @param directory not null
+     * @param snapshot not null
+     * @param fileConfig not null
      * @param printer not null
-     * @param setLastModifiedTime true if last-modified timestamps should be set
      * @return a new instance, not null
      */
     // TODO rework this
-    public static SnapshotFileWriter newInstance(
-            KeyBagTools keyBagTools,
-            SnapshotDirectory directory,
-            Printer printer,
-            boolean setLastModifiedTime) {
+    public static SignatureWriter from(
+            Snapshot snapshot,
+            FileConfig fileConfig,
+            Printer printer) {
 
-        return new SnapshotFileWriter(
+        return new SignatureWriter(
+                snapshot.signatures(),
                 FileDecrypter.newInstance(),
-                keyBagTools,
-                directory,
+                KeyBagTools.newInstance(snapshot.backup().keybag()),
+                SnapshotDirectory.from(snapshot, fileConfig),
                 printer,
-                setLastModifiedTime);
+                fileConfig.setLastModifiedTimestamp());
     }
 
+    private final Map<ByteString, Set<ICloud.MBSFile>> signatureToFileSet;
     private final FileDecrypter decrypter;
     private final KeyBagTools keyBagTools;
     private final SnapshotDirectory directory;
     private final Printer print;
     private final boolean setLastModifiedTime;
 
-    SnapshotFileWriter(
+    SignatureWriter(
+            Map<ByteString, Set<ICloud.MBSFile>> signatureToFile,
             FileDecrypter decrypter,
             KeyBagTools keyBagTools,
             SnapshotDirectory directory,
             Printer print,
             boolean setLastModifiedTime) {
 
+        this.signatureToFileSet = Objects.requireNonNull(signatureToFile);
         this.decrypter = Objects.requireNonNull(decrypter);
         this.keyBagTools = Objects.requireNonNull(keyBagTools);
         this.directory = Objects.requireNonNull(directory);
@@ -115,37 +123,58 @@ public final class SnapshotFileWriter {
             return;
         }
 
-        write(file, outputStream -> 0L);
+        doWrite(file, outputStream -> 0L);
     }
 
     /**
-     * Writes a file.
+     * Writes the files referenced by the specified signature.
      * <p>
      * If encrypted, attempts to decrypt the file. Optionally set's the last-modified timestamp.
      *
-     * @param file not null
+     * @param signature not null
      * @param writer not null
      * @return bytes written
      * @throws IOException
      */
-    public long write(ICloud.MBSFile file, IOFunction<OutputStream, Long> writer) throws IOException {
-        logger.trace("<< write() < file: {}", file.getRelativePath());
+    public long write(ByteString signature, IOFunction<OutputStream, Long> writer) throws IOException {
+        logger.trace("<< write() < signature: {}", Bytes.hex(signature));
+        Set<ICloud.MBSFile> files = signatureToFileSet.get(signature);
+        if (files == null) {
+            logger.warn("-- write() >> bad state, unknown signature: {}", Bytes.hex(signature));
+            return 0;
+        }
+
+        long total = 0;
+        for (ICloud.MBSFile file : files) {
+            total += doWrite(file, writer);
+        }
+
+        if (signatureToFileSet.remove(signature) == null) {
+            logger.warn("-- write() >> bad state, concurrent removal: {}", Bytes.hex(signature));
+        }
+
+        logger.trace(">> write() > bytes written: {}", total);
+        return total;
+    }
+
+    long doWrite(ICloud.MBSFile file, IOFunction<OutputStream, Long> writer) throws IOException {
+        logger.trace("<< doWrite() < file: {}", file.getRelativePath());
 
         Path path = directory.apply(file);
 
         long written = writeFile(path, writer);
-        logger.debug("-- write() > path: {} written: {}", path, written);
+        logger.debug("-- doWrite() > path: {} written: {}", path, written);
 
         if (file.hasAttributes() && file.getAttributes().hasEncryptionKey()) {
             decrypt(path, file);
         } else {
-            logger.debug("-- write() > success: {}", file.getRelativePath());
+            logger.debug("-- doWrite() > success: {}", file.getRelativePath());
             print.println(Level.VV, "\t" + file.getDomain() + " " + file.getRelativePath());
         }
 
         setLastModifiedTime(path, file);
 
-        logger.trace(">> write() > written: {}", written);
+        logger.trace(">> doWrite() > written: {}", written);
         return written;
     }
 
@@ -175,8 +204,7 @@ public final class SnapshotFileWriter {
         }
     }
 
-    boolean exists(MBSFile file
-    ) {
+    boolean exists(MBSFile file) {
         return Files.exists(directory.apply(file));
     }
 
