@@ -27,15 +27,12 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import static com.github.horrorho.liquiddonkey.settings.Markers.HOST;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,141 +44,99 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public class HostManager {
 
-    public static HostManager from(ChunkServer.FileGroups fileGroups) {
+    public static HostManager from(ChunkServer.FileChecksumStorageHostChunkLists fileGroup) {
         logger.trace("<< from()");
-        logger.debug(HOST, "-- from() > fileGroup: {}", fileGroups);
+        logger.debug(HOST, "-- from() > fileGroup: {}", fileGroup);
 
-        ConcurrentMap<Long, ConcurrentMap<Long, ChunkServer.StorageHostChunkList>> groupToContainerToStorageHost
-                = new ConcurrentHashMap<>();
-        ConcurrentMap<Long, Set<Long>> groupToContainerSet = new ConcurrentHashMap<>();
+        List<ChunkServer.StorageHostChunkList> list = fileGroup.getStorageHostChunkListList();
 
-        List<ChunkServer.FileChecksumStorageHostChunkLists> fileGroupsList = fileGroups.getFileGroupsList();
-
-        for (int groupIndex = 0; groupIndex < fileGroupsList.size(); groupIndex++) {
-            List<ChunkServer.StorageHostChunkList> list = fileGroupsList.get(groupIndex).getStorageHostChunkListList();
-
-            for (int containerIndex = 0; containerIndex < list.size(); containerIndex++) {
-                groupToContainerToStorageHost
-                        .computeIfAbsent(Long.valueOf(groupIndex), key -> new ConcurrentHashMap<>())
-                        .put(Long.valueOf(containerIndex), list.get(containerIndex));
-
-                groupToContainerSet
-                        .computeIfAbsent(Long.valueOf(groupIndex), key -> newConcurrentSet())
-                        .add(Long.valueOf(containerIndex));
-            }
+        ConcurrentMap<Long, ChunkServer.StorageHostChunkList> containerToStorageHost = new ConcurrentHashMap<>();
+        Set<Long> containers = Collections.<Long>newSetFromMap(new ConcurrentHashMap<>());
+        for (int index = 0; index < list.size(); index++) {
+            containerToStorageHost.put(Long.valueOf(index), list.get(index));
+            containers.add((long) index);
         }
 
-        logger.debug(HOST, "-- from() > containerToStorageHost: {}", groupToContainerToStorageHost);
-        logger.debug(HOST, "-- from() > containers: {}", groupToContainerSet);
+        logger.debug(HOST, "-- from() > containerToStorageHost: {}", containerToStorageHost);
+        logger.debug(HOST, "-- from() > containers: {}", containers);
 
         HostManager instance = new HostManager(
-                groupToContainerToStorageHost,
+                containerToStorageHost,
                 new ConcurrentHashMap<>(),
                 new ConcurrentHashMap<>(),
-                groupToContainerSet,
-                new ConcurrentHashMap<>());
+                containers,
+                Collections.<Long>newSetFromMap(new ConcurrentHashMap<>()));
 
         logger.trace(">> from()");
         return instance;
     }
 
-    static <T> Set<T> newConcurrentSet() {
-        return Collections.<T>newSetFromMap(new ConcurrentHashMap<>());
-    }
-
-    static <T> List<T> newSyncList() {
-        return Collections.synchronizedList(new ArrayList<>());
-    }
-
     private static final Logger logger = LoggerFactory.getLogger(HostManager.class);
 
-    // Lists are Collections#synchronizedList
-    // Sets are wrapped ConcurrentMap
-    private final ConcurrentMap<Long, ConcurrentMap<Long, ChunkServer.StorageHostChunkList>> groupToContainerToStorageHost;
-    private final ConcurrentMap<Long, ConcurrentMap<Long, Integer>> groupToContainerToRetryCount;
-    private final ConcurrentMap<Long, ConcurrentMap<Long, List<Exception>>> groupToContainerToExceptions;
-    private final ConcurrentMap<Long, Set<Long>> groupToContainerSet;
-    private final ConcurrentMap<Long, Set<Long>> groupToContainerSetSuccess;
+    private final ConcurrentMap<Long, ChunkServer.StorageHostChunkList> containerToStorageHost;
+    private final ConcurrentMap<Long, Integer> containerToRetryCount;
+    private final ConcurrentMap<Long, List<Throwable>> containerToExceptions;   // Collections#synchronizedList
+    private final Set<Long> containers;                                         // Concurrent Set
+    private final Set<Long> success;                                            // Concurrent Set 
 
-    private final List<Long> emptyList = Collections.unmodifiableList(new ArrayList<>());
-    private final Set<Long> emptySet = Collections.unmodifiableSet(new HashSet<>());
+    HostManager(
+            ConcurrentMap<Long, ChunkServer.StorageHostChunkList> containerToStorageHost,
+            ConcurrentMap<Long, Integer> containerToRetryCount,
+            ConcurrentMap<Long, List<Throwable>> containerToExceptions,
+            Set<Long> containers,
+            Set<Long> success) {
 
-    public HostManager(
-            ConcurrentMap<Long, ConcurrentMap<Long, ChunkServer.StorageHostChunkList>> groupToContainerToStorageHost,
-            ConcurrentMap<Long, ConcurrentMap<Long, Integer>> groupToContainerToRetryCount,
-            ConcurrentMap<Long, ConcurrentMap<Long, List<Exception>>> groupToContainerToExceptions,
-            ConcurrentMap<Long, Set<Long>> groupToContainerSet,
-            ConcurrentMap<Long, Set<Long>> groupToContainerSetSuccess) {
-
-        this.groupToContainerToStorageHost = Objects.requireNonNull(groupToContainerToStorageHost);
-        this.groupToContainerToRetryCount = Objects.requireNonNull(groupToContainerToRetryCount);
-        this.groupToContainerToExceptions = Objects.requireNonNull(groupToContainerToExceptions);
-        this.groupToContainerSet = Objects.requireNonNull(groupToContainerSet);
-        this.groupToContainerSetSuccess = Objects.requireNonNull(groupToContainerSetSuccess);
+        this.containerToStorageHost = Objects.requireNonNull(containerToStorageHost);
+        this.containerToRetryCount = containerToRetryCount;
+        this.containerToExceptions = containerToExceptions;
+        this.containers = containers;
+        this.success = success;
     }
 
-    public ChunkServer.StorageHostChunkList storageHostChunkList(long groupIndex, long containerIndex) {
-        // TODO remove completed
-        if (groupToContainerSetSuccess.getOrDefault(groupIndex, emptySet).contains(containerIndex)) {
-            logger.warn("-- storageHostChunkList() > duplicated group: {} container: {}",
-                    groupIndex, containerIndex);
+    public ChunkServer.StorageHostChunkList storageHostChunkList(long container) {
+        if (success.contains(container)) {
+            logger.warn("-- storageHostChunkList() > bad state, duplicated container: {}", container);
         }
-
-        return groupToContainerToStorageHost.get(groupIndex).get(containerIndex);
+        return containerToStorageHost.get(container);
     }
 
-    public Map<Long, Iterator<Long>> iterator() {
+    public Iterator<Long> iterator() {
         logger.trace("<< iterator()");
-
-        groupToContainerSet.entrySet().stream().forEach(entry
-                -> logger.debug("-- iterator() > group: {} containers: {}", entry.getKey(), entry.getValue()));
-
-        Map<Long, Iterator<Long>> iterator = groupToContainerSet.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().iterator()));
+        logger.debug("-- iterator() > containers size: {}", containers.size());
+        logger.debug(HOST, "-- iterator() > containers: {}", containers);
+        Iterator<Long> iterator = containers.iterator();
 
         logger.trace(">> iterator()");
         return iterator;
     }
 
-    public void failed(Long groupIndex, Long containerIndex, Exception ex) {
-        logger.trace("<< failed() < group: {} container: {} exception: {}",
-                groupIndex, containerIndex, ex.getMessage());
+    public void failed(Long container, Throwable th) {
+        logger.trace("<< failed() < container: {} throwable: {}", container, th.getMessage());
 
         // TODO handle retry policy
         // IllegalStateException also
-        groupToContainerToExceptions
-                .computeIfAbsent(groupIndex, key -> new ConcurrentHashMap<>())
-                .computeIfAbsent(containerIndex, key -> newSyncList())
-                .add(ex);
+        containerToExceptions
+                .computeIfAbsent(container, c -> Collections.synchronizedList(new ArrayList<>()))
+                .add(th);
 
         logger.trace(">> failed");
     }
 
-    public void success(Long groupIndex, Long containerIndex) {
-        logger.trace("<< success() < container: {}", groupIndex, containerIndex);
+    public void success(Long container) {
+        logger.trace("<< success() < container: {}", container);
 
-        if (!groupToContainerSetSuccess
-                .computeIfAbsent(groupIndex, key -> newConcurrentSet())
-                .add(containerIndex)) {
-            logger.warn("-- success() -> duplicated success, group: {} container: {}", groupIndex, containerIndex);
+        if (!success.add(container)) {
+            logger.warn("-- success() -> bad state, duplicated success: {}", container);
         }
-
-        if (groupToContainerSet.containsKey(groupIndex)) {
-            if (!groupToContainerSet.get(groupIndex).remove(containerIndex)) {
-                logger.warn("-- success() -> duplicated remove, group: {} container: {}", groupIndex, containerIndex);
-            } else if (groupToContainerSet.get(groupIndex).isEmpty()) {
-                groupToContainerSet.remove(groupIndex);
-
-            }
-        } else {
-            logger.warn("-- success() > duplicated remove, group: {} container: {}", groupIndex, containerIndex);
+        if (!containers.remove(container)) {
+            logger.warn("-- success() -> bad state, duplicated container: {}", container);
         }
 
         logger.trace(">> success()");
     }
 
     public boolean isEmpty() {
-        return groupToContainerSet.isEmpty();
+        return containers.isEmpty();
     }
 
     // TODO retrieval methods

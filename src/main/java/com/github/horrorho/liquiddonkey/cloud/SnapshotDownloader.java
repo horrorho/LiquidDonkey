@@ -105,7 +105,7 @@ public final class SnapshotDownloader {
         for (ChunkServer.FileChecksumStorageHostChunkLists fileGroup : fileGroups.getFileGroupsList()) {
 
             FileGroupDownloader downloader
-                    = FileGroupDownloader.from(fileGroup, chunkDataFetcher, signatureWriter, threads, printer);
+                    = FileGroupDownloader.from(fileGroups, chunkDataFetcher, signatureWriter, threads, printer);
             downloader.download();
 
         }

@@ -125,6 +125,7 @@ public final class ChunkDecrypter {
     }
 
     byte[] decryptCfbAes(ChunkServer.ChunkInfo chunkInfo, byte[] data, int offset) {
+        // TOFIX input buffer too small exception, are we truncating too early somewhere?
         cfbAes.init(false, key(chunkInfo));
         byte[] decrypted = new byte[chunkInfo.getChunkLength()];
         cfbAes.processBytes(data, offset, chunkInfo.getChunkLength(), decrypted, 0);
