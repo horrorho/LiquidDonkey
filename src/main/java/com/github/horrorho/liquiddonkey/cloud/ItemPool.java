@@ -25,9 +25,9 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.util.Fifo;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.UnaryOperator;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 /**
  * ItemPool.
  * <p>
- * Thread safe work pool.
+ * Thread safe work pool. Null values not permitted.
  *
  * @author Ahseya
  * @param <T> type
@@ -47,6 +47,10 @@ public class ItemPool<T> {
 
     public static <T> ItemPool<T> newInstance(Collection<T> collection) {
         logger.trace("<< newInstance() < item count: {}", collection.size());
+
+        if (collection.contains(null)) {
+            throw new IllegalArgumentException("Null entries not permitted");
+        }
 
         T[] array = (T[]) collection.toArray(new Object[collection.size()]);
 
@@ -72,31 +76,7 @@ public class ItemPool<T> {
         this.pending = pending;
     }
 
-    public boolean function(UnaryOperator<T> operator) throws InterruptedException {
-        logger.trace("<< function()");
-
-        T item = acquire();
-
-        boolean isEmpty;
-        if (item == null) {
-            isEmpty = true;
-        } else {
-            try {
-                release(operator.apply(item));
-                isEmpty = false;
-            } catch (Throwable th) {
-                logger.warn("-- function() > item: {} throwable: {}", item, th);
-                // Do not retry
-                release(null);
-                throw th;
-            }
-        }
-
-        logger.trace(">> function() > isEmpty: {}", isEmpty);
-        return isEmpty;
-    }
-
-    T acquire() throws InterruptedException {
+    public Box acquire() throws InterruptedException {
         lock.lockInterruptibly();
         try {
             logger.trace("<< acquire()");
@@ -106,18 +86,20 @@ public class ItemPool<T> {
             }
 
             T item = buffer.pull();
-
+            Box box;
             if (item == null) {
                 // Poisoned
                 logger.debug("-- acquire() > poisoned");
                 buffer.push(null);
                 notEmpty.signal();
+                box = null;
             } else {
                 pending++;
+                box = new Box(item);
             }
 
-            logger.trace(">> acquire() > item: {}", item);
-            return item;
+            logger.trace(">> acquire() > box: {}", box);
+            return box;
         } finally {
             lock.unlock();
         }
@@ -144,6 +126,40 @@ public class ItemPool<T> {
             logger.trace(">> release()");
         } finally {
             lock.unlock();
+        }
+    }
+
+    public class Box {
+
+        private T t;
+
+        Box(T t) {
+            this.t = Objects.requireNonNull(t);
+        }
+
+        public T item() {
+            return t;
+        }
+
+        public boolean isDisposed() {
+            return t == null;
+        }
+
+        public void requeue() throws InterruptedException {
+            Objects.requireNonNull(t);
+            release(t);
+            t = null;
+        }
+
+        public void dispose() throws InterruptedException {
+            Objects.requireNonNull(t);
+            release(null);
+            t = null;
+        }
+
+        @Override
+        public String toString() {
+            return "Box{" + "t=" + t + '}';
         }
     }
 }
