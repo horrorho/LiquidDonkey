@@ -67,18 +67,11 @@ public final class StoreManager {
             list.stream().forEach(reference -> {
                 long containerIndex = reference.getContainerIndex();
 
-                // TODO computer instead? as we are using parallel streams possible BUG
-//                signatureToContainers
-//                        .putIfAbsent(signature, Collections.<Long>newSetFromMap(new ConcurrentHashMap<>()));
-//                signatureToContainers.get(signature).add(containerIndex);
                 signatureToContainers
                         .computeIfAbsent(signature,
                                 s -> Collections.<Long>newSetFromMap(new ConcurrentHashMap<>()))
                         .add(containerIndex);
 
-//                containerToSignatures
-//                        .putIfAbsent(containerIndex, Collections.<ByteString>newSetFromMap(new ConcurrentHashMap<>()));
-//                containerToSignatures.get(containerIndex).add(signature);
                 containerToSignatures
                         .computeIfAbsent(containerIndex,
                                 i -> Collections.<ByteString>newSetFromMap(new ConcurrentHashMap<>()))
@@ -120,38 +113,39 @@ public final class StoreManager {
         this.signatureToChunkReferences = Objects.requireNonNull(signatureToChunkReferences);
     }
 
-    public Map<ByteString, IOFunction<OutputStream, Long>> put(long containerIndex, List<byte[]> data) {
+    public Map<ByteString, IOFunction<OutputStream, Long>>
+            put(long groupIndex, long containerIndex, List<byte[]> data) {
 
         logger.trace("<< put() < containerIndex: {} chunkDataSize: {}", containerIndex, data.size());
 
-        if (!store.put(containerIndex, data)) {
+        if (!store.put(groupIndex, containerIndex, data)) {
             logger.warn("-- put() > overwritten store container: {}", containerIndex);
         }
 
-        Map<ByteString, IOFunction<OutputStream, Long>> writers = process(containerIndex);
+        Map<ByteString, IOFunction<OutputStream, Long>> writers = process(groupIndex, containerIndex);
         if (writers != null) {
-            clear(writers.keySet());
+            clear(groupIndex, writers.keySet());
         }
 
         logger.trace(">> put() > writers: {}", writers);
         return writers;
     }
 
-    Map<ByteString, IOFunction<OutputStream, Long>> process(long containerIndex) {
+    Map<ByteString, IOFunction<OutputStream, Long>> process(long groupIndex, long containerIndex) {
 
         Map<ByteString, IOFunction<OutputStream, Long>> writers = containerToSignatures.get(containerIndex).stream()
-                .map(signature -> new SimpleEntry<>(signature, process(signature)))
+                .map(signature -> new SimpleEntry<>(signature, process(groupIndex, signature)))
                 .filter(entry -> entry.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         return writers;
     }
 
-    IOFunction<OutputStream, Long> process(ByteString signature) {
+    IOFunction<OutputStream, Long> process(long groupIndex, ByteString signature) {
         List<ChunkReference> references = signatureToChunkReferences.get(signature);
 
         // Exit if any chunks are missing.
-        if (!store.contains(references)) {
+        if (!store.contains(groupIndex, references)) {
             return null;
         }
 
@@ -161,18 +155,17 @@ public final class StoreManager {
         }
 
         // Writer.
-        return store.writer(references);
+        return store.writer(groupIndex, references);
     }
 
-    void clear(Set<ByteString> signatures) {
-
+    void clear(long groupIndex, Set<ByteString> signatures) {
         signatures.forEach(signature -> {
             signatureToContainers.get(signature).stream().forEach(index -> {
                 containerToSignatures.get(index).remove(signature);
 
                 if (containerToSignatures.get(index).isEmpty()) {
                     containerToSignatures.remove(index);
-                    store.remove(index);
+                    store.remove(groupIndex, index);
                 }
             });
             signatureToContainers.remove(signature);

@@ -27,7 +27,10 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -52,54 +55,71 @@ public final class MemoryStore implements Store {
     }
 
     private static final Logger logger = LoggerFactory.getLogger(MemoryStore.class);
+    private static final Map<Long, List<byte[]>> emptyGroup = Collections.unmodifiableMap(new HashMap<>());
 
-    private final ConcurrentMap<Long, List<byte[]>> containers;
+    private final ConcurrentMap<Long, ConcurrentMap<Long, List<byte[]>>> groupToContainerToList;
 
-    MemoryStore(ConcurrentMap<Long, List<byte[]>> containers) {
-        this.containers = Objects.requireNonNull(containers);
+    MemoryStore(ConcurrentMap<Long, ConcurrentMap<Long, List<byte[]>>> groupToContainerToList) {
+        this.groupToContainerToList = Objects.requireNonNull(groupToContainerToList);
     }
 
     @Override
-    public boolean contains(List<ChunkServer.ChunkReference> chunkReferences) {
-        return chunkReferences.stream().allMatch(this::contains);
+    public boolean contains(long groupIndex, List<ChunkServer.ChunkReference> chunkReferences) {
+        return chunkReferences.stream().allMatch(reference -> contains(groupIndex, reference));
     }
 
-    boolean contains(ChunkServer.ChunkReference chunkReference) {
+    boolean contains(long groupIndex, ChunkServer.ChunkReference chunkReference) {
+        if (!groupToContainerToList.containsKey(groupIndex)) {
+            return false;
+        }
+        
         long containerIndex = chunkReference.getContainerIndex();
         long chunkIndex = chunkReference.getChunkIndex();
 
-        return containers.containsKey(containerIndex)
-                ? containers.get(containerIndex).size() > chunkIndex
-                : false;
+        ConcurrentMap<Long, List<byte[]>> container = groupToContainerToList.get(groupIndex);
+        if (!container.containsKey(containerIndex)) {
+            return false;
+        }
+
+        return container.get(containerIndex).size() > chunkIndex;
     }
 
     @Override
-    public boolean put(long containerIndex, List<byte[]> chunkData) {
+    public boolean put(long groupIndex, long containerIndex, List<byte[]> chunkData) {
         List<byte[]> copy = chunkData.stream()
                 .map(data -> Arrays.copyOf(data, data.length))
                 .collect(Collectors.toList());
 
-        return containers.put(containerIndex, copy) == null;
+        return groupToContainerToList
+                .computeIfAbsent(groupIndex, key -> new ConcurrentHashMap<>())
+                .put(containerIndex, copy) == null;
     }
 
     @Override
-    public boolean remove(long containerIndex) {
-        return containers.remove(containerIndex) != null;
+    public boolean remove(long groupIndex, long containerIndex) {
+        if (!groupToContainerToList.containsKey(groupIndex)) {
+            return false;
+        }
+        return groupToContainerToList.get(groupIndex).remove(containerIndex) != null;
     }
 
     @Override
-    public int size(long containerIndex) {
+    public int size(long groupIndex, long containerIndex) {
+        if (!groupToContainerToList.containsKey(groupIndex)) {
+            return -1;
+        }
+        ConcurrentMap<Long, List<byte[]>> containers = groupToContainerToList.get(groupIndex);
         return containers.containsKey(containerIndex)
                 ? containers.get(containerIndex).size()
                 : -1;
     }
 
     @Override
-    public IOFunction<OutputStream, Long> writer(List<ChunkServer.ChunkReference> chunkReferences) {
-        if (!contains(chunkReferences)) {
+    public IOFunction<OutputStream, Long> writer(long groupIndex, List<ChunkServer.ChunkReference> chunkReferences) {
+        if (!contains(groupIndex, chunkReferences)) {
             throw new NullPointerException("Missing chunk references");
         }
-
+        ConcurrentMap<Long, List<byte[]>> containers = groupToContainerToList.get(groupIndex);
         List<byte[]> chunks = chunkReferences.stream()
                 .map(reference -> containers.get(reference.getContainerIndex()).get((int) reference.getChunkIndex()))
                 .collect(Collectors.toList());

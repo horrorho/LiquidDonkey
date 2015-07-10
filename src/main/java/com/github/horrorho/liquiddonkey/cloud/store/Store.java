@@ -38,53 +38,59 @@ public interface Store {
     /**
      * Returns the size of the specified container.
      *
+     * @param groupIndex
      * @param containerIndex
      * @return size of the container, or -1 if no such container exists
      */
-    int size(long containerIndex);
+    int size(long groupIndex, long containerIndex);
 
     /**
      * Removes the specified container from the Store.
      *
+     * @param groupIndex
      * @param containerIndex
      * @return true if the Store contained the specified element
      */
-    boolean remove(long containerIndex);
+    boolean remove(long groupIndex, long containerIndex);
 
     /**
      * Creates the specified container and copies over the specified data.
      *
+     * @param groupIndex
      * @param containerIndex
      * @param chunkData, not null
      * @return true if the Store did not already contain the specified container
      */
-    boolean put(long containerIndex, List<byte[]> chunkData);
+    boolean put(long groupIndex, long containerIndex, List<byte[]> chunkData);
 
     /**
      * Returns an IOFunction that writes the referenced containers data to the specified output stream. Subsequent
      * modifications to the Store will not alter its output.
      *
+     * @param groupIndex
      * @param chunkReferences chunk references, not null
      * @return immutable writer, not null
      * @throws NullPointerException if the specified container is not present in the Store
      */
-    IOFunction<OutputStream, Long> writer(List<ChunkServer.ChunkReference> chunkReferences);
+    IOFunction<OutputStream, Long> writer(long groupIndex, List<ChunkServer.ChunkReference> chunkReferences);
 
     /**
      * Returns whether the referenced chunks are present in this Store.
      *
+     * @param groupIndex
      * @param chunkReferences chunk references, not null
      * @return true if all present
      */
-    boolean contains(List<ChunkServer.ChunkReference> chunkReferences);
+    boolean contains(long groupIndex, List<ChunkServer.ChunkReference> chunkReferences);
 
     /**
      * Returns whether the specified container is present in the Store.
      *
+     * @param groupIndex
      * @param containerIndex
      * @return true if present
      */
-    default boolean contains(long containerIndex) {
-        return size(containerIndex) != -1;
+    default boolean contains(long groupIndex, long containerIndex) {
+        return size(groupIndex, containerIndex) != -1;
     }
 }
