@@ -23,74 +23,63 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.store;
 
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
-import java.io.OutputStream;
 import java.util.List;
 
 /**
- * Container store.
+ * Container store. Implementations must be thread safe.
  *
  * @author Ahseya
+ * @param <K> key type
  */
-public interface Store {
-
-    /**
-     * Returns the size of the specified container.
-     *
-     * @param groupIndex
-     * @param containerIndex
-     * @return size of the container, or -1 if no such container exists
-     */
-    int size(long groupIndex, long containerIndex);
-
-    /**
-     * Removes the specified container from the Store.
-     *
-     * @param groupIndex
-     * @param containerIndex
-     * @return true if the Store contained the specified element
-     */
-    boolean remove(long groupIndex, long containerIndex);
+public interface Store<K> {
 
     /**
      * Creates the specified container and copies over the specified data.
      *
-     * @param groupIndex
-     * @param containerIndex
+     * @param key, not null
      * @param chunkData, not null
      * @return true if the Store did not already contain the specified container
+     * @throws NullPointerException if the chunkData contains null reference/s
      */
-    boolean put(long groupIndex, long containerIndex, List<byte[]> chunkData);
+    boolean put(K key, List<byte[]> chunkData);
 
     /**
-     * Returns an IOFunction that writes the referenced containers data to the specified output stream. Subsequent
-     * modifications to the Store will not alter its output.
+     * Removes the specified container from the Store.
      *
-     * @param groupIndex
-     * @param chunkReferences chunk references, not null
+     * @param key, not null
+     * @return true if the Store contained the specified element
+     */
+    boolean remove(K key);
+
+    /**
+     * Returns the size of the specified container.
+     *
+     * @param key, not null
+     * @return size of the container, or -1 if no such container exists
+     */
+    int size(K key);
+
+    /**
+     * Returns an DataWriter that writes the referenced data to the specified output stream. Subsequent modifications to
+     * the Store will not alter its output. This writer should be closed when no longer required to release underlying
+     * resources.
+     *
+     * @param key, not null
+     * @param index
      * @return immutable writer, not null
-     * @throws NullPointerException if the specified container is not present in the Store
+     * @throws NullPointerException if the specified container does not exist
+     * @throws ArrayIndexOutOfBoundsException if the specified index does not exist
      */
-    IOFunction<OutputStream, Long> writer(long groupIndex, List<ChunkServer.ChunkReference> chunkReferences);
+    DataWriter writer(K key, int index);
 
     /**
-     * Returns whether the referenced chunks are present in this Store.
+     * Returns whether the Store contains the referenced data item.
      *
-     * @param groupIndex
-     * @param chunkReferences chunk references, not null
-     * @return true if all present
+     * @param key, not null
+     * @param index
+     * @return true is the referenced data item is present
      */
-    boolean contains(long groupIndex, List<ChunkServer.ChunkReference> chunkReferences);
-
-    /**
-     * Returns whether the specified container is present in the Store.
-     *
-     * @param groupIndex
-     * @param containerIndex
-     * @return true if present
-     */
-    default boolean contains(long groupIndex, long containerIndex) {
-        return size(groupIndex, containerIndex) != -1;
+    default boolean contains(K key, int index) {
+        return index < size(key);
     }
 }

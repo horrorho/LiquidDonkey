@@ -23,14 +23,10 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.store;
 
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -43,9 +39,10 @@ import org.slf4j.LoggerFactory;
  * Memory based Store.
  *
  * @author Ahseya
+ * @param <K> key type
  */
 @ThreadSafe
-public final class MemoryStore implements Store {
+public final class MemoryStore<K> implements Store<K> {
 
     public static MemoryStore newInstance() {
         logger.trace("<< newInstance()");
@@ -55,82 +52,68 @@ public final class MemoryStore implements Store {
     }
 
     private static final Logger logger = LoggerFactory.getLogger(MemoryStore.class);
-    private static final Map<Long, List<byte[]>> emptyGroup = Collections.unmodifiableMap(new HashMap<>());
 
-    private final ConcurrentMap<Long, ConcurrentMap<Long, List<byte[]>>> groupToContainerToList;
+    private final ConcurrentMap<K, List<byte[]>> containers;
 
-    MemoryStore(ConcurrentMap<Long, ConcurrentMap<Long, List<byte[]>>> groupToContainerToList) {
-        this.groupToContainerToList = Objects.requireNonNull(groupToContainerToList);
+    MemoryStore(ConcurrentMap<K, List<byte[]>> containers) {
+        this.containers = Objects.requireNonNull(containers);
     }
 
     @Override
-    public boolean contains(long groupIndex, List<ChunkServer.ChunkReference> chunkReferences) {
-        return chunkReferences.stream().allMatch(reference -> contains(groupIndex, reference));
-    }
-
-    boolean contains(long groupIndex, ChunkServer.ChunkReference chunkReference) {
-        if (!groupToContainerToList.containsKey(groupIndex)) {
-            return false;
+    public boolean put(K key, List<byte[]> chunkData
+    ) {
+        if (chunkData.contains(null)) {
+            throw new NullPointerException("Null chunk data entry");
         }
-        
-        long containerIndex = chunkReference.getContainerIndex();
-        long chunkIndex = chunkReference.getChunkIndex();
-
-        ConcurrentMap<Long, List<byte[]>> container = groupToContainerToList.get(groupIndex);
-        if (!container.containsKey(containerIndex)) {
-            return false;
-        }
-
-        return container.get(containerIndex).size() > chunkIndex;
-    }
-
-    @Override
-    public boolean put(long groupIndex, long containerIndex, List<byte[]> chunkData) {
         List<byte[]> copy = chunkData.stream()
                 .map(data -> Arrays.copyOf(data, data.length))
                 .collect(Collectors.toList());
 
-        return groupToContainerToList
-                .computeIfAbsent(groupIndex, key -> new ConcurrentHashMap<>())
-                .put(containerIndex, copy) == null;
+        return containers.put(key, copy) == null;
     }
 
     @Override
-    public boolean remove(long groupIndex, long containerIndex) {
-        if (!groupToContainerToList.containsKey(groupIndex)) {
-            return false;
-        }
-        return groupToContainerToList.get(groupIndex).remove(containerIndex) != null;
+    public boolean remove(K key
+    ) {
+        return containers.remove(key) != null;
     }
 
     @Override
-    public int size(long groupIndex, long containerIndex) {
-        if (!groupToContainerToList.containsKey(groupIndex)) {
-            return -1;
-        }
-        ConcurrentMap<Long, List<byte[]>> containers = groupToContainerToList.get(groupIndex);
-        return containers.containsKey(containerIndex)
-                ? containers.get(containerIndex).size()
+    public int size(K key) {
+        return containers.containsKey(key)
+                ? containers.get(key).size()
                 : -1;
     }
 
     @Override
-    public IOFunction<OutputStream, Long> writer(long groupIndex, List<ChunkServer.ChunkReference> chunkReferences) {
-        if (!contains(groupIndex, chunkReferences)) {
-            throw new NullPointerException("Missing chunk references");
-        }
-        ConcurrentMap<Long, List<byte[]>> containers = groupToContainerToList.get(groupIndex);
-        List<byte[]> chunks = chunkReferences.stream()
-                .map(reference -> containers.get(reference.getContainerIndex()).get((int) reference.getChunkIndex()))
-                .collect(Collectors.toList());
+    public DataWriter writer(K key, int index) {
+        return new Writer(key, index);
+    }
 
-        return outputStream -> {
-            long total = 0;
-            for (byte[] chunk : chunks) {
-                outputStream.write(chunk);
-                total += chunk.length;
+    public final class Writer implements DataWriter {
+
+        private byte[] data;
+
+        Writer(K key, int index) {
+            if (!contains(key, index)) {
+                throw new IllegalStateException("Missing item, key: " + key + " index: " + index);
             }
-            return total;
-        };
+            data = containers.get(key).get(index);
+        }
+
+        @Override
+        public Long apply(OutputStream outputStream) throws IOException {
+            if (data == null) {
+                throw new IllegalStateException("Closed");
+            }
+
+            outputStream.write(data);
+            return (long) data.length;
+        }
+
+        @Override
+        public void close() throws IOException {
+            data = null;
+        }
     }
 }
