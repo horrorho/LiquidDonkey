@@ -77,14 +77,14 @@ public final class StoreManager {
             fileGroup.getFileChecksumChunkReferencesList().stream().forEach(references -> {
                 ByteString signature = references.getFileChecksum();
                 List<ChunkReference> list = references.getChunkReferencesList();
-
                 signatureToChunkListReferenceList.put(signature, new ArrayList<>());
+                
                 list.stream().forEach(reference -> {
                     long containerIndex = reference.getContainerIndex();
                     long chunkIndex = reference.getChunkIndex();
                     ChunkServer.StorageHostChunkList chunkList = containerToChunkList.get(containerIndex);
-
                     ChunkListReference chunkListReference = new ChunkListReference(chunkList, (int) chunkIndex);
+                    
                     signatureToChunkListReferenceList.get(signature).add(chunkListReference);
 
                     signatureToChunkList
@@ -200,6 +200,10 @@ public final class StoreManager {
         });
     }
 
+    public List<ChunkServer.StorageHostChunkList> chunkListList() {
+        return new ArrayList<>(chunkListToSignatures.keySet());
+    }
+
     static class ChunkListReference {
 
         private final ChunkServer.StorageHostChunkList chunkList;
@@ -216,11 +220,6 @@ public final class StoreManager {
 
         int index() {
             return index;
-        }
-
-        @Override
-        public String toString() {
-            return "ChunkListReference{" + "chunkList=" + chunkList + ", index=" + index + '}';
         }
 
         @Override
@@ -244,6 +243,11 @@ public final class StoreManager {
                 return false;
             }
             return this.index == other.index;
+        }
+
+        @Override
+        public String toString() {
+            return "ChunkListReference{" + "chunkList=" + chunkList + ", index=" + index + '}';
         }
     }
 

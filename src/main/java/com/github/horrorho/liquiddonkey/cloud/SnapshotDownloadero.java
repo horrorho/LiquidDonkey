@@ -3,15 +3,15 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * Permission is hereby granted, free from charge, to any person obtaining a copy
+ * from this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * copies from the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * all copies or substantial portions from the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -26,83 +26,51 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.printer.Printer;
-import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import net.jcip.annotations.NotThreadSafe;
 import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Snapshot download.
+ * <p>
+ * Concurrently downloads snapshots via Donkeys.
  *
  * @author Ahseya
  */
-public class SnapshotDownloader {
+@NotThreadSafe
+public final class SnapshotDownloadero {
 
-    private static final Logger logger = LoggerFactory.getLogger(SnapshotDownloader.class);
+    private static final Logger logger = LoggerFactory.getLogger(SnapshotDownloadero.class);
 
-    /*
-    
-     storagehostchunklist
-     chunkreferences
-     signaturewriter
-     http
-     client
-    
-     specified
-     threads
-     stagger
-     error handling
-    
-    
-     */
-    private final int threads = 2;
+    private final Http http;
+    private final Client client;
+    private final SignatureWriter signatureWriter;
+    private final Printer printer;
+    private final int threads = 4;
     private final int retryCount = 3;
-    private final int staggerMs = 100;
+    private final boolean isAggressive = false;
 
-    private final long executorTimeoutSeconds = 1800;
-
-    private final Supplier<WorkerFetcher> fetcherSupplier;
-    private final Supplier<WorkerWriter> writerSupplier;
-
-    public SnapshotDownloader(Supplier<WorkerFetcher> fetcherSupplier, Supplier<WorkerWriter> writerSupplier) {
-        this.fetcherSupplier = fetcherSupplier;
-        this.writerSupplier = writerSupplier;
-    }
-    
-    
-
-    void download() throws InterruptedException {
-        logger.trace("<< download()");
-
-        ExecutorService executor = Executors.newCachedThreadPool();
-        for (int i = 0; i < threads; i++) {
-            executor.submit(fetcherSupplier.get());
-            executor.submit(writerSupplier.get());
-            TimeUnit.MILLISECONDS.sleep(staggerMs);
-        }
-
-        logger.trace("-- download() > workers fired up: {}", threads);
-
-        executor.shutdown();
-        logger.trace("-- download() > awaiting termination");
-        executor.awaitTermination(executorTimeoutSeconds, TimeUnit.SECONDS); // TODO 30 min timeout?
-        executor.shutdownNow();
-        logger.trace(">> download()");
+    public SnapshotDownloadero(Http http, Client client, SignatureWriter signatureWriter, Printer printer) {
+        this.http = http;
+        this.client = client;
+        this.signatureWriter = signatureWriter;
+        this.printer = printer;
     }
 
-    ChunkServer.FileGroups fetchFileGroups(Client client, Http http, Snapshot snapshot)
+    public void moo(Snapshot snapshot)
+            throws AuthenticationException, BadDataException, IOException, InterruptedException {
+
+        ChunkServer.FileGroups fileGroups = fetchFileGroups(snapshot);
+        downloadFileGroups(fileGroups);
+    }
+
+    ChunkServer.FileGroups fetchFileGroups(Snapshot snapshot)
             throws AuthenticationException, BadDataException, IOException, InterruptedException {
 
         logger.trace("<< fetchFileGroups() < snapshot: {}", snapshot.id());
@@ -129,7 +97,20 @@ public class SnapshotDownloader {
             }
         }
     }
-}
 
-// TODO error count before fail?
-// Aggression
+    void downloadFileGroups(ChunkServer.FileGroups fileGroups)
+            throws AuthenticationException, BadDataException, IOException, InterruptedException {
+
+        logger.trace("<< downloadFileGroups()");
+//        for (ChunkServer.FileChecksumStorageHostChunkLists fileGroup : fileGroups.getFileGroupsList()) {
+//
+//            FileGroupDownloader downloader
+//                    = FileGroupDownloader.from(fileGroups, chunkDataFetcher, signatureWriter, threads, printer);
+//            downloader.download();
+//
+//        }
+        logger.trace(">> downloadFileGroups()");
+    }
+}
+// TODO split downloads?
+// TODO ChunkServer.StorageHostChunkList for item

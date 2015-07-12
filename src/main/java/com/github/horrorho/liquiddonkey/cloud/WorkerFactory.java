@@ -21,51 +21,19 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.util;
-
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+package com.github.horrorho.liquiddonkey.cloud;
 
 /**
- * Pool.
  *
  * @author Ahseya
- * @param <T> item type
  */
-public class Pool<T> {
+public class WorkerFactory {
 
-    public static <T> Pool<T> from(Supplier<T> supplier, int count) {
-        logger.trace("<< from() < supplier: {} count: {}", supplier, count);
-
-        ArrayBlockingQueue queue = new ArrayBlockingQueue(count, true);
-        Stream.generate(supplier).limit(count).forEach(queue::add);
-
-        Pool<T> instance = new Pool<>(queue);
-
-        logger.trace(">> from()");
-        return instance;
+    WorkerFetcher workerFetcher() {
+        return null;
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(Pool.class);
-    private final BlockingQueue<T> queue;
-
-    Pool(BlockingQueue queue) {
-        this.queue = queue;
-    }
-
-    public T acquire() throws InterruptedException {
-        return queue.take();
-    }
-
-    public void recycle(T item) {
-        if (item != null) {
-            queue.add(item);
-        } else {
-            logger.warn("-- recycle() > null item");
-        }
+    WorkerWriter workerWriter() {
+        return null;
     }
 }

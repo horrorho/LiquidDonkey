@@ -196,4 +196,3 @@ public final class WorkPool<T> {
         }
     }
 }
-// TODO external predicate for shutdown?

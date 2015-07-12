@@ -24,6 +24,7 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -35,61 +36,69 @@ import net.jcip.annotations.NotThreadSafe;
  * @author Ahseya
  */
 @NotThreadSafe
-public final class Item {
+public final class ItemOld {
 
-    public static enum Task {
+    static enum Task {
 
         TO_FETCH,
+        TO_DECRYPT,
         TO_WRITE,
         COMPLETED
     }
 
-    public static enum Status {
+    static enum Status {
 
         IN_PROGESS,
         FAILED,
         SUCCESS
     }
 
-    static Item newInstance(ChunkServer.StorageHostChunkList chunkList) {
+    static ItemOld newInstance(
+            ChunkServer.StorageHostChunkList chunkList,
+            StoreManager storageManager) {
 
-        return new Item(chunkList);
+        return new ItemOld(
+                chunkList,
+                storageManager,
+                new ArrayList<>(),
+                null,
+                false);
     }
 
     private final ChunkServer.StorageHostChunkList chunkList;
+    private final StoreManager storageManager;
     private final List<Exception> exceptions;
     private byte[] data;
-    private Task task;
-    private Status status;
+    private boolean isCompleted;
 
-    Item(
+    ItemOld(
             ChunkServer.StorageHostChunkList chunkList,
+            StoreManager storageManager,
             List<Exception> exceptions,
             byte[] data,
-            Task task,
-            Status status) {
+            boolean isCompleted) {
 
         this.chunkList = Objects.requireNonNull(chunkList);
+        this.storageManager = Objects.requireNonNull(storageManager);
         this.exceptions = Objects.requireNonNull(exceptions);
         this.data = data;
-        this.task = Objects.requireNonNull(task);
-        this.status = Objects.requireNonNull(status);
-    }
-
-    Item(ChunkServer.StorageHostChunkList chunkList) {
-        this(chunkList, new ArrayList<>(), null, Task.TO_FETCH, Status.IN_PROGESS);
+        this.isCompleted = isCompleted;
     }
 
     public ChunkServer.StorageHostChunkList chunkList() {
         return chunkList;
     }
 
-    public Item addException(Exception ex) {
+    public StoreManager storageManager() {
+        return storageManager;
+    }
+
+    public ItemOld addException(Exception ex) {
         exceptions.add(ex);
         return this;
     }
 
-    public List<Throwable> exceptions() {
+    public List<Throwable> errors() {
         return new ArrayList<>(exceptions);
     }
 
@@ -101,26 +110,27 @@ public final class Item {
         return data;
     }
 
-    public Item setData(byte[] data) {
+    public ItemOld setData(byte[] data) {
         this.data = data;
         return this;
     }
 
-    public Task task() {
-        return task;
+    public boolean isCompleted() {
+        return isCompleted;
     }
 
-    public Item setTask(Task task) {
-        this.task = task;
+    public ItemOld setCompleted() {
+        isCompleted = true;
         return this;
     }
 
-    public Status status() {
-        return status;
-    }
-
-    public Item setStatus(Status status) {
-        this.status = status;
-        return this;
+    @Override
+    public String toString() {
+        return "Item{"
+                + "exceptions=" + exceptions
+                + ", chunkList=" + chunkList.getHostInfo().getUri()
+                + ", isCompleted=" + isCompleted
+                + '}';
     }
 }
+// TODO ChunkServer.StorageHostChunkList for item

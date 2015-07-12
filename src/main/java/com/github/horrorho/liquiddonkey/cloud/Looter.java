@@ -123,14 +123,17 @@ public class Looter implements Closeable {
             Snapshot snapshot = Snapshot.from(http, backup, id, config.engine());
             Snapshot filtered = Snapshot.from(snapshot, filter);
 
-            SnapshotDownloader sd = new SnapshotDownloader(
-                    http,
-                    client,
-                    ChunkDataFetcher.newInstance(http, client),
-                    SignatureWriter.from(snapshot, config.file()),
-                    printer);
+//            SnapshotDownloader sd = new SnapshotDownloader(
+//                    http,
+//                    client,
+//                    ChunkDataFetcher.newInstance(http, client),
+//                    SignatureWriter.from(snapshot, config.file()),
+//                    printer);
+            FileGroupDownloader fg = new FileGroupDownloader();
+
             try {
-                sd.moo(filtered);
+
+                fg.moo(http, client, filtered, printer, config.file());
 
                 System.exit(0);
 
