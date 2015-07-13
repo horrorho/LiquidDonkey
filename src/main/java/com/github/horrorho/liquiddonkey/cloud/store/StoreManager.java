@@ -78,13 +78,13 @@ public final class StoreManager {
                 ByteString signature = references.getFileChecksum();
                 List<ChunkReference> list = references.getChunkReferencesList();
                 signatureToChunkListReferenceList.put(signature, new ArrayList<>());
-                
+
                 list.stream().forEach(reference -> {
                     long containerIndex = reference.getContainerIndex();
                     long chunkIndex = reference.getChunkIndex();
                     ChunkServer.StorageHostChunkList chunkList = containerToChunkList.get(containerIndex);
                     ChunkListReference chunkListReference = new ChunkListReference(chunkList, (int) chunkIndex);
-                    
+
                     signatureToChunkListReferenceList.get(signature).add(chunkListReference);
 
                     signatureToChunkList
@@ -202,53 +202,6 @@ public final class StoreManager {
 
     public List<ChunkServer.StorageHostChunkList> chunkListList() {
         return new ArrayList<>(chunkListToSignatures.keySet());
-    }
-
-    static class ChunkListReference {
-
-        private final ChunkServer.StorageHostChunkList chunkList;
-        private final int index;
-
-        ChunkListReference(ChunkServer.StorageHostChunkList chunkList, int index) {
-            this.chunkList = chunkList;
-            this.index = index;
-        }
-
-        ChunkServer.StorageHostChunkList chunkList() {
-            return chunkList;
-        }
-
-        int index() {
-            return index;
-        }
-
-        @Override
-        public int hashCode() {
-            int hash = 7;
-            hash = 61 * hash + Objects.hashCode(this.chunkList);
-            hash = 61 * hash + this.index;
-            return hash;
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == null) {
-                return false;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-            final ChunkListReference other = (ChunkListReference) obj;
-            if (!Objects.equals(this.chunkList, other.chunkList)) {
-                return false;
-            }
-            return this.index == other.index;
-        }
-
-        @Override
-        public String toString() {
-            return "ChunkListReference{" + "chunkList=" + chunkList + ", index=" + index + '}';
-        }
     }
 
     public static class Writer implements DataWriter {
