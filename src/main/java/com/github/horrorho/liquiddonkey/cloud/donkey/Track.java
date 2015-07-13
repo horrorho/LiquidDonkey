@@ -21,26 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.settings;
-
-import net.jcip.annotations.ThreadSafe;
-import org.slf4j.Marker;
-import org.slf4j.MarkerFactory;
+package com.github.horrorho.liquiddonkey.cloud.donkey;
 
 /**
  *
  * @author Ahseya
  */
-@ThreadSafe
-public final class Markers {
+public enum Track {
 
-    public static final Marker client = MarkerFactory.getMarker("CLIENT");
-    public static final Marker host = MarkerFactory.getMarker("HOST");
-    public static final Marker http = MarkerFactory.getMarker("HTTP");
-    public static final Marker props = MarkerFactory.getMarker("PROPS");
-
-    // TODO redo to String
-    public static final String POOL = "POOL";
-    public static final String STORE = "STORE";
-
+    FETCH,
+    DECODE_WRITE
 }

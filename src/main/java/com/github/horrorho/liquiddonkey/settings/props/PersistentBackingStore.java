@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.props;
 
-import static com.github.horrorho.liquiddonkey.settings.Markers.PROPS;
+import static com.github.horrorho.liquiddonkey.settings.Markers.props;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -74,7 +74,7 @@ public class PersistentBackingStore<E extends Enum<E>> implements BackingStore<E
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
         } catch (BackingStoreException ex) {
-            logger.warn(PROPS, "-- keySet() > exception: ", ex);
+            logger.warn(props, "-- keySet() > exception: ", ex);
             return new HashSet<>();
         }
     }

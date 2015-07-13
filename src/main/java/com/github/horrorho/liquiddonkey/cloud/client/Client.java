@@ -39,7 +39,7 @@ import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFact
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ProtoBufArray;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import static com.github.horrorho.liquiddonkey.settings.Markers.CLIENT;
+import static com.github.horrorho.liquiddonkey.settings.Markers.client;
 import static com.github.horrorho.liquiddonkey.http.NameValuePairs.parameter;
 import static com.github.horrorho.liquiddonkey.util.Bytes.hex;
 import com.github.horrorho.liquiddonkey.settings.config.ClientConfig;
@@ -242,7 +242,7 @@ public final class Client {
                         mbsaKeySetResponseHandler,
                         path("mbs", dsPrsId, hex(backupUDID), "getKeys"));
 
-        logger.trace(CLIENT, ">> getKeys() > {}", keys);
+        logger.trace(client, ">> getKeys() > {}", keys);
         return keys;
     }
 
@@ -276,7 +276,7 @@ public final class Client {
         } while (!data.isEmpty());
 
         logger.trace(">> listFiles() > count: {}", files.size());
-        logger.trace(CLIENT, ">> listFiles() > {}", files);
+        logger.trace(client, ">> listFiles() > {}", files);
         return files;
     }
 
@@ -308,7 +308,7 @@ public final class Client {
                         files));
 
         logger.trace(">> getFileGroups() > count: {}", fileGroups.getFileGroupsCount());
-        logger.trace(CLIENT, ">> getFileGroups() > {}", fileGroups);
+        logger.trace(client, ">> getFileGroups() > {}", fileGroups);
         return fileGroups;
     }
 
@@ -338,7 +338,7 @@ public final class Client {
             tokens = mobileBackupPost(http, mbsFileAuthTokenListHandler, uri, encoded);
         }
         logger.trace(">> getFiles() > count: {}", tokens.size());
-        logger.trace(CLIENT, ">> getFiles() > {}", tokens);
+        logger.trace(client, ">> getFiles() > {}", tokens);
         return tokens;
     }
 
@@ -362,9 +362,9 @@ public final class Client {
                     .post(tokens.toByteArray());
         }
         logger.trace(">> authorizeGet() > count: {}", groups.getFileGroupsCount());
-        logger.trace(CLIENT, ">> authorizeGet)() > fileError: {}", groups.getFileErrorList());
-        logger.trace(CLIENT, ">> authorizeGet() > fileChunkError: {}", groups.getFileChunkErrorList());
-        logger.trace(CLIENT, ">> authorizeGet() > {}", groups);
+        logger.trace(client, ">> authorizeGet)() > fileError: {}", groups.getFileErrorList());
+        logger.trace(client, ">> authorizeGet() > fileChunkError: {}", groups.getFileChunkErrorList());
+        logger.trace(client, ">> authorizeGet() > {}", groups);
         return groups;
     }
 

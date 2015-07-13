@@ -21,19 +21,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.cloud;
+package com.github.horrorho.liquiddonkey.cloud.store;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
+ * CompoundWriter.
  *
  * @author Ahseya
  */
-public class WorkerFactory {
+public class CompoundWriter implements DataWriter {
 
-    WorkerFetcher workerFetcher() {
-        return null;
+    public static CompoundWriter of(List<DataWriter> writers) {
+        return new CompoundWriter(writers);
     }
 
-    WorkerWriter workerWriter() {
-        return null;
+    private List<DataWriter> writers;
+
+    CompoundWriter(List<DataWriter> writers) {
+        this.writers = new ArrayList<>(writers);
+    }
+
+    @Override
+    public Long apply(OutputStream outputStream) throws IOException {
+        if (writers == null) {
+            throw new IllegalStateException("Closed");
+        }
+        long total = 0;
+        for (DataWriter writer : writers) {
+            total += writer.apply(outputStream);
+        }
+        return total;
+    }
+
+    @Override
+    public void close() throws IOException {
+        for (DataWriter writer : writers) {
+            writer.close();
+        }
+        writers = null;
     }
 }

@@ -24,7 +24,7 @@
 package com.github.horrorho.liquiddonkey.http;
 
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
-import static com.github.horrorho.liquiddonkey.settings.Markers.HTTP;
+import static com.github.horrorho.liquiddonkey.settings.Markers.http;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
@@ -75,7 +75,7 @@ public final class Http implements Closeable {
      */
     public <T> T request(HttpUriRequest request, ResponseHandler<T> handler)
             throws AuthenticationException, IOException {
-        logger.trace(HTTP, "<< request() < {}", request);
+        logger.trace(http, "<< request() < {}", request);
         int count = 0;
         while (true) {
             try {
@@ -86,13 +86,13 @@ public final class Http implements Closeable {
                 if (count++ < socketTimeoutRetryCount) {
                     logger.trace("-- request() > retrying: ", ex);
                 } else {
-                    logger.trace(HTTP, "-- request() > ", ex);
+                    logger.trace(http, "-- request() > ", ex);
                     throw ex;
                 }
             } catch (HttpResponseException ex) {
                 throw AuthenticationException.test(ex);
             } catch (IOException ex) {
-                logger.trace(HTTP, "-- request() > ", ex);
+                logger.trace(http, "-- request() > ", ex);
                 throw ex;
             }
         }

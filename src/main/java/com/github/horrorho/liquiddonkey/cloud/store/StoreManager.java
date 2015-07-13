@@ -23,13 +23,15 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.store;
 
+import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.ChunkReference;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import static com.github.horrorho.liquiddonkey.settings.Markers.STORE;
+import com.github.horrorho.liquiddonkey.printer.Level;
+import com.github.horrorho.liquiddonkey.printer.Printer;
+import com.github.horrorho.liquiddonkey.settings.Markers;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,9 +45,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
-import static org.bouncycastle.asn1.cms.CMSObjectIdentifiers.data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 /**
  * StoreManager.
@@ -55,9 +58,13 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class StoreManager {
 
-    public static StoreManager from(ChunkServer.FileGroups fileGroups) {
+    public static StoreManager from(
+            ChunkServer.FileGroups fileGroups,
+            SignatureWriter signatureWriter,
+            Printer printer) {
+
         logger.trace("<< from()");
-        logger.debug(STORE, "-- from() > fileGroup: {}", fileGroups);
+        logger.debug(marker, "-- from() > fileGroup: {}", fileGroups);
 
         ConcurrentMap<ByteString, Set<ChunkServer.StorageHostChunkList>> signatureToChunkList
                 = new ConcurrentHashMap<>();
@@ -97,45 +104,54 @@ public final class StoreManager {
                 });
             });
         });
-        logger.debug(STORE, "-- from() > signatureToChunkListReferenceList: {}", signatureToChunkListReferenceList);
-        logger.debug(STORE, "-- from() > signatureToChunkList: {}", signatureToChunkList);
-        logger.debug(STORE, "-- from() > chunkListToSignatures: {}", chunkListToSignatures);
+        logger.debug(marker, "-- from() > signatureToChunkListReferenceList: {}", signatureToChunkListReferenceList);
+        logger.debug(marker, "-- from() > signatureToChunkList: {}", signatureToChunkList);
+        logger.debug(marker, "-- from() > chunkListToSignatures: {}", chunkListToSignatures);
 
         StoreManager chunkManager = new StoreManager(
                 MemoryStore.newInstance(),
                 chunkListToSignatures,
                 signatureToChunkList,
                 signatureToChunkListReferenceList,
-                ChunkDecrypter::newInstance);
+                ChunkDecrypter::newInstance,
+                signatureWriter,
+                printer);
 
         logger.trace(">> from()");
         return chunkManager;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(StoreManager.class);
+    private static final Marker marker = MarkerFactory.getMarker(Markers.STORE);
 
     private final Store<ChunkServer.StorageHostChunkList> store;
     private final ConcurrentMap<ChunkServer.StorageHostChunkList, Set<ByteString>> chunkListToSignatures;   // Requires concurrent Set
     private final ConcurrentMap<ByteString, Set<ChunkServer.StorageHostChunkList>> signatureToChunkList;   // Requires concurrent Set
     private final ConcurrentMap<ByteString, List<ChunkListReference>> signatureToChunkListReferenceList;
     private final Supplier<ChunkDecrypter> decrypters;
+    private final SignatureWriter signatureWriter;
+    private final Printer printer;
 
     StoreManager(
             Store<ChunkServer.StorageHostChunkList> store,
             ConcurrentMap<ChunkServer.StorageHostChunkList, Set<ByteString>> chunkListToSignatures,
             ConcurrentMap<ByteString, Set<ChunkServer.StorageHostChunkList>> signatureToChunkList,
             ConcurrentMap<ByteString, List<ChunkListReference>> signatureToChunkListReferenceList,
-            Supplier<ChunkDecrypter> decrypters) {
+            Supplier<ChunkDecrypter> decrypters,
+            SignatureWriter signatureWriter,
+            Printer printer) {
 
         this.store = Objects.requireNonNull(store);
         this.chunkListToSignatures = Objects.requireNonNull(chunkListToSignatures);
         this.signatureToChunkList = Objects.requireNonNull(signatureToChunkList);
         this.signatureToChunkListReferenceList = Objects.requireNonNull(signatureToChunkListReferenceList);
         this.decrypters = Objects.requireNonNull(decrypters);
+        this.signatureWriter = Objects.requireNonNull(signatureWriter);
+        this.printer = Objects.requireNonNull(printer);
     }
 
-    public Map<ByteString, DataWriter> put(ChunkServer.StorageHostChunkList chunkList, byte[] chunkData)
-            throws BadDataException {
+    public void put(ChunkServer.StorageHostChunkList chunkList, byte[] chunkData)
+            throws BadDataException, IOException {
 
         logger.trace("<< put() < uri: {} length: {}", chunkList.getHostInfo().getUri(), chunkData.length);
 
@@ -150,8 +166,35 @@ public final class StoreManager {
             clear(writers.keySet());
         }
 
-        logger.trace(">> put() > writers: {}", writers);
-        return writers;
+        logger.debug("-- put() > writing signatures: {}", writers.keySet());
+        write(writers);
+
+        logger.trace(">> put()");
+        return;
+    }
+
+    void write(Map<ByteString, DataWriter> writers) throws IOException {
+        try {
+            for (ByteString signature : writers.keySet()) {
+                try (DataWriter dataWriter = writers.get(signature)) {
+                    signatureWriter.write(signature, dataWriter).entrySet().stream().forEach(
+                            entry -> printer.println(Level.VV,
+                                    "\t" + entry.getKey().getDomain()
+                                    + " " + entry.getKey().getRelativePath()
+                                    + " " + entry.getValue()));
+                } finally {
+                    writers.remove(signature);
+                }
+            }
+        } finally {
+            writers.values().stream().forEach(dataWriter -> {
+                try {
+                    dataWriter.close();
+                } catch (IOException ex) {
+                    logger.warn("-- write() > exception on close: {}", ex);
+                }
+            });
+        }
     }
 
     Map<ByteString, DataWriter> process(ChunkServer.StorageHostChunkList chunkList) {
@@ -182,7 +225,7 @@ public final class StoreManager {
                 .map(reference -> store.writer(reference.chunkList(), reference.index()))
                 .collect(Collectors.toList());
 
-        return new Writer(writers);
+        return CompoundWriter.of(writers);
     }
 
     void clear(Set<ByteString> signatures) {
@@ -203,34 +246,5 @@ public final class StoreManager {
     public List<ChunkServer.StorageHostChunkList> chunkListList() {
         return new ArrayList<>(chunkListToSignatures.keySet());
     }
-
-    public static class Writer implements DataWriter {
-
-        private List<DataWriter> writers;
-
-        Writer(List<DataWriter> writers) {
-            this.writers = writers;
-        }
-
-        @Override
-        public Long apply(OutputStream outputStream) throws IOException {
-            if (data == null) {
-                throw new IllegalStateException("Closed");
-            }
-
-            long total = 0;
-            for (DataWriter writer : writers) {
-                total += writer.apply(outputStream);
-            }
-            return total;
-        }
-
-        @Override
-        public void close() throws IOException {
-            for (DataWriter writer : writers) {
-                writer.close();
-            }
-            writers = null;
-        }
-    }
 }
+// failed list?

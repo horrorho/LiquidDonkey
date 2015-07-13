@@ -25,12 +25,17 @@ package com.github.horrorho.liquiddonkey.cloud.store;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import java.util.Objects;
+import net.jcip.annotations.Immutable;
+import net.jcip.annotations.ThreadSafe;
 
 /**
+ * ChunkListReference.
  *
  * @author Ahseya
  */
-class ChunkListReference {
+@Immutable
+@ThreadSafe
+final class ChunkListReference {
 
     private final ChunkServer.StorageHostChunkList chunkList;
     private final int index;
@@ -75,6 +80,4 @@ class ChunkListReference {
     public String toString() {
         return "ChunkListReference{" + "chunkList=" + chunkList + ", index=" + index + '}';
     }
-
 }
-// TODO move out ChunkListReference

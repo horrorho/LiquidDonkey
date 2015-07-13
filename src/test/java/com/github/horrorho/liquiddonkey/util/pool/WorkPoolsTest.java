@@ -25,7 +25,6 @@ package com.github.horrorho.liquiddonkey.util.pool;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -57,7 +56,7 @@ import org.slf4j.MarkerFactory;
 public class WorkPoolsTest {
 
     private static final Logger logger = LoggerFactory.getLogger(WorkPoolsTest.class);
-    public static final Marker test = MarkerFactory.getMarker("TEST");
+    public static final Marker marker = MarkerFactory.getMarker("TEST");
 
     public static enum Pool {
 
@@ -84,7 +83,7 @@ public class WorkPoolsTest {
 
     @Test
     public void testFromFactoryMethodsEmpty() throws Exception {
-        Map<Pool, Collection<Integer>> items = new EnumMap<>(Pool.class);
+        Map<Pool, List<Integer>> items = new EnumMap<>(Pool.class);
 
         WorkPools<Pool, Integer> pools = WorkPools.from(Pool.class, items);
         assertThat(pools.isFair(), is(false));
@@ -101,7 +100,7 @@ public class WorkPoolsTest {
 
     @Test
     public void testFromFactoryMethodNotEmpty() throws Exception {
-        Map<Pool, Collection<Integer>> items = new EnumMap<>(Pool.class);
+        Map<Pool, List<Integer>> items = new EnumMap<>(Pool.class);
         items.put(Pool.ONE, Arrays.asList(1));
         items.put(Pool.TWO, Arrays.asList(1, 2));
         items.put(Pool.THREE, Arrays.asList(1, 2, 3));
@@ -118,17 +117,17 @@ public class WorkPoolsTest {
 
     @Test
     public void testFromFactoryMethodNullException() throws Exception {
-        Map<Pool, Collection<String>> items = new EnumMap<>(Pool.class);
+        Map<Pool, List<String>> items = new EnumMap<>(Pool.class);
         List<String> bad = Arrays.asList("one", "two", "three", null);
         items.put(Pool.ONE, bad);
 
         exception.expect(IllegalArgumentException.class);
-        WorkPools<Pool, String> pools = WorkPools.from(Pool.class, items);
+        WorkPools.from(Pool.class, items);
     }
 
     @Test
     public void testAcquireRelease() throws Exception {
-        Map<Pool, Collection<Integer>> items = new EnumMap<>(Pool.class);
+        Map<Pool, List<Integer>> items = new EnumMap<>(Pool.class);
         items.put(Pool.ONE, Arrays.asList(1, 2));
         items.put(Pool.TWO, Arrays.asList(3, 4));
 
@@ -183,7 +182,7 @@ public class WorkPoolsTest {
     @Test
     public void testProcess() throws Exception {
 
-        Map<Pool, Collection<Integer>> items = new EnumMap<>(Pool.class);
+        Map<Pool, List<Integer>> items = new EnumMap<>(Pool.class);
         items.put(Pool.ONE, Arrays.asList(1));
 
         WorkPools<Pool, Integer> pools;
@@ -253,7 +252,7 @@ public class WorkPoolsTest {
     @Test
     public void testConcurrentAquireDispose() throws Exception {
         List<Integer> integers = IntStream.range(0, max).mapToObj(Integer::valueOf).collect(Collectors.toList());
-        Map<Pool, Collection<Integer>> items = new EnumMap<>(Pool.class);
+        Map<Pool, List<Integer>> items = new EnumMap<>(Pool.class);
         Stream.of(Pool.values()).forEach(e -> items.put(e, integers));
         WorkPools<Pool, Integer> pools = WorkPools.from(Pool.class, items);
 
@@ -280,7 +279,7 @@ public class WorkPoolsTest {
 
     public Runnable acquireDisposeRunnable(WorkPools<Pool, Integer> pools, Pool pool, List<Integer> list) {
         return () -> {
-            logger.trace(test, "<< runnable() < pool: {}", pool);
+            logger.trace(marker, "<< runnable() < pool: {}", pool);
             try {
                 pending.incrementAndGet();
                 Integer i;
@@ -288,12 +287,12 @@ public class WorkPoolsTest {
                     list.add(i);
                     pools.release(pool, null);
                 }
-                logger.trace(test, "-- runnable > done");
+                logger.trace(marker, "-- runnable > done");
             } catch (InterruptedException | RuntimeException ex) {
                 logger.warn(">> runnable() > exception: {}", ex);
             } finally {
                 pending.decrementAndGet();
-                logger.trace(test, ">> runnable() > pool: {}", pool);
+                logger.trace(marker, ">> runnable() > pool: {}", pool);
             }
         };
     }
@@ -301,7 +300,7 @@ public class WorkPoolsTest {
     @Test
     public void testConcurrentAquireRequeue() throws Exception {
         List<Integer> integers = IntStream.range(0, max).mapToObj(Integer::valueOf).collect(Collectors.toList());
-        Map<Pool, Collection<Integer>> items = new EnumMap<>(Pool.class);
+        Map<Pool, List<Integer>> items = new EnumMap<>(Pool.class);
         Stream.of(Pool.values()).forEach(e -> items.put(e, Arrays.asList(max)));
         WorkPools<Pool, Integer> pools = WorkPools.from(Pool.class, items);
 
@@ -328,7 +327,7 @@ public class WorkPoolsTest {
 
     public Runnable acquireRequeueRunnable(WorkPools<Pool, Integer> pools, Pool pool, List<Integer> list) {
         return () -> {
-            logger.trace(test, "<< runnable() < pool: {}", pool);
+            logger.trace(marker, "<< runnable() < pool: {}", pool);
             try {
                 pending.incrementAndGet();
                 Integer i;
@@ -336,12 +335,12 @@ public class WorkPoolsTest {
                     list.add(--i);
                     pools.release(pool, i > 0 ? i : null);
                 }
-                logger.trace(test, "-- runnable > done");
+                logger.trace(marker, "-- runnable > done");
             } catch (InterruptedException | RuntimeException ex) {
                 logger.warn(">> runnable() > exception: {}", ex);
             } finally {
                 pending.decrementAndGet();
-                logger.trace(test, ">> runnable() > pool: {}", pool);
+                logger.trace(marker, ">> runnable() > pool: {}", pool);
             }
         };
     }
@@ -349,7 +348,7 @@ public class WorkPoolsTest {
     @Test
     public void testConcurrentAquireCrossRequeue() throws Exception {
         List<Integer> integers = IntStream.range(0, max).mapToObj(Integer::valueOf).collect(Collectors.toList());
-        Map<Pool, Collection<Integer>> items = new EnumMap<>(Pool.class);
+        Map<Pool, List<Integer>> items = new EnumMap<>(Pool.class);
         items.put(Pool.ONE, Arrays.asList(max));
         WorkPools<Pool, Integer> pools = WorkPools.from(Pool.class, items);
 
@@ -373,7 +372,7 @@ public class WorkPoolsTest {
 
     public Runnable acquireCrossRequeueRunnable(WorkPools<Pool, Integer> pools, Pool pool, List<Integer> list) {
         return () -> {
-            logger.trace(test, "<< runnable() < pool: {}", pool);
+            logger.trace(marker, "<< runnable() < pool: {}", pool);
             try {
                 pending.incrementAndGet();
                 Integer i;
@@ -381,15 +380,15 @@ public class WorkPoolsTest {
                     list.add(--i);
                     Pool nextPool = next.get(pool);
                     Integer item = i > 0 ? i : null;
-                    logger.debug(test, "-- runnable > release, pool: {} item: {}", nextPool, item);
+                    logger.debug(marker, "-- runnable > release, pool: {} item: {}", nextPool, item);
                     pools.release(nextPool, item);
                 }
-                logger.trace(test, "-- runnable > done");
+                logger.trace(marker, "-- runnable > done");
             } catch (InterruptedException | RuntimeException ex) {
                 logger.warn(">> runnable() > exception: {}", ex);
             } finally {
                 pending.decrementAndGet();
-                logger.trace(test, ">> runnable() > pool: {}", pool);
+                logger.trace(marker, ">> runnable() > pool: {}", pool);
             }
         };
     }
@@ -397,7 +396,7 @@ public class WorkPoolsTest {
     @Test
     public void testConcurrentAquireCrossProcess() throws Exception {
         List<Integer> integers = IntStream.range(0, max).mapToObj(Integer::valueOf).collect(Collectors.toList());
-        Map<Pool, Collection<Integer>> items = new EnumMap<>(Pool.class);
+        Map<Pool, List<Integer>> items = new EnumMap<>(Pool.class);
         items.put(Pool.ONE, Arrays.asList(max));
         WorkPools<Pool, Integer> pools = WorkPools.from(Pool.class, items);
 
@@ -421,7 +420,7 @@ public class WorkPoolsTest {
 
     public Runnable acquireCrossProcessRunnable(WorkPools<Pool, Integer> pools, Pool pool, List<Integer> list) {
         return () -> {
-            logger.trace(test, "<< runnable() < pool: {}", pool);
+            logger.trace(marker, "<< runnable() < pool: {}", pool);
             try {
                 pending.incrementAndGet();
                 while (!pools.process(pool, i -> {
@@ -429,20 +428,20 @@ public class WorkPoolsTest {
                     Pool nextPool = next.get(pool);
                     Integer item = i > 0 ? i : null;
                     if (item == null) {
-                        logger.debug(test, "-- runnable > dispose, pool: {} item: {}", nextPool, item);
+                        logger.debug(marker, "-- runnable > dispose, pool: {} item: {}", nextPool, item);
                         return Release.dispose();
                     } else {
-                        logger.debug(test, "-- runnable > requeue, pool: {} item: {}", nextPool, item);
+                        logger.debug(marker, "-- runnable > requeue, pool: {} item: {}", nextPool, item);
                         return Release.requeue(nextPool, item);
                     }
                 })) {
                 }
-                logger.trace(test, "-- runnable > done");
+                logger.trace(marker, "-- runnable > done");
             } catch (InterruptedException | RuntimeException ex) {
                 logger.warn(">> runnable() > exception: {}", ex);
             } finally {
                 pending.decrementAndGet();
-                logger.trace(test, ">> runnable() > pool: {}", pool);
+                logger.trace(marker, ">> runnable() > pool: {}", pool);
             }
         };
     }

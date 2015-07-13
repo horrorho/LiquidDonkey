@@ -129,11 +129,11 @@ public class Looter implements Closeable {
 //                    ChunkDataFetcher.newInstance(http, client),
 //                    SignatureWriter.from(snapshot, config.file()),
 //                    printer);
-            FileGroupDownloader fg = new FileGroupDownloader();
-
             try {
 
-                fg.moo(http, client, filtered, printer, config.file());
+                SnapshotDownloader downloader = new SnapshotDownloader(config.file(), printer);
+
+                downloader.download(http, client, filtered);
 
                 System.exit(0);
 

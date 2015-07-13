@@ -24,8 +24,8 @@
 package com.github.horrorho.liquiddonkey.util.pool;
 
 import com.github.horrorho.liquiddonkey.settings.Markers;
-import java.util.Collection;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.locks.Condition;
@@ -53,23 +53,23 @@ public final class WorkPools<E extends Enum<E>, T> {
     private static final Logger logger = LoggerFactory.getLogger(WorkPools.class);
     public static final Marker marker = MarkerFactory.getMarker(Markers.POOL);
 
-    public static <E extends Enum<E>, T> WorkPools<E, T> from(Class<E> poolKeyType, Map<E, Collection<T>> items) {
+    public static <E extends Enum<E>, T> WorkPools<E, T> from(Class<E> poolKeyType, Map<E, List<T>> items) {
         return WorkPools.from(poolKeyType, items, false);
     }
 
     public static <E extends Enum<E>, T> WorkPools<E, T>
-            from(Class<E> poolKeyType, Map<E, Collection<T>> items, boolean fairness) {
+            from(Class<E> poolKeyType, Map<E, List<T>> items, boolean fairness) {
 
         Objects.requireNonNull(poolKeyType);
         Objects.requireNonNull(items);
 
-        logger.trace(marker,"<< from() < key: {} item count: {} fairness: {}",
+        logger.trace(marker, "<< from() < key: {} item count: {} fairness: {}",
                 poolKeyType.getSimpleName(), items.size(), fairness);
 
         ReentrantLock lock = new ReentrantLock();
-        Map<E, Condition> notEmptyConditions = new EnumMap<>(poolKeyType);       
+        Map<E, Condition> notEmptyConditions = new EnumMap<>(poolKeyType);
         Map<E, SimpleQueue<T>> pools = new EnumMap<>(poolKeyType);
-        
+
         Stream.of(poolKeyType.getEnumConstants()).forEach(key -> {
             notEmptyConditions.put(key, lock.newCondition());
             pools.put(key, new FifoLinkedListQueue());
@@ -86,13 +86,13 @@ public final class WorkPools<E extends Enum<E>, T> {
                 .sum();
 
         if (total == 0) {
-            logger.debug(marker,"-- from() > empty collection, poisoning pools");
+            logger.debug(marker, "-- from() > empty collection, poisoning pools");
             pools.values().stream().forEach(q -> q.add(null));
         }
 
         WorkPools<E, T> worksPool = new WorkPools<>(lock, notEmptyConditions, pools, 0, total == 0);
 
-        logger.trace(marker,">> from() > key: {} fairness: {} total: {}", poolKeyType.getSimpleName(), fairness, total);
+        logger.trace(marker, ">> from() > key: {} fairness: {} total: {}", poolKeyType.getSimpleName(), fairness, total);
         return worksPool;
     }
 
@@ -123,7 +123,7 @@ public final class WorkPools<E extends Enum<E>, T> {
         }
 
         Release<E, T> action = null;
-        
+
         try {
             action = function.apply(item);
         } finally {
@@ -137,16 +137,16 @@ public final class WorkPools<E extends Enum<E>, T> {
     }
 
     T acquire(E pool) throws InterruptedException {
-        logger.trace(marker,"<< acquire() < pool: {}", pool);
+        logger.trace(marker, "<< acquire() < pool: {}", pool);
         if (isDepleted) {
-            logger.trace(marker,">> acquire() > depleted, pool: {} item: null", pool);
+            logger.trace(marker, ">> acquire() > depleted, pool: {} item: null", pool);
             return null;
         }
         lock.lockInterruptibly();
         try {
             SimpleQueue<T> queue = pools.get(pool);
             Condition notEmpty = notEmptyConditions.get(pool);
-            
+
             while (queue.isEmpty()) {
                 notEmpty.await();
             }
@@ -154,13 +154,13 @@ public final class WorkPools<E extends Enum<E>, T> {
             T item = queue.remove();
 
             if (item == null) {
-                logger.debug(marker,"-- acquire() > poisoned pool: {}", pool);
+                logger.debug(marker, "-- acquire() > poisoned pool: {}", pool);
                 queue.add(null);
                 notEmpty.signal();
             } else {
                 pending++;
             }
-            logger.trace(marker,">> acquire() > pool: {} item: {}", pool, item);
+            logger.trace(marker, ">> acquire() > pool: {} item: {}", pool, item);
             return item;
         } finally {
             lock.unlock();
@@ -168,28 +168,28 @@ public final class WorkPools<E extends Enum<E>, T> {
     }
 
     void release(E pool, T item) {
-        logger.trace(marker,"<< release() < pool: {} item: {}", pool, item);
+        logger.trace(marker, "<< release() < pool: {} item: {}", pool, item);
         lock.lock();
         try {
             pending--;
             SimpleQueue<T> queue = pools.get(pool);
             Condition notEmpty = notEmptyConditions.get(pool);
-            
+
             if (item == null) {
-                logger.debug(marker,"-- release() > disposed, pool: {} item: {}", pool, item);
-                
+                logger.debug(marker, "-- release() > disposed, pool: {} item: {}", pool, item);
+
                 if (pending == 0 && queue.isEmpty() && pools.values().stream().allMatch(SimpleQueue::isEmpty)) {
-                    logger.debug(marker,"-- release() > depleted, poisoning pools");
+                    logger.debug(marker, "-- release() > depleted, poisoning pools");
                     pools.values().stream().forEach(q -> q.add(null));
                     isDepleted = true;
                     notEmptyConditions.values().forEach(Condition::signal);
                 }
             } else {
-                logger.debug(marker,"-- release() > pool: {} item: {}", pool, item);
+                logger.debug(marker, "-- release() > pool: {} item: {}", pool, item);
                 queue.add(item);
                 notEmpty.signal();
             }
-            logger.trace(marker,">> release() > requeued, pool: {} item: {}", pool, item);
+            logger.trace(marker, ">> release() > requeued, pool: {} item: {}", pool, item);
         } finally {
             lock.unlock();
         }
