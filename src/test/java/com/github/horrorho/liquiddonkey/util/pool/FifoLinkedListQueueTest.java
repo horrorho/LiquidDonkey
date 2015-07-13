@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.NoSuchElementException;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Rule;
@@ -58,6 +59,12 @@ public class FifoLinkedListQueueTest {
         instance.add("three");
         assertThat(instance.remove(), is("two"));
         assertThat(instance.remove(), is("three"));
+        instance.add("one");
+        instance.add("one");
+        assertThat(instance.remove(), is("one"));
+        assertThat(instance.remove(), is("one"));
+        instance.add(null);
+        assertThat(instance.remove(), is(nullValue())); 
     }
 
     @Test
@@ -89,6 +96,8 @@ public class FifoLinkedListQueueTest {
         assertThat(instance.size(), is(0));
         instance.add("one");
         assertThat(instance.size(), is(1));
+        instance.add("two");
+        assertThat(instance.size(), is(2));
     }
 
     @Test
@@ -111,6 +120,12 @@ public class FifoLinkedListQueueTest {
         assertThat(instance.isEmpty(), is(true));
         instance.add("one");
         assertThat(instance.isEmpty(), is(false));
+        instance.add("two");
+        assertThat(instance.isEmpty(), is(false));
+        instance.remove();
+        assertThat(instance.isEmpty(), is(false));
+        instance.remove();
+        assertThat(instance.isEmpty(), is(true));
     }
 
     @Test
@@ -130,7 +145,7 @@ public class FifoLinkedListQueueTest {
 
     @Test
     public void testContains() {
-        SimpleQueue<String> instance = new FifoArrayQueue<>(3);
+        SimpleQueue<String> instance = new FifoLinkedListQueue<>();
 
         assertThat(instance.contains("one"), is(false));
         instance.add("one");
@@ -141,5 +156,8 @@ public class FifoLinkedListQueueTest {
         assertThat(instance.contains("one"), is(false));
         assertThat(instance.remove(), is("two"));
         assertThat(instance.isEmpty(), is(true));
+        assertThat(instance.contains(null), is(false));
+        instance.add(null);
+        assertThat(instance.contains(null), is(true));
     }
 }

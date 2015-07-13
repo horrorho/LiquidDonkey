@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.NoSuchElementException;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.Rule;
@@ -58,6 +59,12 @@ public class FifoArrayQueueTest {
         instance.add("three");
         assertThat(instance.remove(), is("two"));
         assertThat(instance.remove(), is("three"));
+        instance.add("one");
+        instance.add("one");
+        assertThat(instance.remove(), is("one"));
+        assertThat(instance.remove(), is("one"));
+        instance.add(null);
+        assertThat(instance.remove(), is(nullValue())); 
     }
 
     @Test
@@ -92,7 +99,7 @@ public class FifoArrayQueueTest {
 
     @Test
     public void testSize() {
-        SimpleQueue<String> instance = new FifoArrayQueue<>(1);
+        SimpleQueue<String> instance = new FifoArrayQueue<>(2);
 
         assertThat(instance.size(), is(0));
         instance.add("one");
@@ -101,6 +108,8 @@ public class FifoArrayQueueTest {
         assertThat(instance.size(), is(0));
         instance.add("one");
         assertThat(instance.size(), is(1));
+        instance.add("two");
+        assertThat(instance.size(), is(2));
     }
 
     @Test
@@ -114,11 +123,13 @@ public class FifoArrayQueueTest {
         assertThat(instance.isFull(), is(true));
         instance.remove();
         assertThat(instance.isFull(), is(false));
+        instance.add(null);
+        assertThat(instance.isFull(), is(true));
     }
 
     @Test
     public void testIsEmpty() {
-        SimpleQueue<String> instance = new FifoArrayQueue<>(1);
+        SimpleQueue<String> instance = new FifoArrayQueue<>(2);
 
         assertThat(instance.isEmpty(), is(true));
         instance.add("one");
@@ -127,6 +138,12 @@ public class FifoArrayQueueTest {
         assertThat(instance.isEmpty(), is(true));
         instance.add("one");
         assertThat(instance.isEmpty(), is(false));
+        instance.add("two");
+        assertThat(instance.isEmpty(), is(false));
+        instance.remove();
+        assertThat(instance.isEmpty(), is(false));
+        instance.remove();
+        assertThat(instance.isEmpty(), is(true));
     }
 
     @Test
@@ -157,5 +174,8 @@ public class FifoArrayQueueTest {
         assertThat(instance.contains("one"), is(false));
         assertThat(instance.remove(), is("two"));
         assertThat(instance.isEmpty(), is(true));
+        assertThat(instance.contains(null), is(false));
+        instance.add(null);
+        assertThat(instance.contains(null), is(true));
     }
 }
