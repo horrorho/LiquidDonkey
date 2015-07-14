@@ -25,6 +25,7 @@ package com.github.horrorho.liquiddonkey.http;
 
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.iofunction.IOBiFunction;
+import com.github.horrorho.liquiddonkey.iofunction.IOSupplier;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -42,7 +43,7 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 
 /**
- * Request builder and executor.
+ * Http request builder.
  *
  * @author ahseya
  * @param <T> Return type.
@@ -93,25 +94,33 @@ public class HttpExecutor<T> {
         return this;
     }
 
+    IOSupplier<T> execute(RequestBuilder builder) throws AuthenticationException, IOException {
+        builder.setUri(uri);
+        headers.stream().forEach(builder::addHeader);
+        parameters.stream().forEach(builder::addParameter);
+        HttpUriRequest request = builder.build();
+        return () -> http.apply(request, handler);
+    }
+
     /**
      * Get.
      *
-     * @return result, may be null
-     * @throws AuthenticationException
+     * @return IOSupplier, not null
+     * @throws AuthenticationException, IOException
      * @throws IOException
      */
-    public T get() throws AuthenticationException, IOException {
+    public IOSupplier<T> get() throws AuthenticationException, IOException {
         return execute(RequestBuilder.get());
     }
 
     /**
      * Post.
      *
-     * @return result, may be null
-     * @throws AuthenticationException
+     * @return IOSupplier, not null
+     * @throws AuthenticationException, IOException
      * @throws IOException
      */
-    public T post() throws AuthenticationException, IOException {
+    public IOSupplier<T> post() throws AuthenticationException, IOException {
         return execute(RequestBuilder.post());
     }
 
@@ -119,11 +128,11 @@ public class HttpExecutor<T> {
      * Post.
      *
      * @param postData post data, not null
-     * @return result, may be null
-     * @throws AuthenticationException
+     * @return IOSupplier, not null
+     * @throws AuthenticationException, IOException
      * @throws IOException
      */
-    public T post(byte[] postData) throws AuthenticationException, IOException {
+    public IOSupplier<T> post(byte[] postData) throws AuthenticationException, IOException {
         RequestBuilder builder = RequestBuilder.post();
         builder.setEntity(new ByteArrayEntity(postData));
         return execute(builder);
@@ -133,19 +142,11 @@ public class HttpExecutor<T> {
      * Execute.
      *
      * @param method, not null
-     * @return result, may be null
-     * @throws AuthenticationException
+     * @return IOSupplier, not null
+     * @throws AuthenticationException, IOException
      * @throws IOException
      */
-    public T execute(String method) throws AuthenticationException, IOException {
+    public IOSupplier<T> method(String method) throws AuthenticationException, IOException {
         return execute(RequestBuilder.create(method));
-    }
-
-    T execute(RequestBuilder builder) throws AuthenticationException, IOException {
-        builder.setUri(uri);
-        headers.stream().forEach(builder::addHeader);
-        parameters.stream().forEach(builder::addParameter);
-        HttpUriRequest request = builder.build();
-        return http.apply(request, handler);
     }
 }

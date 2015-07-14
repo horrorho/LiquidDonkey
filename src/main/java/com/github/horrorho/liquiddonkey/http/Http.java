@@ -75,6 +75,7 @@ public final class Http implements Closeable {
      */
     public <T> T request(HttpUriRequest request, ResponseHandler<T> handler)
             throws AuthenticationException, IOException {
+
         logger.trace(http, "<< request() < {}", request);
         int count = 0;
         while (true) {
