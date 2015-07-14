@@ -66,11 +66,11 @@ public class HttpExecutor<T> {
     }
 
     public HttpExecutor<T> header(String name, String value) {
-        return HttpExecutor.this.headers(new BasicHeader(name, value));
+        return headers(new BasicHeader(name, value));
     }
 
     public HttpExecutor<T> headers(Header... headers) {
-        return HttpExecutor.this.headers(Arrays.asList(headers));
+        return headers(Arrays.asList(headers));
     }
 
     public HttpExecutor<T> headers(Collection<Header> headers) {
@@ -140,7 +140,7 @@ public class HttpExecutor<T> {
      * @return result, may be null
      * @throws IOException
      */
-    public T method(String method) throws IOException {
+    public T execute(String method) throws IOException {
         return execute(RequestBuilder.create(method));
     }
 }
