@@ -29,7 +29,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.Objects;
-import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.impl.client.BasicResponseHandler;
@@ -73,10 +72,9 @@ public final class Http implements Closeable {
      * @throws AuthenticationException
      * @throws IOException
      */
-    public <T> T request(HttpUriRequest request, ResponseHandler<T> handler)
-            throws AuthenticationException, IOException {
-
+    public <T> T request(HttpUriRequest request, ResponseHandler<T> handler) throws IOException {
         logger.trace(http, "<< request() < {}", request);
+
         int count = 0;
         while (true) {
             try {
@@ -90,8 +88,6 @@ public final class Http implements Closeable {
                     logger.trace(http, "-- request() > ", ex);
                     throw ex;
                 }
-            } catch (HttpResponseException ex) {
-                throw AuthenticationException.test(ex);
             } catch (IOException ex) {
                 logger.trace(http, "-- request() > ", ex);
                 throw ex;
