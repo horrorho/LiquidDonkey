@@ -58,7 +58,7 @@ public class SnapshotDownloader {
     private final FileConfig fileConfig;
     private final Printer printer;
 
-    private final int threads = 2;
+    private final int threads = 4;
     private final int retryCount = 3;
     private final int staggerMs = 100;
 

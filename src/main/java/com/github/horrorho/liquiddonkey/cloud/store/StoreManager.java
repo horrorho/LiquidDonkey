@@ -36,6 +36,7 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -153,6 +154,9 @@ public final class StoreManager {
     public void put(ChunkServer.StorageHostChunkList chunkList, byte[] chunkData)
             throws BadDataException, IOException {
 
+        Objects.requireNonNull(chunkList);
+        Objects.requireNonNull(chunkData);
+
         logger.trace("<< put() < uri: {} length: {}", chunkList.getHostInfo().getUri(), chunkData.length);
 
         List<byte[]> chunks = decrypters.get().decrypt(chunkList, chunkData);
@@ -170,12 +174,11 @@ public final class StoreManager {
         write(writers);
 
         logger.trace(">> put()");
-        return;
     }
 
     void write(Map<ByteString, DataWriter> writers) throws IOException {
         try {
-            for (ByteString signature : writers.keySet()) {
+            for (ByteString signature : new HashSet<>(writers.keySet())) {
                 try (DataWriter dataWriter = writers.get(signature)) {
                     signatureWriter.write(signature, dataWriter).entrySet().stream().forEach(
                             entry -> printer.println(Level.VV,

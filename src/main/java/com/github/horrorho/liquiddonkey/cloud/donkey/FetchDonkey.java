@@ -35,6 +35,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.http.client.HttpResponseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * FetchDonkey.
@@ -43,6 +45,8 @@ import org.apache.http.client.HttpResponseException;
  */
 @NotThreadSafe
 public final class FetchDonkey extends Donkey {
+
+    private static final Logger log = LoggerFactory.getLogger(FetchDonkey.class);
 
     private final Http http;
     private final Client client;
@@ -65,20 +69,25 @@ public final class FetchDonkey extends Donkey {
     }
 
     @Override
-    protected Release<Track, Donkey>  toProcess() throws IOException {
-        Release<Track, Donkey>  toDo;
+    protected Release<Track, Donkey> toProcess() throws IOException {
+        log.trace("<< toProcess()");
+
+        Release<Track, Donkey> toDo;
         try {
             byte[] data = client.chunks(http, chunkList);
             toDo = Release.requeue(Track.DECODE_WRITE, writerDonkeys.apply(this, data));
         } catch (AuthenticationException ex) {
             throw ex;
         } catch (HttpResponseException ex) {
+            log.warn("-- toProcess() > exception: ", ex);
             toDo = isExceptionLimit(ex)
                     ? Release.dispose()
                     : Release.requeue(this);
         } catch (IOException | RuntimeException ex) {
             throw ex;
         }
+
+        log.trace(">> toProcess() > release: {}", toDo);
         return toDo;
     }
 }

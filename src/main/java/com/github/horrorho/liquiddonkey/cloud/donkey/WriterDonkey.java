@@ -33,6 +33,8 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import net.jcip.annotations.NotThreadSafe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * WriterDonkey.
@@ -41,6 +43,8 @@ import net.jcip.annotations.NotThreadSafe;
  */
 @NotThreadSafe
 public final class WriterDonkey extends Donkey {
+
+    private static final Logger log = LoggerFactory.getLogger(WriterDonkey.class);
 
     private final StoreManager manager;
     private final Function<WriterDonkey, FetchDonkey> fetchDonkeys;
@@ -59,16 +63,20 @@ public final class WriterDonkey extends Donkey {
 
         this.manager = Objects.requireNonNull(manager);
         this.fetchDonkeys = Objects.requireNonNull(fetchDonkeys);
+        this.data = Objects.requireNonNull(data);
     }
 
     @Override
     protected Release<Track, Donkey> toProcess() throws IOException {
-        Release<Track, Donkey>  toDo;
+        log.trace("<< toProcess()");
+
+        Release<Track, Donkey> toDo;
         try {
             manager.put(chunkList, data);
             data = null;
             toDo = Release.dispose();
         } catch (BadDataException ex) {
+            log.warn("-- toProcess() > exception: ", ex);
             toDo = isExceptionLimit(ex)
                     ? Release.dispose()
                     : Release.requeue(fetchDonkeys.apply(this));
@@ -77,6 +85,8 @@ public final class WriterDonkey extends Donkey {
         } finally {
             data = null;
         }
+
+        log.trace(">> toProcess() > release: {}", toDo);
         return toDo;
     }
 }

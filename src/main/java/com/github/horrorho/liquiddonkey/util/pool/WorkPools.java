@@ -185,11 +185,11 @@ public final class WorkPools<E extends Enum<E>, T> {
                     notEmptyConditions.values().forEach(Condition::signal);
                 }
             } else {
-                logger.debug(marker, "-- release() > pool: {} item: {}", pool, item);
+                logger.debug(marker, "-- release() > requeued: {} item: {}", pool, item);
                 queue.add(item);
                 notEmpty.signal();
             }
-            logger.trace(marker, ">> release() > requeued, pool: {} item: {}", pool, item);
+            logger.trace(marker, ">> release() > pool: {} item: {}", pool, item);
         } finally {
             lock.unlock();
         }

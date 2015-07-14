@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 @NotThreadSafe
 public abstract class Donkey {
 
-    protected static final Logger logger = LoggerFactory.getLogger(Donkey.class);
+    private static final Logger logger = LoggerFactory.getLogger(Donkey.class);
 
     protected final ChunkServer.StorageHostChunkList chunkList;
     protected final List<Exception> exceptions;
@@ -62,28 +62,36 @@ public abstract class Donkey {
     }
 
     public Release<Track, Donkey> process() {
+        logger.trace("<< process()");
+
+        Release<Track, Donkey> toDo;
         try {
             Exception exception = fatal.get();
             if (exception == null) {
-                return toProcess();
+                toDo = toProcess();
             } else {
                 exceptions.add(exception);
-                return Release.dispose();
+                toDo = Release.dispose();
             }
         } catch (IOException | RuntimeException ex) {
+            logger.warn("-- process() > exception: {}", ex);
             exceptions.add(ex);
             fatal.compareAndSet(null, ex);
-            return Release.dispose();
+            toDo = Release.dispose();
         }
+
+        logger.trace(">> process() > release: {}", toDo);
+        return toDo;
     }
 
     protected boolean isExceptionLimit(Exception exception) {
         exceptions.add(exception);
         if (exceptions.size() > retryCount) {
-            logger.warn("-- exception > retry exhausted, count: {} exception: {}", exceptions.size(), exception);
+            logger.warn("-- isExceptionLimit() > retry exhausted, count: {} exception: {}",
+                    exceptions.size(), exception);
             return true;
         } else {
-            logger.warn("-- exception > retry, count: {} exception: {}", exceptions.size(), exception);
+            logger.warn("-- isExceptionLimit() > retry, count: {} exception: {}", exceptions.size(), exception);
             return false;
         }
     }
@@ -100,5 +108,10 @@ public abstract class Donkey {
         return retryCount;
     }
 
-    protected abstract Release<Track, Donkey>  toProcess() throws IOException;
+    protected abstract Release<Track, Donkey> toProcess() throws IOException;
+
+    @Override
+    public String toString() {
+        return "Donkey{" + "chunkList=" + chunkList.getHostInfo().getUri() + '}';
+    }
 }

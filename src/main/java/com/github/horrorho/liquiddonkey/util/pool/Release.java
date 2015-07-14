@@ -61,4 +61,9 @@ public final class Release<E extends Enum<E>, T> {
     public T item() {
         return item;
     }
+
+    @Override
+    public String toString() {
+        return "Release{" + "pool=" + pool + ", item=" + item + '}';
+    }
 }

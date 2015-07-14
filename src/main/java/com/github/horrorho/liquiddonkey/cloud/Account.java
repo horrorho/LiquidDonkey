@@ -49,7 +49,6 @@ public final class Account {
      * Queries the client and returns a new instance.
      *
      * @param http, not null
-     * @param client, not null
      * @return new instance, not null
      * @throws AuthenticationException
      * @throws IOException

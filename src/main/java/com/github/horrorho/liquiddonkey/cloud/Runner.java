@@ -57,7 +57,7 @@ public class Runner implements Runnable {
         logger.trace("<< run() < track: {}", track);
 
         try {
-            while (pools.process(track, Donkey::process)) {
+            while (!pools.process(track, Donkey::process)) {
                 count++;
             }
         } catch (RuntimeException | InterruptedException ex) {
