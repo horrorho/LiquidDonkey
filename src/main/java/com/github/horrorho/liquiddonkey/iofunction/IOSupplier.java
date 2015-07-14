@@ -26,7 +26,7 @@ package com.github.horrorho.liquiddonkey.iofunction;
 import java.io.IOException;
 
 /**
- * Represents a supplier of results.
+ * IOSupplier with IOException.
  *
  * @author ahseya
  * @param <T> the input type.

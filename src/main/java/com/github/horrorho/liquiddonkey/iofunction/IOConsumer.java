@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- * Represents a function that accepts two arguments and produces a result.
+ * IOConsumer with IOException.
  *
  * @author ahseya
  * @param <T> the input type.

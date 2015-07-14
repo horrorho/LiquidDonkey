@@ -27,7 +27,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 /**
- * Represents a function that accepts one argument and produces a result.
+ * BiConsumer with IOException.
  *
  * @author ahseya
  * @param <T> First input type.

@@ -28,7 +28,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Represents a function that accepts one argument and produces a result.
+ * BiFunction with IOException.
  *
  * @author ahseya
  * @param <T> First input type.

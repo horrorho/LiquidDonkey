@@ -28,7 +28,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Represents a function that accepts two arguments and produces a result.
+ * IOFunction with IOException.
  *
  * @author ahseya
  * @param <T> the input type.
