@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.http;
 
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import static com.github.horrorho.liquiddonkey.settings.Markers.http;
 import java.io.Closeable;
 import java.io.IOException;
@@ -69,7 +68,6 @@ public final class Http implements Closeable {
      * @param request not null
      * @param handler not null
      * @return result, may be null
-     * @throws AuthenticationException
      * @throws IOException
      */
     public <T> T request(HttpUriRequest request, ResponseHandler<T> handler) throws IOException {
