@@ -53,11 +53,11 @@ public final class Account {
      * @throws IOException
      */
     public static Account of(Client client) throws IOException {
-        logger.trace("<< from()");
+        logger.trace("<< of()");
 
         Account instance = new Account(client.account());
 
-        logger.trace(">> from() > {}", instance);
+        logger.trace(">> of() > {}", instance);
         return instance;
     }
 
