@@ -60,7 +60,7 @@ public class Looter implements Closeable {
                 config,
                 HttpFactory.of(config.http()).newInstance(printer),
                 printer,
-                FileFilter.getInstance(config.fileFilter()));
+                FileFilter.from(config.fileFilter()));
 
         logger.trace(">> of()");
         return looter;

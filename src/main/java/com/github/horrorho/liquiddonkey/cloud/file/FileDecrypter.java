@@ -66,13 +66,13 @@ public final class FileDecrypter {
      *
      * @return a new instance, not null
      */
-    public static FileDecrypter newInstance() {
-        return FileDecrypter.newInstance(
+    public static FileDecrypter create() {
+        return FileDecrypter.create(
                 new BufferedBlockCipher(new CBCBlockCipher(new AESEngine())),
                 MessageDigestFactory.getInstance().SHA1());
     }
 
-    static FileDecrypter newInstance(BufferedBlockCipher cbcAes, MessageDigest sha1) {
+    static FileDecrypter create(BufferedBlockCipher cbcAes, MessageDigest sha1) {
         return new FileDecrypter(cbcAes, sha1);
     }
 

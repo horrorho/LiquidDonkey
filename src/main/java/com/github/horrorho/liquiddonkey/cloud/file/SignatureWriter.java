@@ -72,15 +72,15 @@ public final class SignatureWriter {
      * @return a new instance, not null
      */
     // TODO rework this
-    public static SignatureWriter of(
+    public static SignatureWriter from(
             Snapshot snapshot,
             FileConfig fileConfig) {
 
         return new SignatureWriter(
                 snapshot.signatures(),
-                FileDecrypter.newInstance(),
+                FileDecrypter.create(),
                 KeyBagTools.newInstance(snapshot.backup().keybag()),
-                SnapshotDirectory.of(snapshot, fileConfig),
+                SnapshotDirectory.from(snapshot, fileConfig),
                 fileConfig.setLastModifiedTimestamp());
     }
 

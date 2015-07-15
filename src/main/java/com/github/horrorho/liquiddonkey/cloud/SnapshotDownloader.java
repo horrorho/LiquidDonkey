@@ -73,7 +73,7 @@ public class SnapshotDownloader {
 
         ChunkServer.FileGroups fileGroups = fetchFileGroups(client, snapshot);
 
-        SignatureWriter writer = SignatureWriter.of(snapshot, fileConfig);
+        SignatureWriter writer = SignatureWriter.from(snapshot, fileConfig);
         StoreManager manager = StoreManager.of(fileGroups, writer, printer);
         DonkeyFactory factory = DonkeyFactory.from(client, manager, retryCount);
 

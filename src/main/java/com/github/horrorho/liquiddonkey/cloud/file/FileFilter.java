@@ -45,7 +45,7 @@ import net.jcip.annotations.ThreadSafe;
 public final class FileFilter
         implements Predicate<ICloud.MBSFile>, Function<Collection<ICloud.MBSFile>, Set<ICloud.MBSFile>> {
 
-    public static FileFilter getInstance(FileFilterConfig config) {
+    public static FileFilter from(FileFilterConfig config) {
 
         return new FileFilter(
                 config.domainContains(),
