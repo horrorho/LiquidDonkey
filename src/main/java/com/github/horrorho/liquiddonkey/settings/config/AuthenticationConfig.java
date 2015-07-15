@@ -83,6 +83,22 @@ public class AuthenticationConfig {
         return !hasAppleIdPassword() && !hasToken();
     }
 
+    public String appleId() {
+        return appleId;
+    }
+
+    public String password() {
+        return password;
+    }
+
+    public String dsPrsID() {
+        return dsPrsID;
+    }
+
+    public String mmeAuthToken() {
+        return mmeAuthToken;
+    }
+
     @Override
     public String toString() {
         return "AuthenticationConfigNew{"
