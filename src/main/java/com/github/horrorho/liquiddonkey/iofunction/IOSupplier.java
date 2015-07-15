@@ -29,7 +29,7 @@ import java.io.IOException;
  * IOSupplier with IOException.
  *
  * @author ahseya
- * @param <T> the input type.
+ * @param <T> input type.
  */
 @FunctionalInterface
 public interface IOSupplier<T> {

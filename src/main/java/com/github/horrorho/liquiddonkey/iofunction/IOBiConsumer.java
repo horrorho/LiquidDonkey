@@ -30,8 +30,8 @@ import java.util.Objects;
  * BiConsumer with IOException.
  *
  * @author ahseya
- * @param <T> First input type.
- * @param <U> Second input type.
+ * @param <T> first input type.
+ * @param <U> second input type.
  */
 @FunctionalInterface
 public interface IOBiConsumer<T, U> {

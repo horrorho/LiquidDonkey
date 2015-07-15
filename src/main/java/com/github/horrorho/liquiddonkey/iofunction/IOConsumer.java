@@ -30,7 +30,7 @@ import java.util.Objects;
  * IOConsumer with IOException.
  *
  * @author ahseya
- * @param <T> the input type.
+ * @param <T> input type.
  */
 @FunctionalInterface
 public interface IOConsumer<T> {

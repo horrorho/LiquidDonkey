@@ -31,8 +31,8 @@ import java.util.function.Function;
  * IOFunction with IOException.
  *
  * @author ahseya
- * @param <T> the input type.
- * @param <R> the return type.
+ * @param <T> input type.
+ * @param <R> return type.
  */
 @FunctionalInterface
 public interface IOFunction<T, R> {

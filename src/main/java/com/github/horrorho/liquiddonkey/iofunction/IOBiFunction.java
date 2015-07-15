@@ -31,9 +31,9 @@ import java.util.function.Function;
  * BiFunction with IOException.
  *
  * @author ahseya
- * @param <T> First input type.
- * @param <U> Second input type.
- * @param <R> Return type.
+ * @param <T> first input type.
+ * @param <U> second input type.
+ * @param <R> return type.
  */
 @FunctionalInterface
 public interface IOBiFunction<T, U, R> {
