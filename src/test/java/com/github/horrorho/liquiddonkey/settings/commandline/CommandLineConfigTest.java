@@ -24,7 +24,6 @@
 package com.github.horrorho.liquiddonkey.settings.commandline;
 
 import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import com.github.horrorho.liquiddonkey.settings.props.Props;
 import java.nio.file.Paths;
@@ -62,8 +61,10 @@ public class CommandLineConfigTest {
 
     public static Object[] parametersForTestFromArgs() {
         return new Object[]{
-            o("user password", config -> ((AuthenticationConfig.AppleIdPassword) config.authentication()).id(), "user"),
-            o("user password", config -> ((AuthenticationConfig.AppleIdPassword) config.authentication()).password(), "password"),
+            o("user password", config -> config.authentication().appleId(), "user"),
+            o("user password", config -> config.authentication().password(), "password"),
+            o("123456:abcdef", config -> config.authentication().dsPrsID(), "123456"),
+            o("123456:abcdef", config -> config.authentication().mmeAuthToken(), "abcdef"),
             o("u p --output test/folder", config -> config.file().base(), Paths.get("test/folder").toAbsolutePath()),
             o("u p --udid", config -> config.selection().udids(), set("")),
             o("u p --udid 1FfF", config -> config.selection().udids(), set("1FfF")),
