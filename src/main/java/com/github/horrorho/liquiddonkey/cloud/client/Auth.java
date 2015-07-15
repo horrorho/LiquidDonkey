@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.client;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -40,10 +41,10 @@ import org.apache.http.Header;
 public final class Auth {
 
     public static Auth of(String dsPrsId, String mmeAuthToken) {
-        return of(dsPrsId, mmeAuthToken, 0);
+        return of(dsPrsId, mmeAuthToken, Instant.now());
     }
 
-    public static Auth of(String dsPrsId, String mmeAuthToken, long revision) {
+    public static Auth of(String dsPrsId, String mmeAuthToken, Instant timeStamp) {
         String authMme = Tokens.create().mobilemeAuthToken(dsPrsId, mmeAuthToken);
         Headers headers = Headers.create();
         return new Auth(
@@ -51,28 +52,27 @@ public final class Auth {
                 mmeAuthToken,
                 headers.mobileBackupHeaders(authMme),
                 headers.contentHeaders(dsPrsId),
-                revision);
+                timeStamp);
     }
 
     private final String dsPrsId;
     private final String mmeAuthToken;
     private final List<Header> mobileBackupHeaders;
     private final List<Header> contentHeaders;
-
-    private final long revision;
+    private final Instant timestamp;
 
     public Auth(
             String dsPrsId,
             String mmeAuthToken,
             List<Header> mobileBackupHeaders,
             List<Header> contentHeaders,
-            long revision) {
+            Instant timestamp) {
 
         this.dsPrsId = Objects.requireNonNull(dsPrsId);
         this.mmeAuthToken = Objects.requireNonNull(mmeAuthToken);
         this.mobileBackupHeaders = Objects.requireNonNull(mobileBackupHeaders);
         this.contentHeaders = Objects.requireNonNull(contentHeaders);
-        this.revision = revision;
+        this.timestamp = Objects.requireNonNull(timestamp);
     }
 
     public String mmeAuthToken() {
@@ -95,8 +95,8 @@ public final class Auth {
         return new ArrayList<>(contentHeaders);
     }
 
-    public long revision() {
-        return revision;
+    public Instant timestamp() {
+        return timestamp;
     }
 
     @Override
@@ -106,7 +106,7 @@ public final class Auth {
                 + ", mmeAuthToken=" + mmeAuthToken
                 + ", mobileBackupHeaders=" + mobileBackupHeaders
                 + ", contentHeaders=" + contentHeaders
-                + ", revision=" + revision
+                + ", timestamp=" + timestamp
                 + '}';
     }
 }
