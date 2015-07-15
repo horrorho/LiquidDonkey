@@ -23,43 +23,48 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.client;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import net.jcip.annotations.Immutable;
-import net.jcip.annotations.ThreadSafe;
-
 /**
- * Tokens.
+ * Settings.
  *
  * @author Ahseya
  */
-@Immutable
-@ThreadSafe
-public class Tokens {
+public class Settings {
 
-    private static final Tokens instance = new Tokens();
+    private final String contentUrl;
+    private final String mobileBackupUrl;
+    private final String appleId;
+    private final String fullName;
 
-    /**
-     * Returns an instance.
-     *
-     * @return instance, not null
-     */
-    public static Tokens create() {
-        return instance;
+    Settings(String contentUrl, String mobileBackupUrl, String appleId, String fullName) {
+        this.contentUrl = contentUrl;
+        this.mobileBackupUrl = mobileBackupUrl;
+        this.appleId = appleId;
+        this.fullName = fullName;
     }
 
-    Tokens() {
+    public String contentUrl() {
+        return contentUrl;
     }
 
-    public String basic(String left, String right) {
-        return token("Basic", left, right);
+    public String mobileBackupUrl() {
+        return mobileBackupUrl;
     }
 
-    public String mobilemeAuthToken(String left, String right) {
-        return token("X-MobileMe-AuthToken", left, right);
+    public String appleId() {
+        return appleId;
     }
 
-    public String token(String type, String left, String right) {
-        return type + " " + Base64.getEncoder().encodeToString((left + ":" + right).getBytes(StandardCharsets.UTF_8));
+    public String fullName() {
+        return fullName;
+    }
+
+    @Override
+    public String toString() {
+        return "Settings{"
+                + "contentUrl=" + contentUrl
+                + ", mobileBackupUrl=" + mobileBackupUrl
+                + ", appleId=" + appleId
+                + ", fullName=" + fullName
+                + '}';
     }
 }

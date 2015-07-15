@@ -3,15 +3,15 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * Permission is hereby granted, free from charge, to any person obtaining a copy
+ * from this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * copies from the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * all copies or substantial portions from the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -23,43 +23,40 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.client;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
 /**
- * Tokens.
+ * Authentication.
  *
  * @author Ahseya
  */
 @Immutable
 @ThreadSafe
-public class Tokens {
+public final class IdPassword {
 
-    private static final Tokens instance = new Tokens();
-
-    /**
-     * Returns an instance.
-     *
-     * @return instance, not null
-     */
-    public static Tokens create() {
-        return instance;
+    public static IdPassword of(String id, String password) {
+        return new IdPassword(id, password);
     }
 
-    Tokens() {
+    private final String id;
+    private final String password;
+
+    IdPassword(String id, String password) {
+        this.id = id;
+        this.password = password;
     }
 
-    public String basic(String left, String right) {
-        return token("Basic", left, right);
+    public String getId() {
+        return id;
     }
 
-    public String mobilemeAuthToken(String left, String right) {
-        return token("X-MobileMe-AuthToken", left, right);
+    public String getPassword() {
+        return password;
     }
 
-    public String token(String type, String left, String right) {
-        return type + " " + Base64.getEncoder().encodeToString((left + ":" + right).getBytes(StandardCharsets.UTF_8));
+    @Override
+    public String toString() {
+        return "IdPass{" + "id=" + id + ", password=" + password + '}';
     }
 }

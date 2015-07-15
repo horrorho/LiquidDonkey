@@ -42,85 +42,95 @@ import org.apache.http.message.BasicHeader;
 @ThreadSafe
 public final class Headers {
 
-    static final Header accept
+    public static Headers create() {
+        return instance;
+    }
+
+    private static final Headers instance = new Headers();
+
+    private static final Header accept
             = new BasicHeader(
                     "Accept",
                     "application/vnd.com.apple.me.ubchunk+protobuf");
-    static final Header contentType
+    private static final Header contentType
             = new BasicHeader(
                     "Content-Type",
                     "application/vnd.com.apple.me.ubchunk+protobuf");
-    static final Header mbsProtocolVersion
+    private static final Header mbsProtocolVersion
             = new BasicHeader(
                     "X-Apple-MBS-Protocol-Version",
                     "1.7");
-    static final Header mmcsProtocolVersion
+    private static final Header mmcsProtocolVersion
             = new BasicHeader(
                     "x-apple-mmcs-proto-version",
                     "3.3");
-    static final Header mmcsDataClass
+    private static final Header mmcsDataClass
             = new BasicHeader(
                     "x-apple-mmcs-dataclass",
                     "com.apple.Dataclass.Backup");
-    static final Header mmeClientInfo
+    private static final Header mmeClientInfo
             = new BasicHeader(
                     "X-MMe-Client-Info",
                     "<iPhone2,1> <iPhone OS;5.1.1;9B206> <com.apple.AppleAccount/1.0 ((null)/(null))>");
-    static final Header mmeClientInfoBackup
+    private static final Header mmeClientInfoBackup
             = new BasicHeader(
                     "X-MMe-Client-Info",
                     "<N88AP> <iPhone OS;5.1.1;9B206> <com.apple.icloud.content/211.1 (com.apple.MobileBackup/9B206)>");
-    static final Header userAgentBackupd
+    private static final Header userAgentBackupd
             = new BasicHeader(
                     HttpHeaders.USER_AGENT,
                     "backupd (unknown version) CFNetwork/548.1.4 Darwin/11.0.0");
-    static final Header userAgentMobileBackup
+    private static final Header userAgentMobileBackup
             = new BasicHeader(
                     HttpHeaders.USER_AGENT,
                     "MobileBackup/5.1.1 (9B206; iPhone3,1)");
-    static final Header userAgentUbd
+    private static final Header userAgentUbd
             = new BasicHeader(
                     HttpHeaders.USER_AGENT,
                     "ubd (unknown version) CFNetwork/548.1.4 Darwin/11.0.0");
 
-    static List<Header> mobileBackupHeaders(String authMme) {
+    List<Header> mobileBackupHeaders(String authMme) {
         return Arrays.asList(
-                Headers.authorization(authMme),
-                Headers.mmeClientInfo,
-                Headers.userAgentMobileBackup,
-                Headers.mbsProtocolVersion
+                authorization(authMme),
+                mmeClientInfo,
+                userAgentMobileBackup,
+                mbsProtocolVersion
         );
     }
 
-    static List<Header> contentHeaders(String dsPrsID) {
+    List<Header> contentHeaders(String dsPrsID) {
         return Arrays.asList(
-                Headers.mmeDsid(dsPrsID),
-                Headers.mmcsProtocolVersion,
-                Headers.mmcsDataClass,
-                Headers.userAgentBackupd,
-                Headers.accept,
-                Headers.contentType,
-                Headers.mmeClientInfoBackup
+                mmeDsid(dsPrsID),
+                mmcsProtocolVersion,
+                mmcsDataClass,
+                userAgentBackupd,
+                accept,
+                contentType,
+                mmeClientInfoBackup
         );
     }
 
-    static Header mmeDsid(String dsPrsID) {
+    Header mmeClientInfo() {
+        return mmeClientInfo;
+    }
+
+    Header mmeDsid(String dsPrsID) {
         return header("x-apple-mme-dsid", dsPrsID);
     }
 
-    static Header authorization(String token) {
+    Header authorization(String token) {
         return header("Authorization", token);
     }
 
-    static Header mmcsAuth(String token) {
+    Header mmcsAuth(String token) {
         return header("x-apple-mmcs-auth", token);
     }
 
-    static Header header(String name, String value) {
+    Header header(String name, String value) {
         return new BasicHeader(name, value);
     }
 
-    static List<Header> headers(List<ChunkServer.NameValuePair> headers) {
+    List<Header> headers(List<ChunkServer.NameValuePair> headers) {
         return headers.stream()
                 .map(header -> new BasicHeader(header.getName(), header.getValue()))
                 .collect(Collectors.toList());
