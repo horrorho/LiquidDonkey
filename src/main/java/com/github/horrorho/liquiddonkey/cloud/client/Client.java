@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
@@ -79,16 +80,16 @@ public class Client {
             = ResponseHandlerFactory.of(ICloud.MBSKeySet.PARSER::parseFrom);
 
     private final Auth auth;
-    private final Settings settings;
+    private final Settings settings; // TODO break down to urls
     private final Http http;
     private final Headers headers;
     private final int listFilesLimit;
 
     Client(Auth auth, Settings settings, Http http, Headers headers, int listFilesLimit) {
-        this.auth = auth;
-        this.settings = settings;
-        this.http = http;
-        this.headers = headers;
+        this.auth = Objects.requireNonNull(auth);
+        this.settings = Objects.requireNonNull(settings);
+        this.http = Objects.requireNonNull(http);
+        this.headers = Objects.requireNonNull(headers);
         this.listFilesLimit = listFilesLimit;
     }
 

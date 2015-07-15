@@ -23,13 +23,11 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.client.Authentication;
+import com.github.horrorho.liquiddonkey.cloud.client.Auth;
+import com.github.horrorho.liquiddonkey.cloud.client.Authenticator;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
+import com.github.horrorho.liquiddonkey.cloud.client.Settings;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
-import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
@@ -42,8 +40,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 import java.util.function.UnaryOperator;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
@@ -92,22 +88,28 @@ public class Looter implements Closeable {
         logger.trace("<< loot()");
 
         printer.println(Level.VV, "Authenticating.");
-        Authentication authentication = Authentication.authenticate(http, config.authentication());
+        // TODO reauthentication
+        
 
-        Client client = Client.from(http, authentication, config.client());
+        
+        Authenticator authenticator = Authenticator.of(config.authentication());
+        Auth auth = authenticator.auth(http);
+        Settings settings = Settings.of(http, auth);
+
+        Client client = Client.of(auth, settings, http, config.client());
 
         if (config.engine().toDumpToken()) {
-            printer.println(Level.V, "Authorization token: " + authentication.token());
+            printer.println(Level.V, "Authorization token: " + auth.token());
             return;
         }
 
-        Account account = Account.from(http, client);
+        Account account = Account.of(client);
 
         UnaryOperator<List<Backup>> backupSelector = BackupSelector.newInstance(config.selection().udids(), printer);
 
         List<Backup> backups = new ArrayList<>();
         for (ByteString udid : account.list()) {
-            backups.add(Backup.from(http, account, udid));
+            backups.add(Backup.of(client, account, udid));
         }
 
         for (Backup backup : backupSelector.apply(backups)) {
@@ -120,8 +122,8 @@ public class Looter implements Closeable {
     void backup(Http http, Client client, Backup backup) throws AuthenticationException, IOException, InterruptedException {
 
         for (int id : backup.snapshots()) {
-            Snapshot snapshot = Snapshot.from(http, backup, id, config.engine());
-            Snapshot filtered = Snapshot.from(snapshot, filter);
+            Snapshot snapshot = Snapshot.of(client, backup, id, config.engine());
+            Snapshot filtered = Snapshot.of(snapshot, filter);
 
 //            SnapshotDownloader sd = new SnapshotDownloader(
 //                    http,
@@ -133,7 +135,7 @@ public class Looter implements Closeable {
 
                 SnapshotDownloader downloader = new SnapshotDownloader(config.file(), printer);
 
-                downloader.download(http, client, filtered);
+                downloader.download(client, filtered);
 
                 System.exit(0);
 

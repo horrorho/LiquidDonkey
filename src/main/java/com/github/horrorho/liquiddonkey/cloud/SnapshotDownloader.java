@@ -30,9 +30,7 @@ import com.github.horrorho.liquiddonkey.cloud.donkey.Track;
 import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.github.horrorho.liquiddonkey.util.pool.WorkPools;
@@ -69,13 +67,13 @@ public class SnapshotDownloader {
         this.printer = printer;
     }
 
-    void download(Http http, Client client, Snapshot snapshot) throws AuthenticationException, BadDataException, IOException, InterruptedException {
+    void download(Client client, Snapshot snapshot) throws BadDataException, IOException, InterruptedException {
 
-        ChunkServer.FileGroups fileGroups = fetchFileGroups(http, client, snapshot);
+        ChunkServer.FileGroups fileGroups = fetchFileGroups(client, snapshot);
 
         SignatureWriter writer = SignatureWriter.from(snapshot, fileConfig);
         StoreManager manager = StoreManager.from(fileGroups, writer, printer);
-        DonkeyFactory factory = DonkeyFactory.from(http, client, manager, retryCount);
+        DonkeyFactory factory = DonkeyFactory.from(client, manager, retryCount);
 
         Map<Track, List<Donkey>> donkies = manager.chunkListList().stream().map(factory::fetchDonkey)
                 .collect(Collectors.groupingBy(list -> Track.FETCH));
@@ -103,8 +101,7 @@ public class SnapshotDownloader {
         logger.trace(">> download()");
     }
 
-    ChunkServer.FileGroups fetchFileGroups(Http http, Client client, Snapshot snapshot)
-            throws AuthenticationException, BadDataException, IOException {
+    ChunkServer.FileGroups fetchFileGroups(Client client, Snapshot snapshot) throws BadDataException, IOException {
 
         logger.trace("<< fetchFileGroups() < snapshot: {}", snapshot.id());
 
@@ -112,21 +109,23 @@ public class SnapshotDownloader {
         while (true) {
             try {
                 ChunkServer.FileGroups fileGroups
-                        = client.getFileGroups(http, snapshot.backup().udid(), snapshot.id(), snapshot.files());
+                        = client.getFileGroups(snapshot.backup().udid(), snapshot.id(), snapshot.files());
 
                 logger.info("-- fetchFileGroups() > fileChunkErrorList: {}", fileGroups.getFileChunkErrorList());
                 logger.info("-- fetchFileGroups() > fileErrorList: {}", fileGroups.getFileErrorList());
                 logger.trace(">> fetchFileGroups()");
                 return fileGroups;
 
-            } catch (AuthenticationException ex) {
-                throw ex;
-            } catch (BadDataException | HttpResponseException ex) {
-                if (count-- > 0) {
-                    logger.warn("-- fetchFileGroups() > exception: {}", ex);
-                } else {
+            } catch (HttpResponseException ex) {
+                if (ex.getStatusCode() == 401 || count-- <= 0) {
                     throw ex;
                 }
+                logger.warn("-- fetchFileGroups() > exception: {}", ex);
+            } catch (BadDataException ex) {
+                if (count-- <= 0) {
+                    throw ex;
+                }
+                logger.warn("-- fetchFileGroups() > exception: {}", ex);
             }
         }
     }

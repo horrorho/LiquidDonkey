@@ -23,12 +23,11 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
-import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagFactory;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -51,6 +50,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Backup.
+ * <p>
+ * Describes {@link ICloud.MBSBackup}.
  *
  * @author Ahseya
  */
@@ -63,37 +64,36 @@ public final class Backup {
     private static final DateTimeFormatter defaultDateTimeFormatter = DateTimeFormatter.RFC_1123_DATE_TIME;
 
     /**
-     * Queries the client and returns a new instance.
+     * Queries the Client and returns a new instance.
      *
-     * @param http not null
+     * @param client not null
      * @param account not null
      * @param udid not null
      * @return a new instance, may be null
-     * @throws AuthenticationException
      * @throws IOException
      */
-    public static Backup from(Http http, Account account, ByteString udid) throws AuthenticationException, IOException {
+    public static Backup of(Client client, Account account, ByteString udid) throws IOException {
         try {
-            logger.trace("<< from() < udid: {}", Bytes.hex(udid));
+            logger.trace("<< of() < udid: {}", Bytes.hex(udid));
 
-            ICloud.MBSBackup backup = account.client().backup(http, udid);
-            ICloud.MBSKeySet keySet = account.client().getKeys(http, udid);
+            ICloud.MBSBackup backup = client.backup(udid);
+            ICloud.MBSKeySet keySet = client.getKeys(udid);
             KeyBag keyBag = KeyBag.from(keySet);
 
-            Backup instance = Backup.newInstance(account, backup, keyBag);
+            Backup instance = Backup.of(account, backup, keyBag);
 
-            logger.trace(">> from() > {}", instance);
+            logger.trace(">> of() > {}", instance);
             return instance;
 
         } catch (AuthenticationException ex) {
             throw ex;
         } catch (BadDataException | HttpResponseException ex) {
-            logger.warn("-- from() > exception: ", ex);
+            logger.warn("-- of() > exception: ", ex);
             return null;
         }
     }
 
-    public static Backup newInstance(
+    public static Backup of(
             Account account,
             ICloud.MBSBackup backup,
             KeyBag keyBag) {

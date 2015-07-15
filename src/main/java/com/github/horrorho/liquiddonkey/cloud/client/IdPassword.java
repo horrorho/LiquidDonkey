@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.client;
 
+import java.util.Objects;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
@@ -43,8 +44,8 @@ public final class IdPassword {
     private final String password;
 
     IdPassword(String id, String password) {
-        this.id = id;
-        this.password = password;
+        this.id = Objects.requireNonNull(id);
+        this.password = Objects.requireNonNull(password);
     }
 
     public String getId() {

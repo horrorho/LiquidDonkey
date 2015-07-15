@@ -32,13 +32,7 @@ import org.apache.http.client.HttpResponseException;
  */
 public class AuthenticationException extends HttpResponseException {
 
-    public static HttpResponseException test(HttpResponseException ex, String message) {
-        return ex.getStatusCode() == 401
-                ? new AuthenticationException(message)
-                : ex;
-    }
-
-    public static HttpResponseException test(HttpResponseException ex) {
+    public static HttpResponseException wrap(HttpResponseException ex) {
         return ex.getStatusCode() == 401
                 ? new AuthenticationException(ex.getMessage())
                 : ex;

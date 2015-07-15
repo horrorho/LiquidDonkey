@@ -28,6 +28,7 @@ import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
+import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import java.io.IOException;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -48,8 +49,26 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public class Authenticator {
 
-    public static Authenticator of(IdPassword idPass, Auth token) {
-        return new Authenticator(idPass, token);
+    public static Authenticator of(AuthenticationConfig config) {
+
+        IdPassword idPassword = config.hasAppleIdPassword()
+                ? IdPassword.of(config.appleId(), config.password())
+                : null;
+
+        Auth auth = config.hasAuthToken()
+                ? Auth.of(config.dsPrsID(), config.mmeAuthToken())
+                : null;
+
+        return of(idPassword, auth);
+    }
+
+    public static Authenticator of(IdPassword idPassword, Auth auth) {
+        logger.trace("<< of() < idPassword: {} Auth:{}", idPassword, auth);
+
+        Authenticator instance = new Authenticator(idPassword, auth);
+
+        logger.trace(">> of() > {}", instance);
+        return instance;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Authenticator.class);
@@ -84,9 +103,7 @@ public class Authenticator {
         this(Headers.create(), idPassword, new ReentrantLock(), token, null);
     }
 
-    public Auth auth(Http http)
-            throws AuthenticationException, BadDataException, IOException, InterruptedException {
-
+    public Auth auth(Http http) throws AuthenticationException, BadDataException, IOException, InterruptedException {
         logger.trace("<< authToken()");
 
         if (authenticationException != null) {
@@ -166,5 +183,16 @@ public class Authenticator {
             }
             throw ex;
         }
+    }
+
+    @Override
+    public String toString() {
+        return "Authenticator{"
+                + "headers=" + headers
+                + ", idPassword=" + idPassword
+                + ", lock=" + lock + ", token="
+                + token + ", authenticationException="
+                + authenticationException
+                + '}';
     }
 }

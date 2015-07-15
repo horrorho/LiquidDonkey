@@ -75,12 +75,12 @@ public class AuthenticationConfig {
         return appleId != null && password != null;
     }
 
-    public boolean hasToken() {
+    public boolean hasAuthToken() {
         return dsPrsID != null && mmeAuthToken != null;
     }
 
     public boolean isNull() {
-        return !hasAppleIdPassword() && !hasToken();
+        return !hasAppleIdPassword() && !hasAuthToken();
     }
 
     public String appleId() {

@@ -23,9 +23,9 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
-import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -45,6 +45,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Snapshot.
+ * <p>
+ * Container {@link ICloud.MBSFile}.
  *
  * @author Ahseya
  */
@@ -59,37 +61,35 @@ public final class Snapshot {
      * @param predicate, not null
      * @return new instance, not null
      */
-    public static Snapshot from(Snapshot snapshot, Predicate<ICloud.MBSFile> predicate) {
-        logger.trace("--from() < snapshot: {}", snapshot);
+    public static Snapshot of(Snapshot snapshot, Predicate<ICloud.MBSFile> predicate) {
+        logger.trace("--of() < snapshot: {}", snapshot);
 
         Snapshot filtered = new Snapshot(
                 snapshot.id(),
                 snapshot.backup(),
                 snapshot.files().stream().filter(predicate::test).collect(Collectors.toSet()));
 
-        logger.trace("--from() > filter: {}", filtered);
+        logger.trace("--of() > filter: {}", filtered);
         return filtered;
     }
 
     /**
-     * Returns a new instance.
+     * Queries the Client and returns a new instance.
      *
-     * @param http, not null
+     * @param client, not null
      * @param backup, not null
      * @param id
      * @param config, not null
      * @return new instance, may be null
-     * @throws AuthenticationException
      * @throws IOException
      */
-    public static Snapshot from(Http http, Backup backup, int id, EngineConfig config)
-            throws AuthenticationException, IOException {
+    public static Snapshot of(Client client, Backup backup, int id, EngineConfig config) throws IOException {
 
         logger.trace("<< of() < id: {}", id);
         int latest = backup.snapshots().stream().mapToInt(Integer::intValue).max().orElse(0);
 
-        Snapshot snapshot = from(
-                http,
+        Snapshot snapshot = of(
+                client,
                 backup,
                 id < 0 ? latest + id + 1 : id,
                 config.isAggressive());
@@ -98,13 +98,12 @@ public final class Snapshot {
         return snapshot;
     }
 
-    static Snapshot from(Http http, Backup backup, int id, boolean toHunt)
-            throws AuthenticationException, IOException {
+    static Snapshot of(Client client, Backup backup, int id, boolean toHunt) throws IOException {
 
         List<Integer> snapshots = backup.snapshots();
 
         if (!snapshots.contains(id)) {
-            logger.warn("-- snapshots() > no snapshot: {}", id);
+            logger.warn("-- of() > no snapshot: {}", id);
             return null;
         }
 
@@ -112,30 +111,28 @@ public final class Snapshot {
                 ? snapshots.get(1)
                 : id + 1;
 
-        List<ICloud.MBSFile> list = list(http, backup, id, to);
+        List<ICloud.MBSFile> list = list(client, backup, id, to);
 
         return list == null
                 ? null
                 : new Snapshot(id, backup, list);
     }
 
-    static List<ICloud.MBSFile> list(Http http, Backup backup, int from, int to)
-            throws AuthenticationException, IOException {
+    static List<ICloud.MBSFile> list(Client client, Backup backup, int from, int to) throws IOException {
 
         int snapshot = from;
         List<ICloud.MBSFile> list = null;
 
         while (snapshot < to && list == null) {
-            list = list(http, backup, snapshot++);
+            list = list(client, backup, snapshot++);
         }
         return list;
     }
 
-    static List<ICloud.MBSFile> list(Http http, Backup backup, int snapshot)
-            throws AuthenticationException, IOException {
+    static List<ICloud.MBSFile> list(Client client, Backup backup, int snapshot) throws IOException {
 
         try {
-            return backup.account().client().listFiles(http, backup.udid(), snapshot);
+            return client.listFiles(backup.udid(), snapshot);
         } catch (AuthenticationException ex) {
             throw ex;
         } catch (HttpResponseException ex) {

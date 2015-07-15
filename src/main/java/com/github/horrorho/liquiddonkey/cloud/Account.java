@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 public final class Account {
 
     /**
-     * Queries the client and returns a new instance.
+     * Queries the Client and returns a new instance.
      *
      * @param client, not null
      * @return new instance, not null
