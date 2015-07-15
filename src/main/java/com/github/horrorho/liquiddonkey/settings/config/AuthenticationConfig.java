@@ -23,10 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import com.github.horrorho.liquiddonkey.settings.Property; 
+import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.props.Props;
-import net.jcip.annotations.Immutable;
-import net.jcip.annotations.ThreadSafe;
 
 /**
  * Authentication configuration.
@@ -36,104 +34,62 @@ import net.jcip.annotations.ThreadSafe;
 public class AuthenticationConfig {
 
     public static AuthenticationConfig newInstance(Props<Property> props) {
-        String id = props.get(Property.AUTHENTICATION_APPLEID);
+        String appleId = props.get(Property.AUTHENTICATION_APPLEID);
         String password = props.get(Property.AUTHENTICATION_PASSWORD);
         String token = props.get(Property.AUTHENTICATION_TOKEN);
 
-        if (id != null && password != null && token != null) {
+        if (appleId != null && password != null && token != null) {
             throw new IllegalStateException("Expected authorization token or appleid/ password only.");
         }
 
-        if (id != null && password != null) {
-            return fromAppleIdPassword(id, password);
-        }
-
+        String dsPrsID;
+        String mmeAuthToken;
         if (token != null) {
-            try {
-                return fromAuthorizationToken(token);
-            } catch (IllegalArgumentException ex) {
-                throw new IllegalArgumentException("Missing password or bad authentication token.");
+            String[] split = token.split(":");
+            if (split.length != 2) {
+                throw new IllegalArgumentException("Invalid authentication token format.");
             }
+            dsPrsID = split[0];
+            mmeAuthToken = split[1];
+        } else {
+            dsPrsID = null;
+            mmeAuthToken = null;
         }
 
-        return Null.instance;
+        return new AuthenticationConfig(appleId, password, dsPrsID, mmeAuthToken);
     }
 
-    public static AppleIdPassword fromAppleIdPassword(String id, String password) {
-        return new AppleIdPassword(id, password);
+    private final String appleId;
+    private final String password;
+    private final String dsPrsID;
+    private final String mmeAuthToken;
+
+    AuthenticationConfig(String appleId, String password, String dsPrsID, String mmeAuthToken) {
+        this.appleId = appleId;
+        this.password = password;
+        this.dsPrsID = dsPrsID;
+        this.mmeAuthToken = mmeAuthToken;
     }
 
-    public static AuthorizationToken fromAuthorization(String dsPrsID, String mmeAuthToken) {
-        return new AuthorizationToken(dsPrsID, mmeAuthToken);
+    public boolean hasAppleIdPassword() {
+        return appleId != null && password != null;
     }
 
-    public static AuthorizationToken fromAuthorizationToken(String token) {
-        String[] split = token.split(":");
-        if (split.length != 2) {
-            throw new IllegalArgumentException("Bad authentication token.");
-        }
-        return fromAuthorization(split[0], split[1]);
+    public boolean hasToken() {
+        return dsPrsID != null && mmeAuthToken != null;
     }
 
-    @Immutable
-    @ThreadSafe
-    public static final class AppleIdPassword extends AuthenticationConfig {
-
-        private final String id;
-        private final String password;
-
-        AppleIdPassword(String id, String password) {
-            this.id = id;
-            this.password = password;
-        }
-
-        public String id() {
-            return id;
-        }
-
-        public String password() {
-            return password;
-        }
-
-        @Override
-        public String toString() {
-            return "AuthenticationConfigIdPassword{" + "id=" + id + ", password=" + password + '}';
-        }
+    public boolean isNull() {
+        return !hasAppleIdPassword() && !hasToken();
     }
 
-    @Immutable
-    @ThreadSafe
-    public static final class AuthorizationToken extends AuthenticationConfig {
-
-        private final String dsPrsId;
-        private final String mmeAuthToken;
-
-        AuthorizationToken(String dsPrsId, String mmeAuthToken) {
-            this.dsPrsId = dsPrsId;
-            this.mmeAuthToken = mmeAuthToken;
-        }
-
-        public String dsPrsId() {
-            return dsPrsId;
-        }
-
-        public String mmeAuthToken() {
-            return mmeAuthToken;
-        }
-
-        @Override
-        public String toString() {
-            return "AuthenticationConfigAuth{" + "dsPrsId=" + dsPrsId + ", mmeAuthToken=" + mmeAuthToken + '}';
-        }
-    }
-
-    @Immutable
-    @ThreadSafe
-    public static final class Null extends AuthenticationConfig {
-
-        private final static Null instance = new Null();
-
-        Null() {
-        }
+    @Override
+    public String toString() {
+        return "AuthenticationConfigNew{"
+                + "appleId=" + appleId
+                + ", password=" + password
+                + ", dsPrsID=" + dsPrsID
+                + ", mmeAuthToken=" + mmeAuthToken
+                + '}';
     }
 }
