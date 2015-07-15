@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Backup.
  * <p>
- * Describes {@link ICloud.MBSBackup}.
+ * Describes {@link com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSBackup}.
  *
  * @author Ahseya
  */

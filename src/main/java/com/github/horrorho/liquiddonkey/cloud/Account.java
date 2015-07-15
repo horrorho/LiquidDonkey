@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Account.
  * <p>
- * Describes {@link ICloud.MBSAccount}.
+ * Describes {@link com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSAccount}.
  *
  * @author Ahseya
  */
