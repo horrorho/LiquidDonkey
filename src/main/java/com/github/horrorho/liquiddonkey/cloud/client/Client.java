@@ -102,9 +102,9 @@ public class Client {
     }
 
     /**
-     * Queries server and returns MBSAccount.
+     * Queries server and returns ICloud.MBSAccount.
      *
-     * @return ChunkServer.MBSAccount, not null
+     * @return ICloud.MBSAccount, not null
      * @throws IOException
      */
     public ICloud.MBSAccount account() throws IOException {
@@ -117,10 +117,10 @@ public class Client {
     }
 
     /**
-     * Queries server and returns MBSBackup.
+     * Queries server and returns ICloud.MBSBackup.
      *
      * @param backupUDID, not null
-     * @return ChunkServer.MBSBackup, not null
+     * @return ICloud.MBSBackup, not null
      * @throws IOException
      */
     public ICloud.MBSBackup backup(ByteString backupUDID) throws IOException {
@@ -133,13 +133,13 @@ public class Client {
     }
 
     /**
-     * Queries server and returns MBSKeySet.
+     * Queries server and returns ICloud.MBSKeySet.
      *
      * @param backupUDID, not null
-     * @return ChunkServer.MBSKeySet, not null
+     * @return ICloud.MBSKeySet, not null
      * @throws IOException
      */
-    public ICloud.MBSKeySet getKeys(ByteString backupUDID) throws IOException {
+    public ICloud.MBSKeySet keys(ByteString backupUDID) throws IOException {
         logger.trace("<< getKeys() < {}", hex(backupUDID));
 
         ICloud.MBSKeySet keys = mobileBackupGet(mbsaKeySetResponseHandler, path(hex(backupUDID), "getKeys"));
@@ -149,14 +149,14 @@ public class Client {
     }
 
     /**
-     * Queries server and returns a list of MBSFiles.
+     * Queries server and returns a list of ICloud.MBSFile/s.
      *
      * @param backupUDID, not null
      * @param snapshotId
-     * @return list of ChunkServer.MBSFiles, not null
+     * @return list of ICloud.MBSFile/s, not null
      * @throws IOException
      */
-    public List<ICloud.MBSFile> listFiles(ByteString backupUDID, int snapshotId) throws IOException {
+    public List<ICloud.MBSFile> files(ByteString backupUDID, int snapshotId) throws IOException {
         logger.trace("<< listFiles() < backupUDID: {} snapshotId: {}", hex(backupUDID), snapshotId);
 
         List<ICloud.MBSFile> files = new ArrayList<>();
@@ -188,7 +188,7 @@ public class Client {
      * @throws BadDataException
      * @throws IOException
      */
-    public ChunkServer.FileGroups getFileGroups(ByteString backupUdid, int snapshotId, Set<ICloud.MBSFile> files)
+    public ChunkServer.FileGroups fileGroups(ByteString backupUdid, int snapshotId, Set<ICloud.MBSFile> files)
             throws BadDataException, IOException {
 
         logger.trace("<< getFilesGroups() < backupUdid: {} snapshot: {} files: {}",
