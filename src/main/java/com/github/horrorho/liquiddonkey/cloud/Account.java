@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Account.
  * <p>
- * Describes for {@link ICloud.MBSAccount}.
+ * Describes {@link ICloud.MBSAccount}.
  *
  * @author Ahseya
  */
@@ -52,7 +52,7 @@ public final class Account {
      * @return new instance, not null
      * @throws IOException
      */
-    public static Account from(Client client) throws IOException {
+    public static Account of(Client client) throws IOException {
         logger.trace("<< from()");
 
         Account instance = new Account(client.account());
