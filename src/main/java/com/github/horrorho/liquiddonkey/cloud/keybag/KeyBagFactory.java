@@ -80,7 +80,7 @@ public class KeyBagFactory {
 
         Map<String, ByteString> block = new HashMap<>();
 
-        for (TagValue tagValue : TagValue.parseTagLengthValues(keySet.getKey(keySet.getKeyCount() - 1).getKeyData())) {
+        for (TagValue tagValue : TagValue.from(keySet.getKey(keySet.getKeyCount() - 1).getKeyData())) {
             if (tagValue.tag().equals("UUID")) {
                 sort(block);
                 block.clear();

@@ -51,7 +51,7 @@ public final class Settings {
                 = http.executor("https://setup.icloud.com/setup/get_account_settings", byteArrayResponseHandler)
                 .headers(headers.mmeClientInfo(), headers.authorization(authToken))
                 .get();
-        SimplePropertyList settings = SimplePropertyList.of(data);
+        SimplePropertyList settings = SimplePropertyList.from(data);
 
         return from(settings);
     }

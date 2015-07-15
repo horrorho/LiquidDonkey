@@ -163,7 +163,7 @@ public class Authenticator {
                     = http.executor("https://setup.icloud.com/setup/authenticate/$APPLE_ID$", byteArrayResponseHandler)
                     .headers(headers.mmeClientInfo(), headers.authorization(authBasic))
                     .get();
-            SimplePropertyList plist = SimplePropertyList.of(data);
+            SimplePropertyList plist = SimplePropertyList.from(data);
             logger.debug("-- authenticate() >  plist: {}", plist);
 
             String dsPrsID = plist.value("appleAccountInfo", "dsPrsID");

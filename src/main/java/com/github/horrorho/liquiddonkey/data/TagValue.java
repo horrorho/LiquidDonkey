@@ -40,7 +40,7 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class TagValue {
 
-    public static List<TagValue> parseTagLengthValues(ByteString tagLengthValues) throws BadDataException {
+    public static List<TagValue> from(ByteString tagLengthValues) throws BadDataException {
         List<TagValue> tagValues = new ArrayList<>();
         int i = 0;
         while (i + 8 <= tagLengthValues.size()) {

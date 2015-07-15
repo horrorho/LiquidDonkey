@@ -46,7 +46,7 @@ import org.xml.sax.SAXException;
 @ThreadSafe
 public final class SimplePropertyList {
 
-    public static SimplePropertyList of(byte[] data) throws BadDataException, IOException {
+    public static SimplePropertyList from(byte[] data) throws BadDataException, IOException {
         try {
             return new SimplePropertyList((NSDictionary) PropertyListParser.parse(data));
 
@@ -72,7 +72,7 @@ public final class SimplePropertyList {
         try {
             return value(path);
         } catch (BadDataException ex) {
-            logger.trace("--valueOr() > exception: ", ex);
+            logger.debug("--valueOr() > exception: ", ex);
             return defaultValue;
         }
     }
@@ -81,7 +81,7 @@ public final class SimplePropertyList {
         try {
             return value(path);
         } catch (BadDataException ex) {
-            logger.trace("--valueOrNull() > exception: ", ex);
+            logger.debug("--valueOrNull() > exception: ", ex);
             return null;
         }
     }
