@@ -80,8 +80,6 @@ public final class WriterDonkey extends Donkey {
             toDo = isExceptionLimit(ex)
                     ? Release.dispose()
                     : Release.requeue(fetchDonkeys.apply(this));
-        } catch (IOException | RuntimeException ex) {
-            throw ex;
         } finally {
             data = null;
         }

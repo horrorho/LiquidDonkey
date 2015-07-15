@@ -26,7 +26,6 @@ package com.github.horrorho.liquiddonkey.cloud.donkey;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
-import com.github.horrorho.liquiddonkey.http.Http;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -40,33 +39,28 @@ public class DonkeyFactory {
 
     // TODO tie in config?
     public static DonkeyFactory from(
-            Http http,
             Client client,
             StoreManager storeManager,
             int retryCount) {
 
         return new DonkeyFactory(
-                http,
                 client,
                 storeManager,
                 retryCount,
                 new AtomicReference<>(null));
     }
 
-    private final Http http;
     private final Client client;
     private final StoreManager storeManager;
     private final int retryCount;
     private final AtomicReference<Exception> fatal;
 
     private DonkeyFactory(
-            Http http,
             Client client,
             StoreManager storeManager,
             int retryCount,
             AtomicReference<Exception> fatal) {
 
-        this.http = Objects.requireNonNull(http);
         this.client = Objects.requireNonNull(client);
         this.storeManager = storeManager;
         this.retryCount = retryCount;
@@ -75,7 +69,6 @@ public class DonkeyFactory {
 
     public FetchDonkey fetchDonkey(ChunkServer.StorageHostChunkList chunkList) {
         return new FetchDonkey(
-                http,
                 client,
                 this::writerDonkey,
                 chunkList,
@@ -86,7 +79,6 @@ public class DonkeyFactory {
 
     FetchDonkey fetchDonkey(WriterDonkey donkey) {
         return new FetchDonkey(
-                http,
                 client,
                 this::writerDonkey,
                 donkey.chunkList(),

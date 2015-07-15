@@ -25,8 +25,6 @@ package com.github.horrorho.liquiddonkey.cloud.donkey;
 
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
-import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.util.pool.Release;
 import java.io.IOException;
 import java.util.List;
@@ -48,12 +46,10 @@ public final class FetchDonkey extends Donkey {
 
     private static final Logger log = LoggerFactory.getLogger(FetchDonkey.class);
 
-    private final Http http;
     private final Client client;
     private final BiFunction<FetchDonkey, byte[], WriterDonkey> writerDonkeys;
 
     public FetchDonkey(
-            Http http,
             Client client,
             BiFunction<FetchDonkey, byte[], WriterDonkey> writerDonkeys,
             ChunkServer.StorageHostChunkList chunkList,
@@ -63,7 +59,6 @@ public final class FetchDonkey extends Donkey {
 
         super(chunkList, exceptions, retryCount, fatal);
 
-        this.http = Objects.requireNonNull(http);
         this.client = Objects.requireNonNull(client);
         this.writerDonkeys = Objects.requireNonNull(writerDonkeys);
     }
@@ -74,13 +69,12 @@ public final class FetchDonkey extends Donkey {
 
         Release<Track, Donkey> toDo;
         try {
-            byte[] data = client.chunks(http, chunkList);
+            byte[] data = client.chunks(chunkList);
             toDo = Release.requeue(Track.DECODE_WRITE, writerDonkeys.apply(this, data));
-        } catch (AuthenticationException ex) {
-            throw ex;
         } catch (HttpResponseException ex) {
             log.warn("-- toProcess() > exception: ", ex);
-            toDo = isExceptionLimit(ex)
+
+            toDo = isExceptionLimit(ex) || ex.getStatusCode() == 401
                     ? Release.dispose()
                     : Release.requeue(this);
         } catch (IOException | RuntimeException ex) {
