@@ -125,13 +125,13 @@ public final class PersistentHttpRequestRetryHandler implements HttpRequestRetry
         }
 
         if (exception instanceof UnknownHostException && retryCount > 3) {
-            logger.trace("-- doRetryRequest() > {} {} > UnknownHostException sleep({})",
+            logger.debug("-- doRetryRequest() > {} {} > UnknownHostException sleep({})",
                     request.getRequestLine(), exception.toString(), retryDelayMs);
             sleep(timeOutMs);
         }
 
         if (retryCount > 3) {
-            logger.trace("-- doRetryRequest() > {} {} > sleep({})",
+            logger.debug("-- doRetryRequest() > {} {} > sleep({})",
                     request.getRequestLine(), exception.toString(), retryDelayMs);
             sleep(timeOutMs);
         }
