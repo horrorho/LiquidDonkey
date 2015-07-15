@@ -23,12 +23,54 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.client;
 
+import com.github.horrorho.liquiddonkey.data.SimplePropertyList;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.github.horrorho.liquiddonkey.http.Http;
+import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
+import java.io.IOException;
+import org.apache.http.client.ResponseHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Settings.
  *
  * @author Ahseya
  */
 public class Settings {
+
+    public static Settings of(Http http, Auth auth) throws IOException, BadDataException {
+
+        String authToken = Tokens.create().basic(auth.dsPrsId(), auth.mmeAuthToken());
+        Headers headers = Headers.create();
+
+        byte[] data
+                = http.executor("https://setup.icloud.com/setup/get_account_settings", byteArrayResponseHandler)
+                .headers(headers.mmeClientInfo(), headers.authorization(authToken))
+                .get();
+        SimplePropertyList settings = SimplePropertyList.from(data);
+
+        return of(settings);
+    }
+
+    public static Settings of(SimplePropertyList settings) throws BadDataException {
+        logger.trace("<< of()");
+
+        String fullName = settings.valueOr("Unknown", "appleAccountInfo", "fullName");
+        String appleId = settings.valueOr("Unknown", "appleAccountInfo", "appleId");
+        String mobileBackupUrl = settings.value("com.apple.mobileme", "com.apple.Dataclass.Backup", "url");
+        String contentUrl = settings.value("com.apple.mobileme", "com.apple.Dataclass.Content", "url");
+
+        Settings instance = new Settings(contentUrl, mobileBackupUrl, appleId, fullName);
+
+        logger.trace(">> of() > {}", instance);
+        return instance;
+    }
+
+    private static final Logger logger = LoggerFactory.getLogger(Settings.class);
+
+    // Thread safe
+    private static final ResponseHandler<byte[]> byteArrayResponseHandler = ResponseHandlerFactory.toByteArray();
 
     private final String contentUrl;
     private final String mobileBackupUrl;
