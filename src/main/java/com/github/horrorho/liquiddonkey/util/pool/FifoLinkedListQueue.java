@@ -58,7 +58,7 @@ public class FifoLinkedListQueue<E> implements SimpleQueue<E> {
             head = node;
 
         } else {
-            tail.setPrevious(node);
+            tail.previous = node;
             tail = node;
         }
         count++;
@@ -71,8 +71,9 @@ public class FifoLinkedListQueue<E> implements SimpleQueue<E> {
             throw new NoSuchElementException("Empty queue");
         }
 
-        E element = head.element();
-        head = head.previous();
+        E element = head.element;
+        head.element = null;
+        head = head.previous;
         if (head == null) {
             tail = null;
         }
@@ -97,25 +98,12 @@ public class FifoLinkedListQueue<E> implements SimpleQueue<E> {
 
     static final class Node<E> {
 
-        private final E element;
-        private Node previous;
+        E element;
+        Node previous;
 
         Node(E element, Node previous) {
             this.element = element;
             this.previous = previous;
-        }
-
-        public E element() {
-            return element;
-        }
-
-        public Node previous() {
-            return previous;
-        }
-
-        public Node setPrevious(Node next) {
-            this.previous = next;
-            return this;
         }
     }
 }
