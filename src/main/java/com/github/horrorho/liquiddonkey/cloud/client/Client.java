@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.http.Header;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.ResponseHandler;
@@ -48,10 +49,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Client.
+ * Cloud.
  *
  * @author Ahseya
  */
+@ThreadSafe
 public class Client {
 
     public static Client of(Auth auth, Settings settings, Http http, ClientConfig config) {
