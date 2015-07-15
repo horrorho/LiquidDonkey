@@ -56,7 +56,7 @@ public class Authenticator {
                 : null;
 
         Auth auth = config.hasAuthToken()
-                ? Auth.from(config.dsPrsID(), config.mmeAuthToken())
+                ? Auth.from(config.dsPrsId(), config.mmeAuthToken())
                 : null;
 
         return of(idPassword, auth);
@@ -78,24 +78,24 @@ public class Authenticator {
     private final Headers headers;
     private final IdPassword idPassword;
     private final Lock lock;
-    private Auth token;
+    private Auth auth;
     private volatile AuthenticationException authenticationException;
 
     Authenticator(
             Headers headers,
             IdPassword idPassword,
             Lock lock,
-            Auth token,
+            Auth auth,
             AuthenticationException authenticationException) {
 
-        if (idPassword == null && token == null) {
+        if (idPassword == null && auth == null) {
             throw new IllegalArgumentException("Null credentials");
         }
 
         this.headers = headers;
         this.idPassword = idPassword;
         this.lock = lock;
-        this.token = token;
+        this.auth = auth;
         this.authenticationException = authenticationException;
     }
 
@@ -112,12 +112,12 @@ public class Authenticator {
 
         lock.lockInterruptibly();
         try {
-            if (token == null) {
-                token = authenticate(http);
+            if (auth == null) {
+                authenticate(http);
             }
 
-            logger.trace(">> authToken() > token: {}", token);
-            return token;
+            logger.trace(">> authToken() > token: {}", auth);
+            return auth;
 
         } finally {
             lock.unlock();
@@ -131,12 +131,12 @@ public class Authenticator {
         try {
             boolean isDisposed;
 
-            if (badToken.timestamp().isBefore(token.timestamp())) {
+            if (badToken.timestamp().isBefore(auth.timestamp())) {
                 // Attempting to dispose stale token, discard
                 isDisposed = false;
             } else {
                 isDisposed = true;
-                token = null;
+                auth = null;
             }
 
             logger.trace(">> dispose() > disposed: {}", isDisposed);
@@ -148,7 +148,7 @@ public class Authenticator {
     }
 
     @GuardedBy("lock")
-    Auth authenticate(Http http) throws AuthenticationException, BadDataException, IOException {
+    void authenticate(Http http) throws AuthenticationException, BadDataException, IOException {
         logger.trace("<< authenticate() < {}", idPassword);
 
         if (idPassword == null) {
@@ -157,24 +157,24 @@ public class Authenticator {
 
         try {
             String authBasic = Tokens.create().basic(idPassword.getId(), idPassword.getPassword());
-            logger.trace("-- authenticate() > token: {}", authBasic);
+            logger.debug("-- authenticate() > token: {}", authBasic);
 
             byte[] data
                     = http.executor("https://setup.icloud.com/setup/authenticate/$APPLE_ID$", byteArrayResponseHandler)
                     .headers(headers.mmeClientInfo(), headers.authorization(authBasic))
                     .get();
             SimplePropertyList plist = SimplePropertyList.of(data);
-            logger.trace("-- authenticate() >  plist: {}", plist);
+            logger.debug("-- authenticate() >  plist: {}", plist);
 
             String dsPrsID = plist.value("appleAccountInfo", "dsPrsID");
-            logger.trace("-- authenticate() >  dsPrsID: {}", dsPrsID);
+            logger.debug("-- authenticate() >  dsPrsID: {}", dsPrsID);
 
             String mmeAuthToken = plist.value("tokens", "mmeAuthToken");
-            logger.trace("-- authenticate() >   mmeAuthToken: {}", mmeAuthToken);
+            logger.debug("-- authenticate() >   mmeAuthToken: {}", mmeAuthToken);
 
-            Auth newAuth = Auth.from(dsPrsID, mmeAuthToken);
-            logger.trace(">> authenticate() > auth: {}", newAuth);
-            return token;
+            auth = Auth.from(dsPrsID, mmeAuthToken);
+            logger.debug("-- authenticate() > auth: {}", auth);
+            logger.trace(">> authenticate()");
 
         } catch (HttpResponseException ex) {
             if (ex.getStatusCode() == 401) {
@@ -190,9 +190,9 @@ public class Authenticator {
         return "Authenticator{"
                 + "headers=" + headers
                 + ", idPassword=" + idPassword
-                + ", lock=" + lock + ", token="
-                + token + ", authenticationException="
-                + authenticationException
+                + ", lock=" + lock
+                + ", auth=" + auth
+                + ", authenticationException=" + authenticationException
                 + '}';
     }
 }

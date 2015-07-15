@@ -28,6 +28,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
@@ -90,7 +91,7 @@ public final class WorkPools<E extends Enum<E>, T> {
             pools.values().stream().forEach(q -> q.add(null));
         }
 
-        WorkPools<E, T> worksPool = new WorkPools<>(lock, notEmptyConditions, pools, 0, total == 0);
+        WorkPools<E, T> worksPool = new WorkPools<>(lock, notEmptyConditions, pools, new AtomicInteger(0), total == 0);
 
         logger.trace(marker, ">> from() > key: {} fairness: {} total: {}", poolKeyType.getSimpleName(), fairness, total);
         return worksPool;
@@ -99,13 +100,13 @@ public final class WorkPools<E extends Enum<E>, T> {
     private final ReentrantLock lock;
     private final Map<E, Condition> notEmptyConditions;
     private final Map<E, SimpleQueue<T>> pools;
-    private volatile int pending;
+    private final AtomicInteger pending;
     private volatile boolean isDepleted;
 
     WorkPools(
             ReentrantLock lock, Map<E, Condition> notEmptyConditions,
             Map<E, SimpleQueue<T>> pools,
-            int pending,
+            AtomicInteger pending,
             boolean isDepleted) {
 
         this.lock = Objects.requireNonNull(lock);
@@ -158,7 +159,7 @@ public final class WorkPools<E extends Enum<E>, T> {
                 queue.add(null);
                 notEmpty.signal();
             } else {
-                pending++;
+                pending.incrementAndGet();
             }
             logger.trace(marker, ">> acquire() > pool: {} item: {}", pool, item);
             return item;
@@ -171,14 +172,14 @@ public final class WorkPools<E extends Enum<E>, T> {
         logger.trace(marker, "<< release() < pool: {} item: {}", pool, item);
         lock.lock();
         try {
-            pending--;
+            pending.decrementAndGet();
             SimpleQueue<T> queue = pools.get(pool);
             Condition notEmpty = notEmptyConditions.get(pool);
 
             if (item == null) {
-                logger.debug(marker, "-- release() > disposed, pool: {} item: {}", pool, item);
+                logger.debug(marker, "-- release() > disposed, pool: {}", pool);
 
-                if (pending == 0 && queue.isEmpty() && pools.values().stream().allMatch(SimpleQueue::isEmpty)) {
+                if (pending.get() == 0 && queue.isEmpty() && pools.values().stream().allMatch(SimpleQueue::isEmpty)) {
                     logger.debug(marker, "-- release() > depleted, poisoning pools");
                     pools.values().stream().forEach(q -> q.add(null));
                     isDepleted = true;

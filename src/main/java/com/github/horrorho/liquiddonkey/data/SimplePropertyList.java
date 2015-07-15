@@ -46,7 +46,7 @@ import org.xml.sax.SAXException;
 @ThreadSafe
 public final class SimplePropertyList {
 
-    public static SimplePropertyList from(byte[] data) throws BadDataException, IOException {
+    public static SimplePropertyList of(byte[] data) throws BadDataException, IOException {
         try {
             return new SimplePropertyList((NSDictionary) PropertyListParser.parse(data));
 

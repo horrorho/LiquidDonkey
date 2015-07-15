@@ -72,7 +72,7 @@ public final class SignatureWriter {
      * @return a new instance, not null
      */
     // TODO rework this
-    public static SignatureWriter from(
+    public static SignatureWriter of(
             Snapshot snapshot,
             FileConfig fileConfig) {
 
@@ -80,7 +80,7 @@ public final class SignatureWriter {
                 snapshot.signatures(),
                 FileDecrypter.newInstance(),
                 KeyBagTools.newInstance(snapshot.backup().keybag()),
-                SnapshotDirectory.from(snapshot, fileConfig),
+                SnapshotDirectory.of(snapshot, fileConfig),
                 fileConfig.setLastModifiedTimestamp());
     }
 
@@ -134,31 +134,29 @@ public final class SignatureWriter {
      *
      * @param signature not null
      * @param writer not null
-     * @return map of ICloud.MBSFile to WriterResult/s
+     * @return map of ICloud.MBSFile to WriterResult/s, or null if the signature doesn't reference any files
      * @throws IOException
      * @throws IllegalStateException if the signature is unknown
      */
     public Map<ICloud.MBSFile, WriterResult> write(ByteString signature, IOFunction<OutputStream, Long> writer)
             throws IOException {
 
-        synchronized (signatureToFileSet) {
-            logger.trace("<< write() < signature: {}", Bytes.hex(signature));
+        logger.trace("<< write() < signature: {}", Bytes.hex(signature));
 
-            Set<ICloud.MBSFile> files = signatureToFileSet.get(signature);
-            if (files == null) {
-                throw new IllegalStateException("Bad signature: " + Bytes.hex(signature));
-            }
-
-            Map<ICloud.MBSFile, WriterResult> results = new HashMap<>();
-            for (ICloud.MBSFile file : files) {
-                results.put(file, doWrite(file, writer));
-            }
-
-            signatureToFileSet.remove(signature);
-
-            logger.trace(">> write()");
-            return results;
+        Set<ICloud.MBSFile> files = signatureToFileSet.get(signature);
+        if (files == null) {
+            return null;
         }
+
+        Map<ICloud.MBSFile, WriterResult> results = new HashMap<>();
+        for (ICloud.MBSFile file : files) {
+            results.put(file, doWrite(file, writer));
+        }
+
+        signatureToFileSet.remove(signature);
+
+        logger.trace(">> write()");
+        return results;
     }
 
     WriterResult doWrite(ICloud.MBSFile file, IOFunction<OutputStream, Long> writer) throws IOException {

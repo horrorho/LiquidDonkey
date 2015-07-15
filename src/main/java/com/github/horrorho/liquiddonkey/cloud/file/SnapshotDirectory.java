@@ -51,8 +51,8 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
      * @param config not null
      * @return new instance, not null
      */
-    public static SnapshotDirectory from(Snapshot snapshot, FileConfig config) {
-        return SnapshotDirectory.newInstance(
+    public static SnapshotDirectory of(Snapshot snapshot, FileConfig config) {
+        return SnapshotDirectory.of(
                 config.base(),
                 snapshot.backup().udidString(),
                 Integer.toString(snapshot.id()),
@@ -60,7 +60,7 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
                 config.isCombined());
     }
 
-    static SnapshotDirectory newInstance(
+    static SnapshotDirectory of(
             Path base,
             String udidStr,
             String snapshotIdStr,

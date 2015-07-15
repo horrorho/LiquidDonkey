@@ -83,7 +83,7 @@ public class Main {
 
         Printer printer = Printer.instanceOf(config.printer());
 
-        try (Looter looter = Looter.from(config, printer)) {
+        try (Looter looter = Looter.of(config, printer)) {
             looter.loot();
         } catch (RuntimeException ex) {
             logger.warn("-- main() > exception", ex);

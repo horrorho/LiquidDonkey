@@ -60,7 +60,7 @@ public class SnapshotDirectoryTest {
         Path expectedPath = Paths.get(expected);
 
         SnapshotDirectory snapshotDirectory
-                = SnapshotDirectory.newInstance(baseBath, udid, snapshotId, isFlat, isCombined);
+                = SnapshotDirectory.of(baseBath, udid, snapshotId, isFlat, isCombined);
 
         Path result = snapshotDirectory.apply(file);
         assertThat(result, is(expectedPath));

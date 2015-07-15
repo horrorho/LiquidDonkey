@@ -39,7 +39,7 @@ public final class Config {
 
     public static Config newInstance(Props<Property> props) {
         return newInstance(
-                AuthenticationConfig.newInstance(props),
+                AuthenticationConfig.from(props),
                 ClientConfig.newInstance(props),
                 EngineConfig.newInstance(props),
                 FileConfig.newInstance(props),

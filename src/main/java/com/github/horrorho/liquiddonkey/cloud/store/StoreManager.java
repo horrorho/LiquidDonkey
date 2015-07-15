@@ -24,12 +24,15 @@
 package com.github.horrorho.liquiddonkey.cloud.store;
 
 import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
+import com.github.horrorho.liquiddonkey.cloud.file.WriterResult;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.ChunkReference;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.Markers;
+import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
@@ -59,7 +62,7 @@ import org.slf4j.MarkerFactory;
 @ThreadSafe
 public final class StoreManager {
 
-    public static StoreManager from(
+    public static StoreManager of(
             ChunkServer.FileGroups fileGroups,
             SignatureWriter signatureWriter,
             Printer printer) {
@@ -180,11 +183,17 @@ public final class StoreManager {
         try {
             for (ByteString signature : new HashSet<>(writers.keySet())) {
                 try (DataWriter dataWriter = writers.get(signature)) {
-                    signatureWriter.write(signature, dataWriter).entrySet().stream().forEach(
-                            entry -> printer.println(Level.VV,
-                                    "\t" + entry.getKey().getDomain()
-                                    + " " + entry.getKey().getRelativePath()
-                                    + " " + entry.getValue()));
+                    Map<ICloud.MBSFile, WriterResult> results = signatureWriter.write(signature, dataWriter);
+
+                    if (results == null) {
+                        logger.warn("-- write() > unreferenced signature: {}", Bytes.hex(signature));
+                    } else {
+                        results.entrySet().stream().forEach(
+                                entry -> printer.println(Level.VV,
+                                        "\t" + entry.getKey().getDomain()
+                                        + " " + entry.getKey().getRelativePath()
+                                        + " " + entry.getValue()));
+                    }
                 } finally {
                     writers.remove(signature);
                 }

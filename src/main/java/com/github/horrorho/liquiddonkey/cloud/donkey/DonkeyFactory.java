@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DonkeyFactory {
 
     // TODO tie in config?
-    public static DonkeyFactory from(
+    public static DonkeyFactory of(
             Client client,
             StoreManager storeManager,
             int retryCount) {

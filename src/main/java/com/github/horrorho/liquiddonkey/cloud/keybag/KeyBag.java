@@ -51,7 +51,7 @@ public final class KeyBag {
      * @return a new unlocked KeyBag instance, not null
      * @throws BadDataException if the KeyBag cannot be unlocked or a data handling error occurred
      */
-    public static KeyBag from(ICloud.MBSKeySet keySet) throws BadDataException {
+    public static KeyBag of(ICloud.MBSKeySet keySet) throws BadDataException {
         return new KeyBagFactory().unlock(keySet);
     }
 

@@ -35,10 +35,12 @@ import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.github.horrorho.liquiddonkey.util.pool.WorkPools;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.http.client.HttpResponseException;
@@ -71,9 +73,9 @@ public class SnapshotDownloader {
 
         ChunkServer.FileGroups fileGroups = fetchFileGroups(client, snapshot);
 
-        SignatureWriter writer = SignatureWriter.from(snapshot, fileConfig);
-        StoreManager manager = StoreManager.from(fileGroups, writer, printer);
-        DonkeyFactory factory = DonkeyFactory.from(client, manager, retryCount);
+        SignatureWriter writer = SignatureWriter.of(snapshot, fileConfig);
+        StoreManager manager = StoreManager.of(fileGroups, writer, printer);
+        DonkeyFactory factory = DonkeyFactory.of(client, manager, retryCount);
 
         Map<Track, List<Donkey>> donkies = manager.chunkListList().stream().map(factory::fetchDonkey)
                 .collect(Collectors.groupingBy(list -> Track.FETCH));
@@ -87,9 +89,12 @@ public class SnapshotDownloader {
         logger.trace("<< download()");
 
         ExecutorService executor = Executors.newCachedThreadPool();
+        List<Future<?>> futuresFetch = new ArrayList<>();
+        List<Future<?>> futuresDecodeWrite = new ArrayList<>();
+
         for (int i = 0; i < threads; i++) {
-            executor.submit(Runner.newInstance(pools, Track.FETCH));
-            executor.submit(Runner.newInstance(pools, Track.DECODE_WRITE));
+            futuresFetch.add(executor.submit(Runner.newInstance(pools, Track.FETCH)));
+            futuresDecodeWrite.add(executor.submit(Runner.newInstance(pools, Track.DECODE_WRITE)));
             TimeUnit.MILLISECONDS.sleep(staggerMs);
         }
 
@@ -97,7 +102,14 @@ public class SnapshotDownloader {
         executor.shutdown();
         logger.trace("-- download() > awaiting termination");
         executor.awaitTermination(executorTimeoutSeconds, TimeUnit.SECONDS); // TODO 30 min timeout? missing files from signature writer?
+        
+        // handle interrupted/ timeout
+        
+        
         executor.shutdownNow();
+        
+        
+        
         logger.trace(">> download()");
     }
 

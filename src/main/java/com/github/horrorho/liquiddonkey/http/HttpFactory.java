@@ -55,7 +55,7 @@ import org.apache.http.ssl.SSLContextBuilder;
 @ThreadSafe
 public final class HttpFactory {
 
-    public static HttpFactory from(HttpConfig config) {
+    public static HttpFactory of(HttpConfig config) {
         return new HttpFactory(config);
     }
 

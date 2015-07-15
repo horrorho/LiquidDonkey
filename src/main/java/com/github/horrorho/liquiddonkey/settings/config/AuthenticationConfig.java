@@ -33,7 +33,7 @@ import com.github.horrorho.liquiddonkey.settings.props.Props;
  */
 public class AuthenticationConfig {
 
-    public static AuthenticationConfig newInstance(Props<Property> props) {
+    public static AuthenticationConfig from(Props<Property> props) {
         String appleId = props.get(Property.AUTHENTICATION_APPLEID);
         String password = props.get(Property.AUTHENTICATION_PASSWORD);
         String token = props.get(Property.AUTHENTICATION_TOKEN);
@@ -61,13 +61,13 @@ public class AuthenticationConfig {
 
     private final String appleId;
     private final String password;
-    private final String dsPrsID;
+    private final String dsPrsId;
     private final String mmeAuthToken;
 
-    AuthenticationConfig(String appleId, String password, String dsPrsID, String mmeAuthToken) {
+    AuthenticationConfig(String appleId, String password, String dsPrsId, String mmeAuthToken) {
         this.appleId = appleId;
         this.password = password;
-        this.dsPrsID = dsPrsID;
+        this.dsPrsId = dsPrsId;
         this.mmeAuthToken = mmeAuthToken;
     }
 
@@ -76,7 +76,7 @@ public class AuthenticationConfig {
     }
 
     public boolean hasAuthToken() {
-        return dsPrsID != null && mmeAuthToken != null;
+        return dsPrsId != null && mmeAuthToken != null;
     }
 
     public boolean isNull() {
@@ -91,8 +91,8 @@ public class AuthenticationConfig {
         return password;
     }
 
-    public String dsPrsID() {
-        return dsPrsID;
+    public String dsPrsId() {
+        return dsPrsId;
     }
 
     public String mmeAuthToken() {
@@ -101,10 +101,10 @@ public class AuthenticationConfig {
 
     @Override
     public String toString() {
-        return "AuthenticationConfigNew{"
+        return "AuthenticationConfig{"
                 + "appleId=" + appleId
                 + ", password=" + password
-                + ", dsPrsID=" + dsPrsID
+                + ", dsPrsID=" + dsPrsId
                 + ", mmeAuthToken=" + mmeAuthToken
                 + '}';
     }

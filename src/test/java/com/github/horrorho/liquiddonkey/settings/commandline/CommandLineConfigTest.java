@@ -63,7 +63,7 @@ public class CommandLineConfigTest {
         return new Object[]{
             o("user password", config -> config.authentication().appleId(), "user"),
             o("user password", config -> config.authentication().password(), "password"),
-            o("123456:abcdef", config -> config.authentication().dsPrsID(), "123456"),
+            o("123456:abcdef", config -> config.authentication().dsPrsId(), "123456"),
             o("123456:abcdef", config -> config.authentication().mmeAuthToken(), "abcdef"),
             o("u p --output test/folder", config -> config.file().base(), Paths.get("test/folder").toAbsolutePath()),
             o("u p --udid", config -> config.selection().udids(), set("")),

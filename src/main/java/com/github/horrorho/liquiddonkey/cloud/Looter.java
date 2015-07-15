@@ -53,16 +53,16 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public class Looter implements Closeable {
 
-    public static Looter from(Config config, Printer printer) {
-        logger.trace("<< from()");
+    public static Looter of(Config config, Printer printer) {
+        logger.trace("<< of()");
 
         Looter looter = new Looter(
                 config,
-                HttpFactory.from(config.http()).newInstance(printer),
+                HttpFactory.of(config.http()).newInstance(printer),
                 printer,
                 FileFilter.getInstance(config.fileFilter()));
 
-        logger.trace(">> from()");
+        logger.trace(">> of()");
         return looter;
     }
 
@@ -89,14 +89,14 @@ public class Looter implements Closeable {
 
         printer.println(Level.VV, "Authenticating.");
         // TODO reauthentication
-        
 
-        
-        Authenticator authenticator = Authenticator.of(config.authentication());
+        Authenticator authenticator = Authenticator.from(config.authentication());
         Auth auth = authenticator.auth(http);
-        Settings settings = Settings.of(http, auth);
+        Settings settings = Settings.from(http, auth);
 
-        Client client = Client.of(auth, settings, http, config.client());
+        System.exit(0);
+        
+        Client client = Client.from(auth, settings, http, config.client());
 
         if (config.engine().toDumpToken()) {
             printer.println(Level.V, "Authorization token: " + auth.token());
