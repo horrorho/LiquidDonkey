@@ -49,14 +49,14 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public class Authenticator {
 
-    public static Authenticator of(AuthenticationConfig config) {
+    public static Authenticator from(AuthenticationConfig config) {
 
         IdPassword idPassword = config.hasAppleIdPassword()
                 ? IdPassword.of(config.appleId(), config.password())
                 : null;
 
         Auth auth = config.hasAuthToken()
-                ? Auth.of(config.dsPrsID(), config.mmeAuthToken())
+                ? Auth.from(config.dsPrsID(), config.mmeAuthToken())
                 : null;
 
         return of(idPassword, auth);
@@ -163,7 +163,7 @@ public class Authenticator {
                     = http.executor("https://setup.icloud.com/setup/authenticate/$APPLE_ID$", byteArrayResponseHandler)
                     .headers(headers.mmeClientInfo(), headers.authorization(authBasic))
                     .get();
-            SimplePropertyList plist = SimplePropertyList.from(data);
+            SimplePropertyList plist = SimplePropertyList.of(data);
             logger.trace("-- authenticate() >  plist: {}", plist);
 
             String dsPrsID = plist.value("appleAccountInfo", "dsPrsID");
@@ -172,7 +172,7 @@ public class Authenticator {
             String mmeAuthToken = plist.value("tokens", "mmeAuthToken");
             logger.trace("-- authenticate() >   mmeAuthToken: {}", mmeAuthToken);
 
-            Auth newAuth = Auth.of(dsPrsID, mmeAuthToken);
+            Auth newAuth = Auth.from(dsPrsID, mmeAuthToken);
             logger.trace(">> authenticate() > auth: {}", newAuth);
             return token;
 

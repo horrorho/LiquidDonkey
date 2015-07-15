@@ -30,9 +30,13 @@ import java.util.Objects;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.Header;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Auth.
+ * <p>
+ * Authorization data.
  *
  * @author Ahseya
  */
@@ -40,20 +44,27 @@ import org.apache.http.Header;
 @ThreadSafe
 public final class Auth {
 
-    public static Auth of(String dsPrsId, String mmeAuthToken) {
+    public static Auth from(String dsPrsId, String mmeAuthToken) {
         return of(dsPrsId, mmeAuthToken, Instant.now());
     }
 
-    public static Auth of(String dsPrsId, String mmeAuthToken, Instant timeStamp) {
+    public static Auth of(String dsPrsId, String mmeAuthToken, Instant timestamp) {
+        logger.trace("<< of() < dsPrsId: {} mmeAuthToken: {} timestamp: {}", dsPrsId, mmeAuthToken, timestamp);
+
         String authMme = Tokens.create().mobilemeAuthToken(dsPrsId, mmeAuthToken);
         Headers headers = Headers.create();
-        return new Auth(
+        Auth instance = new Auth(
                 dsPrsId,
                 mmeAuthToken,
                 headers.mobileBackupHeaders(authMme),
                 headers.contentHeaders(dsPrsId),
-                timeStamp);
+                timestamp);
+
+        logger.trace(">> of > {}", instance);
+        return instance;
     }
+
+    private static final Logger logger = LoggerFactory.getLogger(Auth.class);
 
     private final String dsPrsId;
     private final String mmeAuthToken;

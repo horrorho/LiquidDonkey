@@ -28,7 +28,7 @@ import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
 /**
- * Authentication.
+ * IdPassword.
  *
  * @author Ahseya
  */

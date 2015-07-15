@@ -29,7 +29,7 @@ import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
 /**
- * Tokens.
+ * Tokens factory.
  *
  * @author Ahseya
  */

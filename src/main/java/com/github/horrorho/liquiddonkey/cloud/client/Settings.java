@@ -28,6 +28,8 @@ import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
 import java.io.IOException;
+import net.jcip.annotations.Immutable;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.ResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,10 +39,11 @@ import org.slf4j.LoggerFactory;
  *
  * @author Ahseya
  */
-public class Settings {
+@Immutable
+@ThreadSafe
+public final class Settings {
 
-    public static Settings of(Http http, Auth auth) throws IOException, BadDataException {
-
+    public static Settings from(Http http, Auth auth) throws IOException, BadDataException {
         String authToken = Tokens.create().basic(auth.dsPrsId(), auth.mmeAuthToken());
         Headers headers = Headers.create();
 
@@ -48,13 +51,13 @@ public class Settings {
                 = http.executor("https://setup.icloud.com/setup/get_account_settings", byteArrayResponseHandler)
                 .headers(headers.mmeClientInfo(), headers.authorization(authToken))
                 .get();
-        SimplePropertyList settings = SimplePropertyList.from(data);
+        SimplePropertyList settings = SimplePropertyList.of(data);
 
-        return of(settings);
+        return from(settings);
     }
 
-    public static Settings of(SimplePropertyList settings) throws BadDataException {
-        logger.trace("<< of()");
+    public static Settings from(SimplePropertyList settings) throws BadDataException {
+        logger.trace("<< from()");
 
         String fullName = settings.valueOr("Unknown", "appleAccountInfo", "fullName");
         String appleId = settings.valueOr("Unknown", "appleAccountInfo", "appleId");
@@ -63,7 +66,7 @@ public class Settings {
 
         Settings instance = new Settings(contentUrl, mobileBackupUrl, appleId, fullName);
 
-        logger.trace(">> of() > {}", instance);
+        logger.trace(">> from() > {}", instance);
         return instance;
     }
 

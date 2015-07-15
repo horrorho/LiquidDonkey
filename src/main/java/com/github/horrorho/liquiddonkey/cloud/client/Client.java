@@ -50,15 +50,21 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Cloud.
+ * Client.
  *
  * @author Ahseya
  */
 @ThreadSafe
 public class Client {
 
-    public static Client of(Auth auth, Settings settings, Http http, ClientConfig config) {
-        return new Client(auth, settings, http, Headers.create(), config.listLimit());
+    public static Client from(Auth auth, Settings settings, Http http, ClientConfig config) {
+        return new Client(
+                auth,
+                settings.contentUrl(),
+                settings.mobileBackupUrl(),
+                http,
+                Headers.create(),
+                config.listLimit());
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Client.class);
@@ -80,14 +86,16 @@ public class Client {
             = ResponseHandlerFactory.of(ICloud.MBSKeySet.PARSER::parseFrom);
 
     private final Auth auth;
-    private final Settings settings; // TODO break down to urls
+    private final String contentUrl;
+    private final String mobileBackupUrl;
     private final Http http;
     private final Headers headers;
     private final int listFilesLimit;
 
-    Client(Auth auth, Settings settings, Http http, Headers headers, int listFilesLimit) {
+    Client(Auth auth, String contentUrl, String mobileBackupUrl, Http http, Headers headers, int listFilesLimit) {
         this.auth = Objects.requireNonNull(auth);
-        this.settings = Objects.requireNonNull(settings);
+        this.contentUrl = Objects.requireNonNull(contentUrl);
+        this.mobileBackupUrl = Objects.requireNonNull(mobileBackupUrl);
         this.http = Objects.requireNonNull(http);
         this.headers = Objects.requireNonNull(headers);
         this.listFilesLimit = listFilesLimit;
@@ -148,8 +156,7 @@ public class Client {
      * @return list of ChunkServer.MBSFiles, not null
      * @throws IOException
      */
-    public List<ICloud.MBSFile> listFiles(ByteString backupUDID, int snapshotId)
-            throws IOException {
+    public List<ICloud.MBSFile> listFiles(ByteString backupUDID, int snapshotId) throws IOException {
         logger.trace("<< listFiles() < backupUDID: {} snapshotId: {}", hex(backupUDID), snapshotId);
 
         List<ICloud.MBSFile> files = new ArrayList<>();
@@ -243,7 +250,7 @@ public class Client {
             Header mmcsAuth
                     = headers.mmcsAuth(hex(tokens.getTokens(0).getFileID()) + " " + tokens.getTokens(0).getAuthToken());
 
-            groups = http.executor(path(settings.contentUrl(), auth.dsPrsId(), "authorizeGet"), filesGroupsHandler)
+            groups = http.executor(path(contentUrl, auth.dsPrsId(), "authorizeGet"), filesGroupsHandler)
                     .headers(mmcsAuth).headers(auth.contentHeaders())
                     .post(tokens.toByteArray());
         }
@@ -294,14 +301,14 @@ public class Client {
     }
 
     <T> T mobileBackupGet(ResponseHandler<T> handler, String path, NameValuePair... parameters) throws IOException {
-        return http.executor(path(settings.mobileBackupUrl(), "mbs", auth.dsPrsId(), path), handler)
+        return http.executor(path(mobileBackupUrl, "mbs", auth.dsPrsId(), path), handler)
                 .headers(auth.mobileBackupHeaders())
                 .parameters(parameters)
                 .get();
     }
 
     <T> T mobileBackupPost(ResponseHandler<T> handler, String path, byte[] postData) throws IOException {
-        return http.executor(path(settings.mobileBackupUrl(), "mbs", auth.dsPrsId(), path), handler)
+        return http.executor(path(mobileBackupUrl, "mbs", auth.dsPrsId(), path), handler)
                 .headers(auth.mobileBackupHeaders())
                 .post(postData);
     }
@@ -312,11 +319,13 @@ public class Client {
 
     @Override
     public String toString() {
-        return "ClientNew{"
+        return "Client{"
                 + "auth=" + auth
-                + ", settings=" + settings
+                + ", contentUrl=" + contentUrl
+                + ", mobileBackupUrl=" + mobileBackupUrl
                 + ", http=" + http
                 + ", headers=" + headers
-                + ", listFilesLimit=" + listFilesLimit + '}';
+                + ", listFilesLimit=" + listFilesLimit
+                + '}';
     }
 }

@@ -34,7 +34,7 @@ import org.apache.http.HttpHeaders;
 import org.apache.http.message.BasicHeader;
 
 /**
- * Headers.
+ * Headers factory.
  *
  * @author ahseya
  */
