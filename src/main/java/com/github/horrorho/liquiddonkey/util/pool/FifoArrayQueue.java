@@ -28,7 +28,7 @@ import java.util.Objects;
 import net.jcip.annotations.NotThreadSafe;
 
 /**
- * FIFO queue. Not synchronized.
+ * FIFO queue.
  *
  * @author Ahseya
  * @param <E> element type

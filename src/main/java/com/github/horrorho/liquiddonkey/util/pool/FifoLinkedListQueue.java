@@ -27,7 +27,7 @@ import java.util.NoSuchElementException;
 import net.jcip.annotations.NotThreadSafe;
 
 /**
- * FIFO linked-list queue. Not synchronized.
+ * FIFO linked-list queue.
  *
  * @author Ahseya
  * @param <E> element type
