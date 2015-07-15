@@ -121,7 +121,7 @@ public class SnapshotDownloader {
         while (true) {
             try {
                 ChunkServer.FileGroups fileGroups
-                        = client.getFileGroups(snapshot.backup().udid(), snapshot.id(), snapshot.files());
+                        = client.fileGroups(snapshot.backup().udid(), snapshot.id(), snapshot.files());
 
                 logger.info("-- fetchFileGroups() > fileChunkErrorList: {}", fileGroups.getFileChunkErrorList());
                 logger.info("-- fetchFileGroups() > fileErrorList: {}", fileGroups.getFileErrorList());

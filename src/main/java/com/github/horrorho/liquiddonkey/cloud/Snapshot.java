@@ -132,7 +132,7 @@ public final class Snapshot {
     static List<ICloud.MBSFile> list(Client client, Backup backup, int snapshot) throws IOException {
 
         try {
-            return client.listFiles(backup.udid(), snapshot);
+            return client.files(backup.udid(), snapshot);
         } catch (AuthenticationException ex) {
             throw ex;
         } catch (HttpResponseException ex) {

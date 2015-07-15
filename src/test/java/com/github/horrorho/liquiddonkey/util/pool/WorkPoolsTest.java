@@ -49,7 +49,7 @@ import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
 /**
- * WorkPoolTest. Concurrent test.
+ * WorkPoolTest.
  *
  * @author Ahseya
  */

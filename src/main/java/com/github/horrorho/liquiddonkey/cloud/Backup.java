@@ -77,7 +77,7 @@ public final class Backup {
             logger.trace("<< of() < udid: {}", Bytes.hex(udid));
 
             ICloud.MBSBackup backup = client.backup(udid);
-            ICloud.MBSKeySet keySet = client.getKeys(udid);
+            ICloud.MBSKeySet keySet = client.keys(udid);
             KeyBag keyBag = KeyBag.of(keySet);
 
             Backup instance = Backup.of(account, backup, keyBag);
