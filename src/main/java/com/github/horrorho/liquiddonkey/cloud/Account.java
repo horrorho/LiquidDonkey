@@ -25,8 +25,6 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
-import com.github.horrorho.liquiddonkey.http.Http;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.List;
@@ -38,6 +36,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Account.
+ * <p>
+ * Describes for {@link ICloud.MBSAccount}.
  *
  * @author Ahseya
  */
@@ -48,18 +48,14 @@ public final class Account {
     /**
      * Queries the client and returns a new instance.
      *
-     * @param http, not null
+     * @param client, not null
      * @return new instance, not null
-     * @throws AuthenticationException
      * @throws IOException
      */
-    public static Account from(Http http, Client client) throws AuthenticationException, IOException {
+    public static Account from(Client client) throws IOException {
         logger.trace("<< from()");
 
-        String fullName = client.settings().valueOr("Unknown", "appleAccountInfo", "fullName");
-        String appleId = client.settings().valueOr("Unknown", "appleAccountInfo", "appleId");
-        ICloud.MBSAccount account = client.account(http);
-        Account instance = new Account(client, account, fullName, appleId);
+        Account instance = new Account(client.account());
 
         logger.trace(">> from() > {}", instance);
         return instance;
@@ -67,20 +63,10 @@ public final class Account {
 
     private static final Logger logger = LoggerFactory.getLogger(Account.class);
 
-    private final Client client;
     private final ICloud.MBSAccount account;
-    private final String fullName;
-    private final String appleId;
 
-    Account(Client client, ICloud.MBSAccount account, String fullName, String appleId) {
-        this.client = Objects.requireNonNull(client);
+    Account(ICloud.MBSAccount account) {
         this.account = Objects.requireNonNull(account);
-        this.fullName = fullName;
-        this.appleId = appleId;
-    }
-
-    public Client client() {
-        return client;
     }
 
     public String id() {
@@ -91,20 +77,8 @@ public final class Account {
         return account.getBackupUDIDList();
     }
 
-    public String appleId() {
-        return appleId;
-    }
-
-    public String fullName() {
-        return fullName;
-    }
-
     @Override
     public String toString() {
-        return "Account{"
-                + "client=" + client
-                + ", account=" + account
-                + ", fullName=" + fullName
-                + ", appleId=" + appleId + '}';
+        return "Account{" + "account=" + account + '}';
     }
 }
