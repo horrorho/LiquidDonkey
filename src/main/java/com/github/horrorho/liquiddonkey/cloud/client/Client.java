@@ -173,8 +173,8 @@ public class Client {
             offset += listFilesLimit;
         } while (!data.isEmpty());
 
+        logger.debug(client, "-- listFiles() > files: {}", files);
         logger.trace(">> listFiles() > count: {}", files.size());
-        logger.trace(client, ">> listFiles() > {}", files);
         return files;
     }
 
@@ -201,8 +201,8 @@ public class Client {
                         snapshotId,
                         files));
 
+        logger.debug(client, "-- getFileGroups() > fileGroups: {}", fileGroups);
         logger.trace(">> getFileGroups() > count: {}", fileGroups.getFileGroupsCount());
-        logger.trace(client, ">> getFileGroups() > {}", fileGroups);
         return fileGroups;
     }
 
@@ -231,8 +231,9 @@ public class Client {
 
             tokens = mobileBackupPost(mbsFileAuthTokenListHandler, uri, encoded);
         }
+
+        logger.debug(client, "-- getFiles() > tokens: {}", tokens);
         logger.trace(">> getFiles() > count: {}", tokens.size());
-        logger.trace(client, ">> getFiles() > {}", tokens);
         return tokens;
     }
 
@@ -254,10 +255,10 @@ public class Client {
                     .headers(mmcsAuth).headers(auth.contentHeaders())
                     .post(tokens.toByteArray());
         }
+        logger.debug(client, "-- authorizeGet() > fileError: {}", groups.getFileErrorList());
+        logger.debug(client, "-- authorizeGet() > fileChunkError: {}", groups.getFileChunkErrorList());
+        logger.debug(client, "-- authorizeGet() > {}", groups);
         logger.trace(">> authorizeGet() > count: {}", groups.getFileGroupsCount());
-        logger.trace(client, ">> authorizeGet)() > fileError: {}", groups.getFileErrorList());
-        logger.trace(client, ">> authorizeGet() > fileChunkError: {}", groups.getFileChunkErrorList());
-        logger.trace(client, ">> authorizeGet() > {}", groups);
         return groups;
     }
 
