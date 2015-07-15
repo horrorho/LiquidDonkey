@@ -113,7 +113,9 @@ public class Authenticator {
         lock.lockInterruptibly();
         try {
             boolean isDisposed;
-            if (badToken.revision() < token.revision()) {
+
+            if (badToken.timestamp().isBefore(token.timestamp())) {
+                // Attempting to dispose stale token, discard
                 isDisposed = false;
             } else {
                 isDisposed = true;
