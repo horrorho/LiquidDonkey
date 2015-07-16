@@ -26,7 +26,6 @@ package com.github.horrorho.liquiddonkey.cloud.store;
 import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
 import com.github.horrorho.liquiddonkey.cloud.file.CloudFileWriterResult;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.ChunkReference;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.printer.Level;
@@ -37,7 +36,6 @@ import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -70,10 +68,7 @@ public final class StoreManager {
         logger.trace("<< from()");
         logger.debug(marker, "-- from() > fileGroup: {}", fileGroups);
 
-        ConcurrentMap<ByteString, Set<ChunkServer.StorageHostChunkList>> signatureToChunkList
-                = new ConcurrentHashMap<>();
-        ConcurrentMap<ChunkServer.StorageHostChunkList, Set<ByteString>> chunkListToSignatures
-                = new ConcurrentHashMap<>();
+        Map<ByteString, Set<ChunkServer.StorageHostChunkList>> signatureToChunks = new HashMap<>();
         ConcurrentMap<ByteString, List<ChunkListReference>> signatureToChunkListReferenceList
                 = new ConcurrentHashMap<>();
 
@@ -87,35 +82,26 @@ public final class StoreManager {
 
             fileGroup.getFileChecksumChunkReferencesList().stream().forEach(references -> {
                 ByteString signature = references.getFileChecksum();
-                List<ChunkReference> list = references.getChunkReferencesList();
                 signatureToChunkListReferenceList.put(signature, new ArrayList<>());
+                signatureToChunks.put(signature, new HashSet<>());
 
-                list.stream().forEach(reference -> {
-                    long containerIndex = reference.getContainerIndex();
-                    long chunkIndex = reference.getChunkIndex();
-                    ChunkServer.StorageHostChunkList chunkList = containerToChunkList.get(containerIndex);
-                    ChunkListReference chunkListReference = ChunkListReference.from(chunkList, (int) chunkIndex);
+                references.getChunkReferencesList().stream().forEach(reference -> {
+                    ChunkServer.StorageHostChunkList chunkList
+                            = containerToChunkList.get(reference.getContainerIndex());
+                    ChunkListReference chunkListReference
+                            = ChunkListReference.from(chunkList, (int) reference.getChunkIndex());
 
                     signatureToChunkListReferenceList.get(signature).add(chunkListReference);
-
-                    signatureToChunkList
-                            .computeIfAbsent(signature, s -> Collections.newSetFromMap(new ConcurrentHashMap<>()))
-                            .add(chunkList);
-
-                    chunkListToSignatures
-                            .computeIfAbsent(chunkList, i -> Collections.newSetFromMap(new ConcurrentHashMap<>()))
-                            .add(signature);
+                    signatureToChunks.get(signature).add(chunkList);
                 });
             });
         });
+
         logger.debug(marker, "-- from() > signatureToChunkListReferenceList: {}", signatureToChunkListReferenceList);
-        logger.debug(marker, "-- from() > signatureToChunkList: {}", signatureToChunkList);
-        logger.debug(marker, "-- from() > chunkListToSignatures: {}", chunkListToSignatures);
 
         StoreManager chunkManager = new StoreManager(
                 MemoryStore.create(),
-                chunkListToSignatures,
-                signatureToChunkList,
+                BiRef.from(signatureToChunks),
                 signatureToChunkListReferenceList,
                 ChunkDecrypter::create,
                 signatureWriter,
@@ -129,8 +115,7 @@ public final class StoreManager {
     private static final Marker marker = MarkerFactory.getMarker(Markers.STORE);
 
     private final Store<ChunkServer.StorageHostChunkList> store;
-    private final ConcurrentMap<ChunkServer.StorageHostChunkList, Set<ByteString>> chunkListToSignatures;   // Requires concurrent Set
-    private final ConcurrentMap<ByteString, Set<ChunkServer.StorageHostChunkList>> signatureToChunkList;   // Requires concurrent Set
+    private final BiRef<ByteString, ChunkServer.StorageHostChunkList> references;
     private final ConcurrentMap<ByteString, List<ChunkListReference>> signatureToChunkListReferenceList;
     private final Supplier<ChunkDecrypter> decrypters;
     private final SignatureWriter signatureWriter;
@@ -138,16 +123,14 @@ public final class StoreManager {
 
     StoreManager(
             Store<ChunkServer.StorageHostChunkList> store,
-            ConcurrentMap<ChunkServer.StorageHostChunkList, Set<ByteString>> chunkListToSignatures,
-            ConcurrentMap<ByteString, Set<ChunkServer.StorageHostChunkList>> signatureToChunkList,
+            BiRef<ByteString, ChunkServer.StorageHostChunkList> references,
             ConcurrentMap<ByteString, List<ChunkListReference>> signatureToChunkListReferenceList,
             Supplier<ChunkDecrypter> decrypters,
             SignatureWriter signatureWriter,
             Printer printer) {
 
         this.store = Objects.requireNonNull(store);
-        this.chunkListToSignatures = Objects.requireNonNull(chunkListToSignatures);
-        this.signatureToChunkList = Objects.requireNonNull(signatureToChunkList);
+        this.references = Objects.requireNonNull(references);
         this.signatureToChunkListReferenceList = Objects.requireNonNull(signatureToChunkListReferenceList);
         this.decrypters = Objects.requireNonNull(decrypters);
         this.signatureWriter = Objects.requireNonNull(signatureWriter);
@@ -170,7 +153,7 @@ public final class StoreManager {
 
         Map<ByteString, StoreWriter> writers = process(chunkList);
         if (!writers.isEmpty()) {
-            clear(writers.keySet());
+            writers.keySet().forEach(references::removeKey);
         }
 
         logger.debug("-- put() > writing signatures: {}", writers.keySet());
@@ -210,7 +193,8 @@ public final class StoreManager {
     }
 
     Map<ByteString, StoreWriter> process(ChunkServer.StorageHostChunkList chunkList) {
-        Map<ByteString, StoreWriter> writers = chunkListToSignatures.get(chunkList).stream()
+
+        Map<ByteString, StoreWriter> writers = references.key(chunkList).stream()
                 .map(signature -> new SimpleEntry<>(signature, process(signature)))
                 .filter(entry -> entry.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -219,10 +203,10 @@ public final class StoreManager {
     }
 
     StoreWriter process(ByteString signature) {
-        List<ChunkListReference> references = signatureToChunkListReferenceList.get(signature);
+        List<ChunkListReference> list = signatureToChunkListReferenceList.get(signature);
 
         // Exit if any chunks are missing.
-        if (!references.stream().allMatch(reference -> store.contains(reference.chunkList(), reference.index()))) {
+        if (!list.stream().allMatch(reference -> store.contains(reference.chunkList(), reference.index()))) {
             return null;
         }
 
@@ -232,29 +216,14 @@ public final class StoreManager {
         }
 
         // Writer.
-        List<StoreWriter> writers = references.stream()
+        List<StoreWriter> writers = list.stream()
                 .map(reference -> store.writer(reference.chunkList(), reference.index()))
                 .collect(Collectors.toList());
 
         return CompoundWriter.from(writers);
     }
 
-    void clear(Set<ByteString> signatures) {
-        // Purge completed.
-        signatures.forEach(signature -> {
-            signatureToChunkList.get(signature).stream().forEach(index -> {
-                chunkListToSignatures.get(index).remove(signature);
-
-                if (chunkListToSignatures.get(index).isEmpty()) {
-                    chunkListToSignatures.remove(index);
-                    store.remove(index);
-                }
-            });
-            signatureToChunkList.remove(signature);
-        });
-    }
-
     public List<ChunkServer.StorageHostChunkList> chunkListList() {
-        return new ArrayList<>(chunkListToSignatures.keySet());
+        return new ArrayList<>(references.valueSet());
     }
 }

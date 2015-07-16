@@ -74,7 +74,7 @@ public class SnapshotDownloader {
         ChunkServer.FileGroups fileGroups = fetchFileGroups(client, snapshot);
 
         SignatureWriter writer = SignatureWriter.from(snapshot, fileConfig);
-        StoreManager manager = StoreManager.of(fileGroups, writer, printer);
+        StoreManager manager = StoreManager.from(fileGroups, writer, printer);
         DonkeyFactory factory = DonkeyFactory.from(client, manager, retryCount);
 
         Map<Track, List<Donkey>> donkies = manager.chunkListList().stream().map(factory::fetchDonkey)
