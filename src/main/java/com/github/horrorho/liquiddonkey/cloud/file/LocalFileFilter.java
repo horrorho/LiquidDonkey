@@ -24,13 +24,13 @@
 package com.github.horrorho.liquiddonkey.cloud.file;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.iofunction.IOPredicate;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
 import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * @author Ahseya
  */
 @NotThreadSafe
-public final class LocalFileFilter implements Predicate<ICloud.MBSFile> {
+public final class LocalFileFilter implements IOPredicate<ICloud.MBSFile> {
 
     private static final Logger logger = LoggerFactory.getLogger(LocalFileFilter.class);
 
@@ -72,32 +72,35 @@ public final class LocalFileFilter implements Predicate<ICloud.MBSFile> {
     }
 
     @Override
-    public boolean test(ICloud.MBSFile remote) {
-        try {
-            logger.trace("<< test() < {}", remote.getRelativePath());
+    public boolean test(ICloud.MBSFile remote) throws IOException, SecurityException {
+        logger.trace("<< test() < file: {}", remote.getRelativePath());
 
-            Path local = directory.apply(remote);
+        boolean isLocal = doTest(remote);
 
-            if (!Files.exists(local)) {
-                logger.trace(">> test() < doesn't exist: {}, false", remote.getRelativePath());
-                return false;
-            }
+        logger.trace(">> test() > is local: {}", isLocal);
+        return isLocal;
+    }
 
-            if (!(testSize(local, remote) || testDecryptedSize(local, remote))) {
-                logger.trace(">> test() < mismatched size: {}, false", remote.getRelativePath());
-                return false;
-            }
+    public boolean doTest(ICloud.MBSFile remote) throws IOException, SecurityException {
+        Path local = directory.apply(remote);
 
-            if (toCheckLastModifiedTimestamp && !testLastModified(local, remote)) {
-                logger.trace(">> test() < mismatched last-modified timestamp: {}, false", remote.getRelativePath());
-                return false;
-            }
-
-            logger.trace(">> test() < {} true", remote.getRelativePath());
-            return true;
-        } catch (IOException | SecurityException ex) {
-            throw new IllegalStateException("File io error");
+        if (!Files.exists(local)) {
+            logger.debug("-- doTest() > doesn't exist: {}", remote.getRelativePath());
+            return false;
         }
+
+        if (!(testSize(local, remote) || testDecryptedSize(local, remote))) {
+            logger.debug("-- doTest() > mismatched size: {}", remote.getRelativePath());
+            return false;
+        }
+
+        if (toCheckLastModifiedTimestamp && !testLastModified(local, remote)) {
+            logger.debug("-- doTest() > mismatched last-modified timestamp: {}", remote.getRelativePath());
+            return false;
+        }
+
+        logger.debug("-- doTest() > matches: {}", remote.getRelativePath());
+        return true;
     }
 
     boolean testSize(Path local, ICloud.MBSFile remote) throws IOException {
@@ -107,14 +110,13 @@ public final class LocalFileFilter implements Predicate<ICloud.MBSFile> {
     }
 
     boolean testDecryptedSize(Path local, ICloud.MBSFile remote) throws IOException {
-        return remote.hasAttributes() && remote.getAttributes().hasDecryptedSize()
+        return remote.getAttributes().hasDecryptedSize()
                 ? Files.size(local) == remote.getAttributes().getDecryptedSize()
                 : false;
     }
 
     boolean testLastModified(Path local, ICloud.MBSFile remote) throws IOException {
-        return remote.hasAttributes() && remote.getAttributes().hasLastModified()
-                ? Files.getLastModifiedTime(local).equals(FileTime.from(remote.getAttributes().getLastModified(), TimeUnit.SECONDS))
-                : false;
+        return Files.getLastModifiedTime(local)
+                .equals(FileTime.from(remote.getAttributes().getLastModified(), TimeUnit.SECONDS));
     }
 }

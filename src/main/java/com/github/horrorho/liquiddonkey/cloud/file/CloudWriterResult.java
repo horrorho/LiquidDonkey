@@ -33,7 +33,7 @@ import net.jcip.annotations.ThreadSafe;
  */
 @Immutable
 @ThreadSafe
-public enum WriterResult {
+public enum CloudWriterResult {
 
     SUCCESS("Success.", true),
     SUCCESS_DECRYPT("Success. Decrypted.", true),
@@ -44,7 +44,7 @@ public enum WriterResult {
     private final String toString;
     private final boolean isSuccess;
 
-    private WriterResult(String toString, boolean isSuccess) {
+    private CloudWriterResult(String toString, boolean isSuccess) {
         this.toString = toString;
         this.isSuccess = isSuccess;
     }
