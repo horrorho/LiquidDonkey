@@ -29,6 +29,7 @@ import com.github.horrorho.liquiddonkey.settings.props.Props;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -54,7 +55,7 @@ public final class SelectionConfig {
                 : new ArrayList<>();
 
         return newInstance(new HashSet<>(udid),
-                new HashSet<>(props.getList(Property.SELECTION_SNAPSHOT, parsers::asInteger)));
+                new LinkedHashSet<>(props.getList(Property.SELECTION_SNAPSHOT, parsers::asInteger)));
     }
 
     public static SelectionConfig newInstance(Set<String> backups, Set<Integer> snapshots) {
