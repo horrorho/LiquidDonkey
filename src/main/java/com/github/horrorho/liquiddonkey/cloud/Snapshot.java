@@ -84,7 +84,6 @@ public final class Snapshot {
      * @throws IOException
      */
     public static Snapshot of(Client client, Backup backup, int id, EngineConfig config) throws IOException {
-
         logger.trace("<< of() < id: {}", id);
         int latest = backup.snapshots().stream().mapToInt(Integer::intValue).max().orElse(0);
 
@@ -99,7 +98,6 @@ public final class Snapshot {
     }
 
     static Snapshot of(Client client, Backup backup, int id, boolean toHunt) throws IOException {
-
         List<Integer> snapshots = backup.snapshots();
 
         if (!snapshots.contains(id)) {
@@ -111,31 +109,26 @@ public final class Snapshot {
                 ? snapshots.get(1)
                 : id + 1;
 
-        List<ICloud.MBSFile> list = list(client, backup, id, to);
-
-        return list == null
-                ? null
-                : new Snapshot(id, backup, list);
+        return snapshot(client, backup, id, to);
     }
 
-    static List<ICloud.MBSFile> list(Client client, Backup backup, int from, int to) throws IOException {
+    static Snapshot snapshot(Client client, Backup backup, int from, int to) throws IOException {
+        int id = from;
+        Snapshot snapshot = null;
 
-        int snapshot = from;
-        List<ICloud.MBSFile> list = null;
-
-        while (snapshot < to && list == null) {
-            list = list(client, backup, snapshot++);
+        while (id < to && snapshot == null) {
+            snapshot = Snapshot.snapshot(client, backup, id++);
         }
-        return list;
+        return snapshot;
     }
 
-    static List<ICloud.MBSFile> list(Client client, Backup backup, int snapshot) throws IOException {
-
+    static Snapshot snapshot(Client client, Backup backup, int id) throws IOException {
         try {
-            return client.files(backup.udid(), snapshot);
-        } catch (AuthenticationException ex) {
-            throw ex;
+            return new Snapshot(id, backup, client.files(backup.udid(), id));
         } catch (HttpResponseException ex) {
+            if (ex.getStatusCode() == 401) {
+                throw ex;
+            }
             logger.warn("-- list() > exceptione: ", ex);
             return null;
         }
