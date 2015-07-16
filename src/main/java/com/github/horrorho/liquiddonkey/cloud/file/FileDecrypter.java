@@ -134,10 +134,12 @@ public final class FileDecrypter {
                 }
             }
 
-            if (decryptedSize > 0 && Files.size(path) > decryptedSize) {
+            long size = Files.size(path);
+            if (decryptedSize > 0 && size > decryptedSize) {
+                logger.debug("-- decrypt() > truncating to: {} from: {}", decryptedSize, size);
                 Files.newByteChannel(path, WRITE).truncate(decryptedSize).close();
             } else if (Files.size(path) < decryptedSize) {
-                logger.warn("--decrypt() > short output size: {} expected: {}", Files.size(path), decryptedSize);
+                logger.warn("-- decrypt() > short output size: {} expected: {}", Files.size(path), decryptedSize);
             }
         } catch (BufferUnderflowException | DataLengthException ex) {
             throw new BadDataException("Cipher exception", ex);
