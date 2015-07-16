@@ -28,18 +28,23 @@ import com.github.horrorho.liquiddonkey.cloud.client.Authenticator;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.client.Settings;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
+import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.HttpFactory;
+import com.github.horrorho.liquiddonkey.iofunction.IOPredicate;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import com.google.protobuf.ByteString;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
@@ -93,9 +98,6 @@ public class Looter implements Closeable {
         Authenticator authenticator = Authenticator.from(config.authentication());
         Auth auth = authenticator.auth(http);
         Settings settings = Settings.from(http, auth);
-
-        System.exit(0);
-        
         Client client = Client.from(auth, settings, http, config.client());
 
         if (config.engine().toDumpToken()) {
@@ -125,17 +127,28 @@ public class Looter implements Closeable {
             Snapshot snapshot = Snapshot.of(client, backup, id, config.engine());
             Snapshot filtered = Snapshot.of(snapshot, filter);
 
-//            SnapshotDownloader sd = new SnapshotDownloader(
-//                    http,
-//                    client,
-//                    ChunkDataFetcher.newInstance(http, client),
-//                    SignatureWriter.from(snapshot, config.file()),
-//                    printer);
+            IOPredicate<ICloud.MBSFile> localFilter = LocalFileFilter.from(snapshot, config.file());
+            Predicate<ICloud.MBSFile> localFilterUnchecked = file -> {
+                try {
+                    return !localFilter.test(file);
+                } catch (IOException ex) {
+                    throw new UncheckedIOException(ex);
+                }
+            };
+
+            Snapshot filteredLocal = Snapshot.of(filtered, localFilterUnchecked);
+
+             //            SnapshotDownloader sd = new SnapshotDownloader(
+            //                    http,
+            //                    client,
+            //                    ChunkDataFetcher.newInstance(http, client),
+            //                    SignatureWriter.from(snapshot, config.file()),
+            //                    printer);
             try {
 
                 SnapshotDownloader downloader = new SnapshotDownloader(config.file(), printer);
 
-                downloader.download(client, filtered);
+                downloader.download(client, filteredLocal);
 
                 System.exit(0);
 
