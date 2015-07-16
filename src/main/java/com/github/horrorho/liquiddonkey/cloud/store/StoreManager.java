@@ -210,7 +210,6 @@ public final class StoreManager {
     }
 
     Map<ByteString, StoreWriter> process(ChunkServer.StorageHostChunkList chunkList) {
-
         Map<ByteString, StoreWriter> writers = chunkListToSignatures.get(chunkList).stream()
                 .map(signature -> new SimpleEntry<>(signature, process(signature)))
                 .filter(entry -> entry.getValue() != null)
@@ -241,7 +240,7 @@ public final class StoreManager {
     }
 
     void clear(Set<ByteString> signatures) {
-
+        // Purge completed.
         signatures.forEach(signature -> {
             signatureToChunkList.get(signature).stream().forEach(index -> {
                 chunkListToSignatures.get(index).remove(signature);
@@ -258,4 +257,4 @@ public final class StoreManager {
     public List<ChunkServer.StorageHostChunkList> chunkListList() {
         return new ArrayList<>(chunkListToSignatures.keySet());
     }
-} 
+}
