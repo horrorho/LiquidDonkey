@@ -24,7 +24,7 @@
 package com.github.horrorho.liquiddonkey.cloud.store;
 
 import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
-import com.github.horrorho.liquiddonkey.cloud.file.WriterResult;
+import com.github.horrorho.liquiddonkey.cloud.file.CloudWriterResult;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.ChunkReference;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
@@ -155,7 +155,7 @@ public final class StoreManager {
     }
 
     public void put(ChunkServer.StorageHostChunkList chunkList, byte[] chunkData)
-            throws BadDataException, IOException {
+            throws BadDataException, IOException, InterruptedException {
 
         Objects.requireNonNull(chunkList);
         Objects.requireNonNull(chunkData);
@@ -179,11 +179,11 @@ public final class StoreManager {
         logger.trace(">> put()");
     }
 
-    void write(Map<ByteString, DataWriter> writers) throws IOException {
+    void write(Map<ByteString, DataWriter> writers) throws IOException, InterruptedException {
         try {
             for (ByteString signature : new HashSet<>(writers.keySet())) {
                 try (DataWriter dataWriter = writers.get(signature)) {
-                    Map<ICloud.MBSFile, WriterResult> results = signatureWriter.write(signature, dataWriter);
+                    Map<ICloud.MBSFile, CloudWriterResult> results = signatureWriter.write(signature, dataWriter);
 
                     if (results == null) {
                         logger.warn("-- write() > unreferenced signature: {}", Bytes.hex(signature));
@@ -260,3 +260,6 @@ public final class StoreManager {
     }
 }
 // failed list?
+// TODO progress
+// TODO released chunks
+// TODO check we aren't leaking memory
