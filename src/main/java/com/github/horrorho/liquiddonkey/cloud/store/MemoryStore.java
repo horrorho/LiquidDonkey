@@ -25,11 +25,13 @@ package com.github.horrorho.liquiddonkey.cloud.store;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
@@ -46,7 +48,7 @@ public final class MemoryStore<K> implements Store<K> {
 
     public static MemoryStore newInstance() {
         logger.trace("<< newInstance()");
-        MemoryStore instance = new MemoryStore(new ConcurrentHashMap<>());
+        MemoryStore instance = new MemoryStore(new ConcurrentHashMap<>(), new AtomicLong(0));
         logger.trace(">> newInstance()");
         return instance;
     }
@@ -54,14 +56,20 @@ public final class MemoryStore<K> implements Store<K> {
     private static final Logger logger = LoggerFactory.getLogger(MemoryStore.class);
 
     private final ConcurrentMap<K, List<byte[]>> containers;
+    private final AtomicLong size;
 
-    MemoryStore(ConcurrentMap<K, List<byte[]>> containers) {
+    MemoryStore(ConcurrentMap<K, List<byte[]>> containers, AtomicLong size) {
         this.containers = Objects.requireNonNull(containers);
+        this.size = Objects.requireNonNull(size);
     }
 
     @Override
-    public boolean put(K key, List<byte[]> chunkData
-    ) {
+    public List<K> keys() {
+        return new ArrayList<>(containers.keySet());
+    }
+
+    @Override
+    public boolean put(K key, List<byte[]> chunkData) {
         if (chunkData.contains(null)) {
             throw new NullPointerException("Null chunk data entry");
         }
@@ -69,13 +77,28 @@ public final class MemoryStore<K> implements Store<K> {
                 .map(data -> Arrays.copyOf(data, data.length))
                 .collect(Collectors.toList());
 
-        return containers.put(key, copy) == null;
+        long in = size(chunkData);
+
+        List<byte[]> previousChunkData = containers.put(key, copy);
+        long out = size(previousChunkData);
+
+        long delta = in - out;
+        long instant = size.addAndGet(delta);
+
+        logger.debug("-- put() > in: {} out: {} size: {}", in, out, instant);
+
+        return previousChunkData == null;
     }
 
     @Override
-    public boolean remove(K key
-    ) {
-        return containers.remove(key) != null;
+    public boolean remove(K key) {
+        List<byte[]> previousChunkData = containers.remove(key);
+        long out = size(previousChunkData);
+        long instant = size.addAndGet(-out);
+
+        logger.debug("-- remove() > out: {} size: {}", out, instant);
+
+        return previousChunkData != null;
     }
 
     @Override
@@ -83,6 +106,11 @@ public final class MemoryStore<K> implements Store<K> {
         return containers.containsKey(key)
                 ? containers.get(key).size()
                 : -1;
+    }
+
+    @Override
+    public long size() {
+        return size.get();
     }
 
     @Override
@@ -115,5 +143,11 @@ public final class MemoryStore<K> implements Store<K> {
         public void close() throws IOException {
             data = null;
         }
+    }
+
+    long size(List<byte[]> chunkData) {
+        return chunkData == null
+                ? 0
+                : chunkData.stream().mapToLong(chunk -> chunk.length).sum();
     }
 }

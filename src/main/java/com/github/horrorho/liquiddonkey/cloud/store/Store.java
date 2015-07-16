@@ -34,6 +34,13 @@ import java.util.List;
 public interface Store<K> {
 
     /**
+     * Returns a list of keys.
+     *
+     * @return list of keys, not null
+     */
+    List<K> keys();
+
+    /**
      * Creates the specified container and copies over the specified data.
      *
      * @param key, not null
@@ -52,12 +59,19 @@ public interface Store<K> {
     boolean remove(K key);
 
     /**
-     * Returns the size of the specified container.
+     * Returns the size of the specified container in bytes.
      *
      * @param key, not null
-     * @return size of the container, or -1 if no such container exists
+     * @return size of the container in bytes, or -1 if no such container exists
      */
     int size(K key);
+
+    /**
+     * Returns the size of the store in bytes.
+     *
+     * @return size of the store in bytes
+     */
+    long size();
 
     /**
      * Returns an DataWriter that writes the referenced data to the specified output stream. Subsequent modifications to
