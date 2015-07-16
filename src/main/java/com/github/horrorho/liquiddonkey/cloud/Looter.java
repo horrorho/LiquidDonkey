@@ -29,6 +29,7 @@ import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.client.Settings;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
+import com.github.horrorho.liquiddonkey.cloud.file.Mode;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
@@ -44,6 +45,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import net.jcip.annotations.ThreadSafe;
@@ -123,8 +125,17 @@ public class Looter implements Closeable {
 
     void backup(Http http, Client client, Backup backup) throws AuthenticationException, IOException, InterruptedException {
 
-        for (int id : backup.snapshots()) {
+        logger.info("-- backup() > snapshots: {}", backup.snapshots());
+        for (int id : config.selection().snapshots()) {
+
+            logger.info("-- backup() > id");
             Snapshot snapshot = Snapshot.of(client, backup, id, config.engine());
+
+            if (snapshot == null) {
+                logger.warn("-- backup() > snapshot not found: {}", id);
+                continue;
+            }
+
             Snapshot filtered = Snapshot.of(snapshot, filter);
 
             IOPredicate<ICloud.MBSFile> localFilter = LocalFileFilter.from(snapshot, config.file());
@@ -136,9 +147,24 @@ public class Looter implements Closeable {
                 }
             };
 
+            long a = System.currentTimeMillis();
+            // TODO force overwrite flag
             Snapshot filteredLocal = Snapshot.of(filtered, localFilterUnchecked);
+            long b = System.currentTimeMillis();
+            logger.info("-- backup() > delay: {}", (b - a));
+            System.out.println("delay " + (b - a));
 
-             //            SnapshotDownloader sd = new SnapshotDownloader(
+//            filteredLocal.signatures().values().stream().forEach(System.out::print);
+//            filteredLocal.signatures().values().stream().flatMap(Set::stream)
+//                    .forEach(x -> {
+//
+//                        if (Mode.mode(x) == Mode.FILE) {
+//                            System.out.println(x);
+//                        }
+//                    });
+
+
+                        //            SnapshotDownloader sd = new SnapshotDownloader(
             //                    http,
             //                    client,
             //                    ChunkDataFetcher.newInstance(http, client),
@@ -149,8 +175,6 @@ public class Looter implements Closeable {
                 SnapshotDownloader downloader = new SnapshotDownloader(config.file(), printer);
 
                 downloader.download(client, filteredLocal);
-
-                System.exit(0);
 
 //            try {
 //                ChunkServer.FileGroups fetchFileGroups = client.fetchFileGroups(http, backup.udid(), id, filtered.files());

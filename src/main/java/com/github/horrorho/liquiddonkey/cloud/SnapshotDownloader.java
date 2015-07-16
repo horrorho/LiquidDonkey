@@ -58,11 +58,11 @@ public class SnapshotDownloader {
     private final FileConfig fileConfig;
     private final Printer printer;
 
-    private final int threads = 1;
+    private final int threads = 4;
     private final int retryCount = 3;
     private final int staggerMs = 100;
 
-    private final long executorTimeoutSeconds = 1800;
+    private final long executorTimeoutSeconds = 18000; // TODO back to 1800 or 3600???
 
     public SnapshotDownloader(FileConfig fileConfig, Printer printer) {
         this.fileConfig = fileConfig;

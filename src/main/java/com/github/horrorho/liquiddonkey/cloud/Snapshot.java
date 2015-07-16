@@ -118,8 +118,7 @@ public final class Snapshot {
         // The initial snapshot isn't always at 1.
         while (id < to && snapshot == null) {
             try {
-                snapshot = new Snapshot(id, backup, client.files(backup.udid(), id));
-                id++;
+                snapshot = new Snapshot(id, backup, client.files(backup.udid(), id++));
             } catch (HttpResponseException ex) {
                 if (ex.getStatusCode() == 401) {
                     throw ex;
