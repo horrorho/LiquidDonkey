@@ -124,7 +124,7 @@ public final class CloudFileWriter {
      * @throws IOException
      * @throws IllegalStateException if the signature is unknown
      */
-    public CloudWriterResult write(ICloud.MBSFile file, IOFunction<OutputStream, Long> writer) throws IOException {
+    public CloudFileWriterResult write(ICloud.MBSFile file, IOFunction<OutputStream, Long> writer) throws IOException {
         logger.trace("<< write() < file: {}", file.getRelativePath());
 
         Path path = directory.apply(file);
@@ -132,13 +132,13 @@ public final class CloudFileWriter {
         long written = createDirectoryWriteFile(path, writer);
         logger.debug("-- write() > path: {} written: {}", path, written);
 
-        CloudWriterResult result;
+        CloudFileWriterResult result;
 
         if (file.getAttributes().hasEncryptionKey()) {
             result = decrypt(path, file);
         } else {
             logger.debug("-- write() > success: {}", file.getRelativePath());
-            result = CloudWriterResult.SUCCESS;
+            result = CloudFileWriterResult.SUCCESS;
         }
 
         if (setLastModifiedTime) {
@@ -149,27 +149,27 @@ public final class CloudFileWriter {
         return result;
     }
 
-    CloudWriterResult decrypt(Path path, MBSFile file) throws IOException {
+    CloudFileWriterResult decrypt(Path path, MBSFile file) throws IOException {
         ByteString key = keyBagTools.fileKey(file);
 
         if (key == null) {
             logger.warn("-- decrypt() > failed to derive key: {}", file.getRelativePath());
-            return CloudWriterResult.FAILED_DECRYPT_NO_KEY;
+            return CloudFileWriterResult.FAILED_DECRYPT_NO_KEY;
         }
 
         if (!Files.exists(path)) {
             logger.warn("-- decrypt() > no such file: {}", file.getRelativePath());
-            return CloudWriterResult.FAILED_DECRYPT_NO_FILE;
+            return CloudFileWriterResult.FAILED_DECRYPT_NO_FILE;
         }
 
         try {
             decrypter.decrypt(path, key, file.getAttributes().getDecryptedSize());
             logger.debug("-- decrypt() > success: {}", file.getRelativePath());
-            return CloudWriterResult.SUCCESS_DECRYPT;
+            return CloudFileWriterResult.SUCCESS_DECRYPT;
 
         } catch (BadDataException ex) {
             logger.warn("-- decrypt() > failed: {} exception: {}", file.getRelativePath(), ex);
-            return CloudWriterResult.FAILED_DECRYPT_ERROR;
+            return CloudFileWriterResult.FAILED_DECRYPT_ERROR;
         }
     }
 
