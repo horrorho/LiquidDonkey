@@ -24,7 +24,7 @@
 package com.github.horrorho.liquiddonkey.cloud.store;
 
 import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
-import com.github.horrorho.liquiddonkey.cloud.file.CloudWriterResult;
+import com.github.horrorho.liquiddonkey.cloud.file.CloudFileWriterResult;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer.ChunkReference;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
@@ -183,7 +183,7 @@ public final class StoreManager {
         try {
             for (ByteString signature : new HashSet<>(writers.keySet())) {
                 try (DataWriter dataWriter = writers.get(signature)) {
-                    Map<ICloud.MBSFile, CloudWriterResult> results = signatureWriter.write(signature, dataWriter);
+                    Map<ICloud.MBSFile, CloudFileWriterResult> results = signatureWriter.write(signature, dataWriter);
 
                     if (results == null) {
                         logger.warn("-- write() > unreferenced signature: {}", Bytes.hex(signature));
