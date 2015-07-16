@@ -27,6 +27,7 @@ import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import com.github.horrorho.liquiddonkey.settings.props.Props;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -74,6 +75,10 @@ public class CommandLineConfigTest {
             o("u p --snapshot 1 2", config -> config.selection().snapshots(), set(1, 2)),
             o("u p --snapshot 1 2 2", config -> config.selection().snapshots(), set(1, 2)),
             o("u p --snapshot -1", config -> config.selection().snapshots(), set(-1)),
+            o("u p --snapshot 1 -2 -1", config -> new ArrayList<>(config.selection().snapshots()), Arrays.asList(1, -2, -1)),
+            o("u p --snapshot 3 2 1", config -> new ArrayList<>(config.selection().snapshots()), Arrays.asList(3, 2, 1)),
+            o("u p --snapshot 1 2 3 2 1", config -> new ArrayList<>(config.selection().snapshots()), Arrays.asList(1, 2, 3)),
+            o("u p --snapshot 3 3 2 3 1 3 2 1", config -> new ArrayList<>(config.selection().snapshots()), Arrays.asList(3, 2, 1)),
             o("u p", config -> config.fileFilter().relativePathContains(), set("")),
             o("u p --relative-path first", config -> config.fileFilter().relativePathContains(), set("first")),
             o("u p --relative-path first second", config -> config.fileFilter().relativePathContains(), set("first", "second")),
