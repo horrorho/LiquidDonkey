@@ -23,8 +23,10 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.file;
 
+import com.github.horrorho.liquiddonkey.cloud.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.iofunction.IOPredicate;
+import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,71 +54,91 @@ public final class LocalFileFilter implements IOPredicate<ICloud.MBSFile> {
     /**
      * Returns a new instance.
      *
-     * @param directory the SnapshotDirectory referencing the local files, not null
-     * @param toCheckLastModifiedTimestamp to test the last modified timestamp
+     * @param snapshot, not null
+     * @param config, not null
      * @return a new instance, not null
      */
-    public static LocalFileFilter newInstance(
-            SnapshotDirectory directory,
-            boolean toCheckLastModifiedTimestamp) {
+    public static LocalFileFilter from(
+            Snapshot snapshot,
+            FileConfig config) {
 
-        return new LocalFileFilter(directory, toCheckLastModifiedTimestamp);
+        return new LocalFileFilter(
+                SnapshotDirectory.from(snapshot, config),
+                config.setLastModifiedTimestamp(),
+                config.isCombined()
+        );
+    }
+
+    /**
+     * Returns a new instance.
+     *
+     * @param directory, not null
+     * @param toCheckLastModifiedTimestamp to test the last modified timestamp
+     * @param isCombined
+     * @return a new instance, not null
+     */
+    public static LocalFileFilter from(
+            SnapshotDirectory directory,
+            boolean toCheckLastModifiedTimestamp,
+            boolean isCombined) {
+
+        return new LocalFileFilter(directory, toCheckLastModifiedTimestamp, isCombined);
     }
 
     private final SnapshotDirectory directory;
     private final boolean toCheckLastModifiedTimestamp;
+    private final boolean isCombined;
 
-    LocalFileFilter(SnapshotDirectory directory, boolean toCheckLastModifiedTimestamp) {
+    LocalFileFilter(SnapshotDirectory directory, boolean toCheckLastModifiedTimestamp, boolean isCombined) {
         this.directory = Objects.requireNonNull(directory);
         this.toCheckLastModifiedTimestamp = toCheckLastModifiedTimestamp;
+        this.isCombined = isCombined;
     }
 
     @Override
     public boolean test(ICloud.MBSFile remote) throws IOException, SecurityException {
         logger.trace("<< test() < file: {}", remote.getRelativePath());
 
-        boolean isLocal = doTest(remote);
+        Path local = directory.apply(remote);
+
+        boolean isLocal = isCombined
+                ? testExists(local, remote) && !(testLastModified(local, remote) > 0) // Last modified equal or before.
+                : testExists(local, remote) && testSize(local, remote) && (testLastModified(local, remote) == 0);
 
         logger.trace(">> test() > is local: {}", isLocal);
         return isLocal;
     }
 
-    public boolean doTest(ICloud.MBSFile remote) throws IOException, SecurityException {
-        Path local = directory.apply(remote);
+    boolean testExists(Path local, ICloud.MBSFile remote) throws IOException {
+        boolean match = Files.exists(local);
 
-        if (!Files.exists(local)) {
-            logger.debug("-- doTest() > doesn't exist: {}", remote.getRelativePath());
-            return false;
-        }
-
-        if (!(testSize(local, remote) || testDecryptedSize(local, remote))) {
-            logger.debug("-- doTest() > mismatched size: {}", remote.getRelativePath());
-            return false;
-        }
-
-        if (toCheckLastModifiedTimestamp && !testLastModified(local, remote)) {
-            logger.debug("-- doTest() > mismatched last-modified timestamp: {}", remote.getRelativePath());
-            return false;
-        }
-
-        logger.debug("-- doTest() > matches: {}", remote.getRelativePath());
-        return true;
+        logger.debug("-- testExists() < match: {} local: {} file: {}",
+                match, local, remote.getRelativePath());
+        return match;
     }
 
     boolean testSize(Path local, ICloud.MBSFile remote) throws IOException {
-        return remote.hasSize()
-                ? Files.size(local) == remote.getSize()
-                : false;
+        Long localSize = Files.size(local);
+        Long remoteSize = remote.hasSize()
+                ? remote.getSize()
+                : null;
+        Long remoteDecryptedSize = remote.getAttributes().hasDecryptedSize()
+                ? remote.getAttributes().getDecryptedSize()
+                : null;
+        boolean match = Objects.equals(remoteDecryptedSize, localSize) || Objects.equals(remoteSize, localSize);
+
+        logger.debug("-- testSize() < match: {} local: {} remote: {} decrypted: {} file: {}",
+                match, localSize, remoteSize, remoteDecryptedSize, remote.getRelativePath());
+        return match;
     }
 
-    boolean testDecryptedSize(Path local, ICloud.MBSFile remote) throws IOException {
-        return remote.getAttributes().hasDecryptedSize()
-                ? Files.size(local) == remote.getAttributes().getDecryptedSize()
-                : false;
-    }
+    int testLastModified(Path local, ICloud.MBSFile remote) throws IOException {
+        FileTime localTimestamp = Files.getLastModifiedTime(local);
+        FileTime remoteTimestamp = FileTime.from(remote.getAttributes().getLastModified(), TimeUnit.SECONDS);
+        int comparision = localTimestamp.compareTo(remoteTimestamp);
 
-    boolean testLastModified(Path local, ICloud.MBSFile remote) throws IOException {
-        return Files.getLastModifiedTime(local)
-                .equals(FileTime.from(remote.getAttributes().getLastModified(), TimeUnit.SECONDS));
+        logger.debug("-- testLastModified() < comparision: {} local: {} remote: {} file: {}",
+                comparision, localTimestamp, remoteTimestamp, remote.getRelativePath());
+        return comparision;
     }
 }
