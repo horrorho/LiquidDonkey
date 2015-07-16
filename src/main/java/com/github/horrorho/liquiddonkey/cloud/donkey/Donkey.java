@@ -73,11 +73,14 @@ public abstract class Donkey {
                 exceptions.add(exception);
                 toDo = Release.dispose();
             }
-        } catch (IOException | RuntimeException ex) {
+        } catch (IOException | InterruptedException | RuntimeException ex) {
             logger.warn("-- process() > exception: {}", ex);
             exceptions.add(ex);
             fatal.compareAndSet(null, ex);
             toDo = Release.dispose();
+
+            // TODO remove
+            System.exit(0);
         }
 
         logger.trace(">> process() > release: {}", toDo);
@@ -108,7 +111,7 @@ public abstract class Donkey {
         return retryCount;
     }
 
-    protected abstract Release<Track, Donkey> toProcess() throws IOException;
+    protected abstract Release<Track, Donkey> toProcess() throws IOException, InterruptedException;
 
     @Override
     public String toString() {

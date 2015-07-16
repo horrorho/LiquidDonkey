@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import net.jcip.annotations.NotThreadSafe;
+import org.bouncycastle.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,7 +68,7 @@ public final class WriterDonkey extends Donkey {
     }
 
     @Override
-    protected Release<Track, Donkey> toProcess() throws IOException {
+    protected Release<Track, Donkey> toProcess() throws IOException, InterruptedException {
         log.trace("<< toProcess()");
 
         Release<Track, Donkey> toDo;
