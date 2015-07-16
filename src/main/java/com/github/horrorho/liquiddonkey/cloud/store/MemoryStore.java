@@ -86,7 +86,6 @@ public final class MemoryStore<K> implements Store<K> {
         long instant = size.addAndGet(delta);
 
         logger.debug("-- put() > in: {} out: {} size: {}", in, out, instant);
-
         return previousChunkData == null;
     }
 
@@ -97,7 +96,6 @@ public final class MemoryStore<K> implements Store<K> {
         long instant = size.addAndGet(-out);
 
         logger.debug("-- remove() > out: {} size: {}", out, instant);
-
         return previousChunkData != null;
     }
 
