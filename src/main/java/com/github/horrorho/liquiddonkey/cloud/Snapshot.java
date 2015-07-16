@@ -115,6 +115,7 @@ public final class Snapshot {
         int id = from;
         Snapshot snapshot = null;
 
+        // The initial snapshot isn't always at 1.
         while (id < to && snapshot == null) {
             try {
                 snapshot = new Snapshot(id, backup, client.files(backup.udid(), id));
