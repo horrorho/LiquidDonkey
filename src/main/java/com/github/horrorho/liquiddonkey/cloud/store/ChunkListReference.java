@@ -37,6 +37,10 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 final class ChunkListReference {
 
+    public static ChunkListReference from(ChunkServer.StorageHostChunkList chunkList, int index) {
+        return new ChunkListReference(chunkList, index);
+    }
+
     private final ChunkServer.StorageHostChunkList chunkList;
     private final int index;
 

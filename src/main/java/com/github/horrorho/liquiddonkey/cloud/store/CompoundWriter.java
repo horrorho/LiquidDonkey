@@ -27,22 +27,23 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * CompoundWriter.
  *
  * @author Ahseya
  */
-public class CompoundWriter implements DataWriter {
+public class CompoundWriter implements StoreWriter {
 
-    public static CompoundWriter of(List<DataWriter> writers) {
+    public static CompoundWriter from(List<StoreWriter> writers) {
         return new CompoundWriter(writers);
     }
 
-    private List<DataWriter> writers;
+    private List<StoreWriter> writers;
 
-    CompoundWriter(List<DataWriter> writers) {
-        this.writers = new ArrayList<>(writers);
+    CompoundWriter(List<StoreWriter> writers) {
+        this.writers = Objects.requireNonNull(new ArrayList<>(writers));
     }
 
     @Override
@@ -51,7 +52,7 @@ public class CompoundWriter implements DataWriter {
             throw new IllegalStateException("Closed");
         }
         long total = 0;
-        for (DataWriter writer : writers) {
+        for (StoreWriter writer : writers) {
             total += writer.apply(outputStream);
         }
         return total;
@@ -59,7 +60,7 @@ public class CompoundWriter implements DataWriter {
 
     @Override
     public void close() throws IOException {
-        for (DataWriter writer : writers) {
+        for (StoreWriter writer : writers) {
             writer.close();
         }
         writers = null;

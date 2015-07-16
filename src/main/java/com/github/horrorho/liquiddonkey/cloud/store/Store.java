@@ -84,7 +84,7 @@ public interface Store<K> {
      * @throws NullPointerException if the specified container does not exist
      * @throws ArrayIndexOutOfBoundsException if the specified index does not exist
      */
-    DataWriter writer(K key, int index);
+    StoreWriter writer(K key, int index);
 
     /**
      * Returns whether the Store contains the referenced data item.

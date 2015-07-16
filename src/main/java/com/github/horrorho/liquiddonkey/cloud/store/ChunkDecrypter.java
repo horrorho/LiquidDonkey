@@ -54,7 +54,7 @@ public final class ChunkDecrypter {
      *
      * @return a new instance, not null
      */
-    public static ChunkDecrypter newInstance() {
+    public static ChunkDecrypter create() {
         return new ChunkDecrypter(
                 new CFBBlockCipher(new AESEngine(), 128),
                 MessageDigestFactory.getInstance().SHA256());
@@ -77,8 +77,7 @@ public final class ChunkDecrypter {
      * @param data the chunk data, not null
      * @return the decrypted chunk list, not null
      * @throws BadDataException if a decryption error occurs
-     */
-    // TODO redo to exception
+     */ 
     public List<byte[]> decrypt(ChunkServer.StorageHostChunkList chunkList, byte[] data) throws BadDataException {
         List<byte[]> decrypted = new ArrayList<>();
         int offset = 0;
@@ -119,8 +118,7 @@ public final class ChunkDecrypter {
         }
     }
 
-    byte[] decryptCfbAes(ChunkServer.ChunkInfo chunkInfo, byte[] data, int offset) {
-        // TOFIX input buffer too small exception, are we truncating too early somewhere?
+    byte[] decryptCfbAes(ChunkServer.ChunkInfo chunkInfo, byte[] data, int offset) { 
         cfbAes.init(false, key(chunkInfo));
         byte[] decrypted = new byte[chunkInfo.getChunkLength()];
         cfbAes.processBytes(data, offset, chunkInfo.getChunkLength(), decrypted, 0);

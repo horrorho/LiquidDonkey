@@ -62,7 +62,7 @@ import org.slf4j.MarkerFactory;
 @ThreadSafe
 public final class StoreManager {
 
-    public static StoreManager of(
+    public static StoreManager from(
             ChunkServer.FileGroups fileGroups,
             SignatureWriter signatureWriter,
             Printer printer) {
@@ -94,7 +94,7 @@ public final class StoreManager {
                     long containerIndex = reference.getContainerIndex();
                     long chunkIndex = reference.getChunkIndex();
                     ChunkServer.StorageHostChunkList chunkList = containerToChunkList.get(containerIndex);
-                    ChunkListReference chunkListReference = new ChunkListReference(chunkList, (int) chunkIndex);
+                    ChunkListReference chunkListReference = ChunkListReference.from(chunkList, (int) chunkIndex);
 
                     signatureToChunkListReferenceList.get(signature).add(chunkListReference);
 
@@ -113,11 +113,11 @@ public final class StoreManager {
         logger.debug(marker, "-- from() > chunkListToSignatures: {}", chunkListToSignatures);
 
         StoreManager chunkManager = new StoreManager(
-                MemoryStore.newInstance(),
+                MemoryStore.create(),
                 chunkListToSignatures,
                 signatureToChunkList,
                 signatureToChunkListReferenceList,
-                ChunkDecrypter::newInstance,
+                ChunkDecrypter::create,
                 signatureWriter,
                 printer);
 
@@ -168,7 +168,7 @@ public final class StoreManager {
             logger.warn("-- put() > overwritten store container: {}", chunkList.getHostInfo().getUri());
         }
 
-        Map<ByteString, DataWriter> writers = process(chunkList);
+        Map<ByteString, StoreWriter> writers = process(chunkList);
         if (!writers.isEmpty()) {
             clear(writers.keySet());
         }
@@ -179,10 +179,10 @@ public final class StoreManager {
         logger.trace(">> put()");
     }
 
-    void write(Map<ByteString, DataWriter> writers) throws IOException, InterruptedException {
+    void write(Map<ByteString, StoreWriter> writers) throws IOException, InterruptedException {
         try {
             for (ByteString signature : new HashSet<>(writers.keySet())) {
-                try (DataWriter dataWriter = writers.get(signature)) {
+                try (StoreWriter dataWriter = writers.get(signature)) {
                     Map<ICloud.MBSFile, CloudFileWriterResult> results = signatureWriter.write(signature, dataWriter);
 
                     if (results == null) {
@@ -209,9 +209,9 @@ public final class StoreManager {
         }
     }
 
-    Map<ByteString, DataWriter> process(ChunkServer.StorageHostChunkList chunkList) {
+    Map<ByteString, StoreWriter> process(ChunkServer.StorageHostChunkList chunkList) {
 
-        Map<ByteString, DataWriter> writers = chunkListToSignatures.get(chunkList).stream()
+        Map<ByteString, StoreWriter> writers = chunkListToSignatures.get(chunkList).stream()
                 .map(signature -> new SimpleEntry<>(signature, process(signature)))
                 .filter(entry -> entry.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -219,7 +219,7 @@ public final class StoreManager {
         return writers;
     }
 
-    DataWriter process(ByteString signature) {
+    StoreWriter process(ByteString signature) {
         List<ChunkListReference> references = signatureToChunkListReferenceList.get(signature);
 
         // Exit if any chunks are missing.
@@ -233,11 +233,11 @@ public final class StoreManager {
         }
 
         // Writer.
-        List<DataWriter> writers = references.stream()
+        List<StoreWriter> writers = references.stream()
                 .map(reference -> store.writer(reference.chunkList(), reference.index()))
                 .collect(Collectors.toList());
 
-        return CompoundWriter.of(writers);
+        return CompoundWriter.from(writers);
     }
 
     void clear(Set<ByteString> signatures) {
@@ -258,8 +258,4 @@ public final class StoreManager {
     public List<ChunkServer.StorageHostChunkList> chunkListList() {
         return new ArrayList<>(chunkListToSignatures.keySet());
     }
-}
-// failed list?
-// TODO progress
-// TODO released chunks
-// TODO check we aren't leaking memory
+} 

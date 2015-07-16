@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class MemoryStore<K> implements Store<K> {
 
-    public static MemoryStore newInstance() {
+    public static MemoryStore create() {
         logger.trace("<< newInstance()");
         MemoryStore instance = new MemoryStore(new ConcurrentHashMap<>(), new AtomicLong(0));
         logger.trace(">> newInstance()");
@@ -112,11 +112,11 @@ public final class MemoryStore<K> implements Store<K> {
     }
 
     @Override
-    public DataWriter writer(K key, int index) {
+    public StoreWriter writer(K key, int index) {
         return new Writer(key, index);
     }
 
-    public final class Writer implements DataWriter {
+    public final class Writer implements StoreWriter {
 
         private byte[] data;
 
