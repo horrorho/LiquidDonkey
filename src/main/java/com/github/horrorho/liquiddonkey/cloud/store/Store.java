@@ -34,7 +34,7 @@ import java.util.List;
 public interface Store<K> {
 
     /**
-     * Returns a list of keys.
+     * Returns a list of keys present in the Store.
      *
      * @return list of keys, not null
      */
@@ -67,7 +67,7 @@ public interface Store<K> {
     int size(K key);
 
     /**
-     * Returns the size of the store in bytes.
+     * Returns the size of the Store in bytes.
      *
      * @return size of the store in bytes
      */
