@@ -25,7 +25,6 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -117,21 +116,17 @@ public final class Snapshot {
         Snapshot snapshot = null;
 
         while (id < to && snapshot == null) {
-            snapshot = Snapshot.snapshot(client, backup, id++);
+            try {
+                snapshot = new Snapshot(id, backup, client.files(backup.udid(), id));
+                id++;
+            } catch (HttpResponseException ex) {
+                if (ex.getStatusCode() == 401) {
+                    throw ex;
+                }
+                logger.warn("-- snapshot() > exception: ", ex);
+            }
         }
         return snapshot;
-    }
-
-    static Snapshot snapshot(Client client, Backup backup, int id) throws IOException {
-        try {
-            return new Snapshot(id, backup, client.files(backup.udid(), id));
-        } catch (HttpResponseException ex) {
-            if (ex.getStatusCode() == 401) {
-                throw ex;
-            }
-            logger.warn("-- list() > exceptione: ", ex);
-            return null;
-        }
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Snapshot.class);
