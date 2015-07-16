@@ -24,30 +24,20 @@
 package com.github.horrorho.liquiddonkey.cloud.file;
 
 import com.github.horrorho.liquiddonkey.cloud.Snapshot;
-import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
-import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagTools;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.printer.Level;
-import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
-import static java.nio.file.StandardOpenOption.WRITE;
-import java.nio.file.attribute.FileTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,62 +61,45 @@ public final class SignatureWriter {
      * @param fileConfig not null
      * @return a new instance, not null
      */
-    // TODO rework this
-    public static SignatureWriter from(
-            Snapshot snapshot,
-            FileConfig fileConfig) {
+    public static SignatureWriter from(Snapshot snapshot, FileConfig fileConfig) {
+        logger.trace("<< from() < snapshot: {} fileConfig: {}", snapshot, fileConfig);
 
-        return new SignatureWriter(
-                snapshot.signatures(),
-                FileDecrypter.create(),
-                KeyBagTools.newInstance(snapshot.backup().keybag()),
-                SnapshotDirectory.from(snapshot, fileConfig),
-                fileConfig.setLastModifiedTimestamp());
+        CloudFileWriter cloudWriter = CloudFileWriter.from(snapshot, fileConfig);
+        Map<ByteString, Set<ICloud.MBSFile>> signatures = snapshot.signatures();
+
+        long totalBytes = signatures.values().stream()
+                .flatMap(Set::stream)
+                .mapToLong(ICloud.MBSFile::getSize)
+                .sum();
+
+        Lock lock = new ReentrantLock();
+
+        SignatureWriter instance = new SignatureWriter(signatures, cloudWriter, lock, totalBytes, 0);
+
+        logger.trace(">> from() > {}", instance);
+        return instance;
     }
 
-    private final ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFileSet;
-    private final FileDecrypter decrypter;
-    private final KeyBagTools keyBagTools;
-    private final SnapshotDirectory directory;
-    private final boolean setLastModifiedTime;
+    private final Map<ByteString, Set<ICloud.MBSFile>> signatureToFileSet;
+    private final CloudFileWriter cloudWriter;
+    private final Lock lock;
+    private final long totalBytes;
+    private volatile long outBytes;
 
-    SignatureWriter(
-            ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatureToFile,
-            FileDecrypter decrypter,
-            KeyBagTools keyBagTools,
-            SnapshotDirectory directory,
-            boolean setLastModifiedTime) {
+    public SignatureWriter(
+            Map<ByteString, Set<MBSFile>> signatureToFileSet,
+            CloudFileWriter cloudWriter,
+            Lock lock,
+            long totalBytes,
+            long outBytes) {
 
-        this.signatureToFileSet = Objects.requireNonNull(signatureToFile);
-        this.decrypter = Objects.requireNonNull(decrypter);
-        this.keyBagTools = Objects.requireNonNull(keyBagTools);
-        this.directory = Objects.requireNonNull(directory);
-        this.setLastModifiedTime = setLastModifiedTime;
+        this.signatureToFileSet = Objects.requireNonNull(signatureToFileSet);
+        this.cloudWriter = Objects.requireNonNull(cloudWriter);
+        this.lock = Objects.requireNonNull(lock);
+        this.totalBytes = totalBytes;
+        this.outBytes = outBytes;
     }
 
-    /**
-     * Writes an empty file.
-     * <p>
-     * Optionally set's the last-modified timestamp.
-     *
-     * @param file the file, not null
-     * @throws IOException
-     */
-//    public void writeEmpty(MBSFile file) throws IOException {
-//        synchronized (signatureToFileSet) {
-//            if (file.hasSize() && file.getSize() != 0) {
-//                logger.warn("-- writeEmpty() > bad state, file is not empty: {} bytes", file.getSize());
-//                return;
-//            }
-//
-//            doWrite(file, this::doWriteEmpty);
-//        }
-//    }
-//
-//    long doWriteEmpty(OutputStream outputStream) throws IOException {
-//        outputStream.write(new byte[]{});
-//        return 0;
-//    }
     /**
      * Writes the files referenced by the specified signature.
      * <p>
@@ -134,93 +107,46 @@ public final class SignatureWriter {
      *
      * @param signature not null
      * @param writer not null
-     * @return map of ICloud.MBSFile to WriterResult/s, or null if the signature doesn't reference any files
+     * @return map of ICloud.MBSFile to CloudWriterResult/s, or null if the signature doesn't reference any files
      * @throws IOException
-     * @throws IllegalStateException if the signature is unknown
+     * @throws InterruptedException
      */
-    public Map<ICloud.MBSFile, WriterResult> write(ByteString signature, IOFunction<OutputStream, Long> writer)
-            throws IOException {
+    public Map<ICloud.MBSFile, CloudWriterResult> write(ByteString signature, IOFunction<OutputStream, Long> writer)
+            throws IOException, InterruptedException {
 
         logger.trace("<< write() < signature: {}", Bytes.hex(signature));
 
-        Set<ICloud.MBSFile> files = signatureToFileSet.get(signature);
-        if (files == null) {
-            return null;
-        }
-
-        Map<ICloud.MBSFile, WriterResult> results = new HashMap<>();
-        for (ICloud.MBSFile file : files) {
-            results.put(file, doWrite(file, writer));
-        }
-
-        signatureToFileSet.remove(signature);
-
-        logger.trace(">> write()");
-        return results;
-    }
-
-    WriterResult doWrite(ICloud.MBSFile file, IOFunction<OutputStream, Long> writer) throws IOException {
-        logger.trace("<< doWrite() < file: {}", file.getRelativePath());
-
-        Path path = directory.apply(file);
-
-        long written = createDirectoryWriteFile(path, writer);
-        logger.debug("-- doWrite() > path: {} written: {}", path, written);
-
-        WriterResult result;
-
-        if (file.getAttributes().hasEncryptionKey()) {
-            result = decrypt(path, file);
-        } else {
-            logger.debug("-- doWrite() > success: {}", file.getRelativePath());
-            result = WriterResult.SUCCESS;
-        }
-
-        if (setLastModifiedTime) {
-            setLastModifiedTime(path, file);
-        }
-
-        logger.trace(">> doWrite() > file: {} result: {}", file.getRelativePath(), result);
-        return result;
-    }
-
-    WriterResult decrypt(Path path, MBSFile file) throws IOException {
-        ByteString key = keyBagTools.fileKey(file);
-
-        if (key == null) {
-            logger.warn("-- decrypt() > failed to derive key: {}", file.getRelativePath());
-            return WriterResult.FAILED_DECRYPT_NO_KEY;
-        }
-
-        if (!Files.exists(path)) {
-            logger.warn("-- decrypt() > no such file: {}", file.getRelativePath());
-            return WriterResult.FAILED_DECRYPT_NO_FILE;
-        }
-
+        lock.lockInterruptibly();
         try {
-            decrypter.decrypt(path, key, file.getAttributes().getDecryptedSize());
-            logger.debug("-- decrypt() > success: {}", file.getRelativePath());
-            return WriterResult.SUCCESS_DECRYPT;
+            Set<ICloud.MBSFile> files = signatureToFileSet.get(signature);
+            if (files == null) {
+                return null;
+            }
 
-        } catch (BadDataException ex) {
-            logger.warn("-- decrypt() > failed: {} exception: {}", file.getRelativePath(), ex);
-            return WriterResult.FAILED_DECRYPT_ERROR;
+            Map<ICloud.MBSFile, CloudWriterResult> results = new HashMap<>();
+            for (ICloud.MBSFile file : files) {
+                results.put(file, cloudWriter.write(file, writer));
+                outBytes += file.getSize();
+            }
+
+            signatureToFileSet.remove(signature);
+
+            logger.debug("-- write() > out: {} total: {}", outBytes, totalBytes);
+            logger.trace(">> write()");
+            return results;
+        } finally {
+            lock.unlock();
         }
     }
 
-    long createDirectoryWriteFile(Path path, IOFunction<OutputStream, Long> writer) throws IOException {
-        Files.createDirectories(path.getParent());
-
-        try (OutputStream output = Files.newOutputStream(path, CREATE, WRITE, TRUNCATE_EXISTING)) {
-            return writer.apply(output);
-        }
-    }
-
-    void setLastModifiedTime(Path path, MBSFile file) throws IOException {
-        if (Files.exists(path)) {
-            long lastModifiedTimestamp = file.getAttributes().getLastModified();
-            FileTime fileTime = FileTime.from(lastModifiedTimestamp, TimeUnit.SECONDS);
-            Files.setLastModifiedTime(path, fileTime);
-        }
+    @Override
+    public String toString() {
+        return "SignatureWriter{"
+                + "signatures=" + signatureToFileSet.size()
+                + ", cloudWriter=" + cloudWriter
+                + ", lock=" + lock
+                + ", totalBytes=" + totalBytes
+                + ", outBytes=" + outBytes
+                + '}';
     }
 }
