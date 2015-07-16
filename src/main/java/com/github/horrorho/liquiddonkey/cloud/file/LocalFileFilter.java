@@ -58,10 +58,7 @@ public final class LocalFileFilter implements IOPredicate<ICloud.MBSFile> {
      * @param config, not null
      * @return a new instance, not null
      */
-    public static LocalFileFilter from(
-            Snapshot snapshot,
-            FileConfig config) {
-
+    public static LocalFileFilter from(Snapshot snapshot, FileConfig config) {
         return new LocalFileFilter(
                 SnapshotDirectory.from(snapshot, config),
                 config.setLastModifiedTimestamp(),
@@ -77,8 +74,7 @@ public final class LocalFileFilter implements IOPredicate<ICloud.MBSFile> {
      * @param isCombined
      * @return a new instance, not null
      */
-    public static LocalFileFilter from(
-            SnapshotDirectory directory,
+    public static LocalFileFilter from(SnapshotDirectory directory,
             boolean toCheckLastModifiedTimestamp,
             boolean isCombined) {
 
@@ -102,7 +98,7 @@ public final class LocalFileFilter implements IOPredicate<ICloud.MBSFile> {
         Path local = directory.apply(remote);
 
         boolean isLocal = isCombined
-                ? testExists(local, remote) && !(testLastModified(local, remote) > 0) // Last modified equal or before.
+                ? testExists(local, remote) && !(testLastModified(local, remote) < 0) // Last modified equal or after.
                 : testExists(local, remote) && testSize(local, remote) && (testLastModified(local, remote) == 0);
 
         logger.trace(">> test() > is local: {}", isLocal);
