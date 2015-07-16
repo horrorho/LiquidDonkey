@@ -27,6 +27,7 @@ import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.util.pool.Release;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -71,6 +72,12 @@ public final class FetchDonkey extends Donkey {
         try {
             byte[] data = client.chunks(chunkList);
             toDo = Release.requeue(Track.DECODE_WRITE, writerDonkeys.apply(this, data));
+        } catch (UnknownHostException ex) {
+            log.warn("-- toProcess() > exception: ", ex);
+            
+            toDo = isExceptionLimit(ex)
+                    ? Release.dispose()
+                    : Release.requeue(this);
         } catch (HttpResponseException ex) {
             log.warn("-- toProcess() > exception: ", ex);
 
