@@ -23,9 +23,11 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.store;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,6 +45,7 @@ import net.jcip.annotations.ThreadSafe;
  */
 @ThreadSafe
 public class BiRef<K, V> {
+
     public static <K, V> BiRef<K, V> from(Map<K, ? extends Collection<V>> map) {
 
         ConcurrentMap<K, Set<V>> kToVSet = new ConcurrentHashMap<>();
@@ -71,6 +74,7 @@ public class BiRef<K, V> {
 
         return new BiRef(kToVSet, vToKSet);
     }
+
     public static <K, V> BiRef<K, V> fromx(Map<K, Collection<V>> map) {
 
         ConcurrentMap<K, Set<V>> kToVSet = new ConcurrentHashMap<>();
@@ -124,19 +128,20 @@ public class BiRef<K, V> {
         return new HashSet<>(kToVSet.get(key));
     }
 
-    public void removeKey(K key) {
-        remove(key, vToKSet, kToVSet);
+    public List<V> removeKey(K key) {
+        return remove(key, vToKSet, kToVSet);
     }
 
-    public void removeValue(V value) {
-        remove(value, kToVSet, vToKSet);
+    public List<K> removeValue(V value) {
+        return remove(value, kToVSet, vToKSet);
     }
 
-    <T, U> void remove(T t, Map<U, Set<T>> uToTSet, Map<T, Set<U>> tToUSet) {
+    <T, U> List<U> remove(T t, Map<U, Set<T>> uToTSet, Map<T, Set<U>> tToUSet) {
+        List<U> removed = new ArrayList<>();
         Set<U> uSet = tToUSet.get(t);
 
         if (uSet == null) {
-            return;
+            return removed;
         }
 
         uSet.forEach(u -> {
@@ -145,11 +150,13 @@ public class BiRef<K, V> {
             if (set != null) {
                 set.remove(t);
                 if (set.isEmpty()) {
+                    removed.add(u);
                     uToTSet.remove(u);
                 }
             }
         });
 
         tToUSet.remove(t);
+        return removed;
     }
 }
