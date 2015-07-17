@@ -28,6 +28,8 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * CompoundWriter.
@@ -35,17 +37,18 @@ import java.util.Objects;
  * @author Ahseya
  */
 public class CompoundWriter implements StoreWriter {
-
+    
     public static CompoundWriter from(List<StoreWriter> writers) {
         return new CompoundWriter(writers);
     }
-
+    
+    private static final Logger logger = LoggerFactory.getLogger(CompoundWriter.class);
     private List<StoreWriter> writers;
-
+    
     CompoundWriter(List<StoreWriter> writers) {
         this.writers = Objects.requireNonNull(new ArrayList<>(writers));
     }
-
+    
     @Override
     public Long apply(OutputStream outputStream) throws IOException {
         if (writers == null) {
@@ -57,12 +60,20 @@ public class CompoundWriter implements StoreWriter {
         }
         return total;
     }
-
+    
     @Override
-    public void close() throws IOException {
-        for (StoreWriter writer : writers) {
-            writer.close();
+    public void close() {
+        if (writers == null) {
+            return;
         }
+        
+        writers.stream().forEach((writer) -> {
+            try {
+                writer.close();
+            } catch (IOException ex) {
+                logger.warn("-- close() > exception: {}", ex);
+            }
+        });
         writers = null;
     }
 }
