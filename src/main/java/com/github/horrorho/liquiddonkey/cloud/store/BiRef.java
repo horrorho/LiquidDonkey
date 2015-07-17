@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.store;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -42,8 +43,35 @@ import net.jcip.annotations.ThreadSafe;
  */
 @ThreadSafe
 public class BiRef<K, V> {
+    public static <K, V> BiRef<K, V> from(Map<K, ? extends Collection<V>> map) {
 
-    public static <K, V> BiRef<K, V> from(Map<K, Set<V>> map) {
+        ConcurrentMap<K, Set<V>> kToVSet = new ConcurrentHashMap<>();
+        ConcurrentMap<V, Set<K>> vToKSet = new ConcurrentHashMap<>();
+
+        map.entrySet().stream()
+                .peek(entry -> {
+                    if (entry.getKey() == null || entry.getValue() == null || entry.getValue().contains(null)) {
+                        throw new IllegalArgumentException("Null values not permitted");
+                    }
+                })
+                .filter(entry -> !entry.getValue().isEmpty())
+                .forEach(entry -> {
+                    K key = entry.getKey();
+
+                    Set<V> set = Collections.newSetFromMap(new ConcurrentHashMap<>());
+
+                    entry.getValue().stream().forEach(value -> {
+                        set.add(value);
+                        vToKSet.computeIfAbsent(value, k
+                                -> Collections.newSetFromMap(new ConcurrentHashMap<>())).add(key);
+                    });
+
+                    kToVSet.put(key, set);
+                });
+
+        return new BiRef(kToVSet, vToKSet);
+    }
+    public static <K, V> BiRef<K, V> fromx(Map<K, Collection<V>> map) {
 
         ConcurrentMap<K, Set<V>> kToVSet = new ConcurrentHashMap<>();
         ConcurrentMap<V, Set<K>> vToKSet = new ConcurrentHashMap<>();
