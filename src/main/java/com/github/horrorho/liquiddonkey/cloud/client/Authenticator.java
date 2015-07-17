@@ -59,10 +59,10 @@ public class Authenticator {
                 ? Auth.from(config.dsPrsId(), config.mmeAuthToken())
                 : null;
 
-        return of(idPassword, auth);
+        return from(idPassword, auth);
     }
 
-    public static Authenticator of(IdPassword idPassword, Auth auth) {
+    public static Authenticator from(IdPassword idPassword, Auth auth) {
         logger.trace("<< of() < idPassword: {} Auth:{}", idPassword, auth);
 
         Authenticator instance = new Authenticator(idPassword, auth);
