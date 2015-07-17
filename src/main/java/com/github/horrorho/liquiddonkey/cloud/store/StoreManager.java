@@ -36,6 +36,7 @@ import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -136,9 +137,12 @@ public final class StoreManager {
         }
 
         Map<ByteString, StoreWriter> writers = process(chunkList);
-        if (!writers.isEmpty()) {
-            writers.keySet().forEach(references::removeKey);
-        }
+
+        // Purge unreferenced data.
+        writers.keySet().stream()
+                .map(references::removeKey)
+                .flatMap(Collection::stream)
+                .forEach(store::remove);
 
         logger.debug("-- put() > writing signatures: {}", writers.keySet());
         write(writers);
