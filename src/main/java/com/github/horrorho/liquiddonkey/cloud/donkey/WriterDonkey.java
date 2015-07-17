@@ -23,9 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.donkey;
 
-import com.github.horrorho.liquiddonkey.cloud.file.WriterResult;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreWriter;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
