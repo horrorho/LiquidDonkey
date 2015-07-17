@@ -36,14 +36,13 @@ import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
@@ -66,36 +65,21 @@ public final class StoreManager {
             Printer printer) {
 
         logger.trace("<< from()");
-        logger.debug(marker, "-- from() > fileGroup: {}", fileGroups);
 
-        Map<ByteString, Set<ChunkServer.StorageHostChunkList>> signatureToChunks = new HashMap<>();
         ConcurrentMap<ByteString, List<ChunkListReference>> signatureToChunkListReferenceList
-                = new ConcurrentHashMap<>();
+                = fileGroups.getFileGroupsList().stream()
+                .map(ChunkListReference::toMap)
+                .collect(Collectors.reducing((a, b) -> {
+                    a.putAll(b);
+                    return a;
+                })).orElse(new ConcurrentHashMap<>());
 
-        fileGroups.getFileGroupsList().stream().forEach(fileGroup -> {
+        Function<Map.Entry<?, List<ChunkListReference>>, List<ChunkServer.StorageHostChunkList>> map = entry
+                -> entry.getValue().stream().map(ChunkListReference::chunkList).collect(Collectors.toList());
 
-            List<ChunkServer.StorageHostChunkList> chunkListList = fileGroup.getStorageHostChunkListList();
-            Map<Long, ChunkServer.StorageHostChunkList> containerToChunkList = new HashMap<>();
-            for (int index = 0; index < chunkListList.size(); index++) {
-                containerToChunkList.put((long) index, chunkListList.get(index));
-            }
-
-            fileGroup.getFileChecksumChunkReferencesList().stream().forEach(references -> {
-                ByteString signature = references.getFileChecksum();
-                signatureToChunkListReferenceList.put(signature, new ArrayList<>());
-                signatureToChunks.put(signature, new HashSet<>());
-
-                references.getChunkReferencesList().stream().forEach(reference -> {
-                    ChunkServer.StorageHostChunkList chunkList
-                            = containerToChunkList.get(reference.getContainerIndex());
-                    ChunkListReference chunkListReference
-                            = ChunkListReference.from(chunkList, (int) reference.getChunkIndex());
-
-                    signatureToChunkListReferenceList.get(signature).add(chunkListReference);
-                    signatureToChunks.get(signature).add(chunkList);
-                });
-            });
-        });
+        Map<ByteString, List<ChunkServer.StorageHostChunkList>> signatureToChunks
+                = signatureToChunkListReferenceList.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, map::apply));
 
         logger.debug(marker, "-- from() > signatureToChunkListReferenceList: {}", signatureToChunkListReferenceList);
 
