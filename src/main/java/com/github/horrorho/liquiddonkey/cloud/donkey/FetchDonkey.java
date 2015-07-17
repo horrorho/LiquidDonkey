@@ -50,7 +50,7 @@ public final class FetchDonkey extends Donkey {
     private final Client client;
     private final BiFunction<FetchDonkey, byte[], WriterDonkey> writerDonkeys;
 
-    public FetchDonkey(
+    FetchDonkey(
             Client client,
             BiFunction<FetchDonkey, byte[], WriterDonkey> writerDonkeys,
             ChunkServer.StorageHostChunkList chunkList,
