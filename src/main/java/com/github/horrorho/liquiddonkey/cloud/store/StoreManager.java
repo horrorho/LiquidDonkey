@@ -76,7 +76,7 @@ public final class StoreManager {
 
         StoreManager chunkManager = new StoreManager(
                 MemoryStore.create(),
-                BiRef.from(signatureToChunks),
+                BiMapSet.from(signatureToChunks),
                 signatureToChunkListReferenceList,
                 ChunkDecrypter::create);
 
@@ -88,13 +88,13 @@ public final class StoreManager {
     private static final Marker marker = MarkerFactory.getMarker(Markers.STORE);
 
     private final Store<ChunkServer.StorageHostChunkList> store;
-    private final BiRef<ByteString, ChunkServer.StorageHostChunkList> references;
+    private final BiMapSet<ByteString, ChunkServer.StorageHostChunkList> references;
     private final ConcurrentMap<ByteString, List<ChunkListReference>> signatureToChunkListReferenceList;
     private final Supplier<ChunkDecrypter> decrypters;
 
     StoreManager(
             Store<ChunkServer.StorageHostChunkList> store,
-            BiRef<ByteString, ChunkServer.StorageHostChunkList> references,
+            BiMapSet<ByteString, ChunkServer.StorageHostChunkList> references,
             ConcurrentMap<ByteString, List<ChunkListReference>> signatureToChunkListReferenceList,
             Supplier<ChunkDecrypter> decrypters) {
 
