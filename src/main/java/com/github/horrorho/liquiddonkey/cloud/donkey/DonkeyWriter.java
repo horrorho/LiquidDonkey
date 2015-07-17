@@ -57,6 +57,10 @@ public class DonkeyWriter implements Closeable {
     }
 
     public Map<ICloud.MBSFile, WriterResult> write() throws IOException, InterruptedException {
+        if (writers == null) {
+            throw new IllegalStateException("Closed");
+        }
+
         Map<ICloud.MBSFile, WriterResult> all = new HashMap<>();
 
         for (ByteString signature : writers.keySet()) {

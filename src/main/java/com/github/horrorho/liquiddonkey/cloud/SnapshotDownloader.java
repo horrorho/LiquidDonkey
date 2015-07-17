@@ -70,12 +70,12 @@ public class SnapshotDownloader {
     }
 
     void download(Client client, Snapshot snapshot) throws BadDataException, IOException, InterruptedException {
-
+        // TODO empty list
         ChunkServer.FileGroups fileGroups = fetchFileGroups(client, snapshot);
 
         SignatureWriter writer = SignatureWriter.from(snapshot, fileConfig);
-        StoreManager manager = StoreManager.from(fileGroups, writer, printer);
-        DonkeyFactory factory = DonkeyFactory.from(client, manager, retryCount);
+        StoreManager manager = StoreManager.from(fileGroups);
+        DonkeyFactory factory = DonkeyFactory.from(client, printer, writer, manager, retryCount);
 
         Map<Track, List<Donkey>> donkies = manager.chunkListList().stream().map(factory::fetchDonkey)
                 .collect(Collectors.groupingBy(list -> Track.FETCH));
@@ -102,14 +102,10 @@ public class SnapshotDownloader {
         executor.shutdown();
         logger.trace("-- download() > awaiting termination");
         executor.awaitTermination(executorTimeoutSeconds, TimeUnit.SECONDS); // TODO 30 min timeout? missing files from signature writer?
-        
+
         // handle interrupted/ timeout
-        
-        
         executor.shutdownNow();
-        
-        
-        
+
         logger.trace(">> download()");
     }
 

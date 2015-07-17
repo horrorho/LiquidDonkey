@@ -138,7 +138,7 @@ public final class MemoryStore<K> implements Store<K> {
         }
 
         @Override
-        public void close() throws IOException {
+        public void close() {
             data = null;
         }
     }
