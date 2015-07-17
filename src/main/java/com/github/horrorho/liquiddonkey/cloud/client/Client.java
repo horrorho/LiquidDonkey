@@ -37,10 +37,12 @@ import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.Header;
@@ -193,6 +195,11 @@ public class Client {
 
         logger.trace("<< getFilesGroups() < backupUdid: {} snapshot: {} files: {}",
                 hex(backupUdid), snapshotId, files.size());
+
+        // Rationalize signatures. Collisions improbable.
+        Collection<ICloud.MBSFile> unique = files.stream()
+                .collect(Collectors.toMap(ICloud.MBSFile::getSignature, Function.identity(), (a, b) -> a))
+                .values();
 
         ChunkServer.FileGroups fileGroups = authorizeGet(
                 files,
