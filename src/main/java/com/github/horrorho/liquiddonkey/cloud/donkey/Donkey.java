@@ -78,9 +78,6 @@ public abstract class Donkey {
             exceptions.add(ex);
             fatal.compareAndSet(null, ex);
             toDo = Release.dispose();
-
-            // TODO remove
-            System.exit(0);
         }
 
         logger.trace(">> process() > release: {}", toDo);
