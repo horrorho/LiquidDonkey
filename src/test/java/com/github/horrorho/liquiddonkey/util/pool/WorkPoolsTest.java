@@ -56,19 +56,19 @@ import org.slf4j.MarkerFactory;
 public class WorkPoolsTest {
 
     private static final Logger logger = LoggerFactory.getLogger(WorkPoolsTest.class);
-    public static final Marker marker = MarkerFactory.getMarker("TEST");
+    private static final Marker marker = MarkerFactory.getMarker("TEST");
 
     public static enum Pool {
 
         ONE, TWO, THREE
     }
 
-    private final int threads = 4;
-    private final int max = 1000;
-    private final long timeoutMs = 30000;
+    public static final int threads = 4;
+    public static final int max = 1000;
+    public static final long timeoutMs = 30000;
 
-    private final AtomicInteger pending = new AtomicInteger(0);
-    private final Map<Pool, Pool> next;
+    public final AtomicInteger pending = new AtomicInteger(0);
+    public final Map<Pool, Pool> next;
 
     public WorkPoolsTest() {
         Pool[] values = Pool.values();
