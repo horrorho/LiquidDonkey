@@ -27,11 +27,8 @@ import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
-import com.github.horrorho.liquiddonkey.cloud.store.StoreWriter;
 import com.github.horrorho.liquiddonkey.printer.Printer;
-import com.google.protobuf.ByteString;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
