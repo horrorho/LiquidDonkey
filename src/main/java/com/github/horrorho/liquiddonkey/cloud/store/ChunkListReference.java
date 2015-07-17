@@ -24,9 +24,18 @@
 package com.github.horrorho.liquiddonkey.cloud.store;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.google.protobuf.ByteString;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * ChunkListReference.
@@ -37,9 +46,34 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 final class ChunkListReference {
 
+    public static ConcurrentMap<ByteString, List<ChunkListReference>>
+            toMap(ChunkServer.FileChecksumStorageHostChunkLists fileGroup) {
+
+        List<ChunkServer.StorageHostChunkList> chunkLists = fileGroup.getStorageHostChunkListList();
+
+        Function<ChunkServer.ChunkReference, ChunkListReference> list = reference
+                -> ChunkListReference.from(
+                        chunkLists.get((int) reference.getContainerIndex()),
+                        (int) reference.getChunkIndex());
+
+        return fileGroup.getFileChecksumChunkReferencesList().stream()
+                .collect(Collectors.toConcurrentMap(
+                                ChunkServer.FileChecksumChunkReferences::getFileChecksum,
+                                r -> r.getChunkReferencesList().stream().map(list).collect(Collectors.toList()),
+                                (a, b) -> {
+                                    if (!Objects.equals(a, b)) {
+                                        // Unlikely to be significant.
+                                        logger.warn("-- toMap() > signature collision: {} {}", a, b);
+                                    }
+                                    return a;
+                                }));
+    }
+
     public static ChunkListReference from(ChunkServer.StorageHostChunkList chunkList, int index) {
         return new ChunkListReference(chunkList, index);
     }
+
+    private static final Logger logger = LoggerFactory.getLogger(ChunkListReference.class);
 
     private final ChunkServer.StorageHostChunkList chunkList;
     private final int index;
