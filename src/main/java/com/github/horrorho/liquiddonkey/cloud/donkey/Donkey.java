@@ -35,7 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Donkey.
+ * Donkey. Base work unit.
  *
  * @author Ahseya
  */
