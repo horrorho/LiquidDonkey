@@ -142,7 +142,7 @@ public class Client {
      * @throws IOException
      */
     public ICloud.MBSKeySet keys(ByteString backupUDID) throws IOException {
-        logger.trace("<< getKeys() < {}", hex(backupUDID));
+        logger.trace("<< keys() < {}", hex(backupUDID));
 
         ICloud.MBSKeySet keys = mobileBackupGet(mbsaKeySetResponseHandler, path(hex(backupUDID), "getKeys"));
 
@@ -193,23 +193,22 @@ public class Client {
     public ChunkServer.FileGroups fileGroups(ByteString backupUdid, int snapshotId, Set<ICloud.MBSFile> files)
             throws BadDataException, IOException {
 
-        logger.trace("<< getFilesGroups() < backupUdid: {} snapshot: {} files: {}",
+        logger.trace("<< fileGroups() < backupUdid: {} snapshot: {} files: {}",
                 hex(backupUdid), snapshotId, files.size());
 
-        // Rationalize signatures. Collisions improbable.
-        Collection<ICloud.MBSFile> unique = files.stream()
+        // Rationalize signatures. Collisions improbable. Null signatures are empty files or other structures.
+        Set<ICloud.MBSFile> unique = files.stream()
+                .filter(ICloud.MBSFile::hasSignature)
                 .collect(Collectors.toMap(ICloud.MBSFile::getSignature, Function.identity(), (a, b) -> a))
-                .values();
+                .values().stream().collect(Collectors.toSet());
 
-        ChunkServer.FileGroups fileGroups = authorizeGet(
-                files,
-                getFiles(
-                        backupUdid,
-                        snapshotId,
-                        files));
+        logger.debug("-- fileGroups() > rationalized count: {}", unique.size());
 
-        logger.debug(client, "-- getFileGroups() > fileGroups: {}", fileGroups);
-        logger.trace(">> getFileGroups() > count: {}", fileGroups.getFileGroupsCount());
+        List<ICloud.MBSFileAuthToken> authTokens = getFiles(backupUdid, snapshotId, unique);
+        ChunkServer.FileGroups fileGroups = authorizeGet(unique, authTokens);
+
+        logger.debug(client, "-- fileGroups() > fileGroups: {}", fileGroups);
+        logger.trace(">> fileGroups() > count: {}", fileGroups.getFileGroupsCount());
         return fileGroups;
     }
 
