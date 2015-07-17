@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -37,7 +38,7 @@ import net.jcip.annotations.ThreadSafe;
 /**
  * BiMapSet.
  * <p>
- * Lightweight dependencies container. Remove only. No put methods. Null values not permitted.
+ * Lightweight set maps referencing each other. Remove only. No put methods. Null values not permitted. Thread safe.
  *
  * @author Ahseya
  * @param <K> key type
@@ -47,14 +48,15 @@ import net.jcip.annotations.ThreadSafe;
 public class BiMapSet<K, V> {
 
     public static <K, V> BiMapSet<K, V> from(Map<K, ? extends Collection<V>> map) {
+        Objects.requireNonNull(map, "Map cannot be null");
 
         ConcurrentMap<K, Set<V>> kToVSet = new ConcurrentHashMap<>();
         ConcurrentMap<V, Set<K>> vToKSet = new ConcurrentHashMap<>();
 
         map.entrySet().stream()
                 .peek(entry -> {
-                    if (entry.getKey() == null || entry.getValue() == null || entry.getValue().contains(null)) {
-                        throw new IllegalArgumentException("Null values not permitted");
+                    if (entry == null || entry.getKey() == null || entry.getValue() == null || entry.getValue().contains(null)) {
+                        throw new NullPointerException("Null values not permitted");
                     }
                 })
                 .filter(entry -> !entry.getValue().isEmpty())
@@ -75,8 +77,8 @@ public class BiMapSet<K, V> {
         return new BiMapSet(kToVSet, vToKSet);
     }
 
-    private final ConcurrentMap<K, Set<V>> kToVSet;    // Requires concurrent Set
-    private final ConcurrentMap<V, Set<K>> vToKSet;    // Requires concurrent Set
+    final ConcurrentMap<K, Set<V>> kToVSet;    // Requires concurrent Set
+    final ConcurrentMap<V, Set<K>> vToKSet;    // Requires concurrent Set
 
     BiMapSet(ConcurrentMap kToVSet, ConcurrentMap vToKSet) {
         this.kToVSet = kToVSet;
@@ -91,25 +93,41 @@ public class BiMapSet<K, V> {
         return vToKSet.keySet();
     }
 
-    public Set<K> key(V value) {
-        return new HashSet<>(vToKSet.get(value));
+    public Set<K> keys(V value) {
+        return set(value, vToKSet);
     }
 
-    public Set<V> value(K key) {
-        return new HashSet<>(kToVSet.get(key));
+    public Set<V> values(K key) {
+        return set(key, kToVSet);
     }
 
-    public List<V> removeKey(K key) {
+    public Set<V> removeKey(K key) {
         return remove(key, vToKSet, kToVSet);
     }
 
-    public List<K> removeValue(V value) {
+    public Set<K> removeValue(V value) {
         return remove(value, kToVSet, vToKSet);
     }
 
-    <T, U> List<U> remove(T t, Map<U, Set<T>> uToTSet, Map<T, Set<U>> tToUSet) {
-        List<U> removed = new ArrayList<>();
-        Set<U> uSet = tToUSet.get(t);
+    public boolean isEmpty() {
+        return vToKSet.isEmpty() && kToVSet.isEmpty();
+    }
+
+    <T, U> Set<U> set(T t, Map<T, Set<U>> tToUSet) {
+        Set<U> set = t == null
+                ? null
+                : tToUSet.get(t);
+
+        return set == null
+                ? new HashSet<>()
+                : new HashSet<>(set);
+    }
+
+    <T, U> Set<U> remove(T t, Map<U, Set<T>> uToTSet, Map<T, Set<U>> tToUSet) {
+        Set<U> removed = new HashSet<>();
+        Set<U> uSet = t == null
+                ? null
+                : tToUSet.get(t);
 
         if (uSet == null) {
             return removed;
