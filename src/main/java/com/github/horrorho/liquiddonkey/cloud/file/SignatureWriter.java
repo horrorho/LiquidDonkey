@@ -111,7 +111,7 @@ public final class SignatureWriter {
      * @throws IOException
      * @throws InterruptedException
      */
-    public Map<ICloud.MBSFile, CloudFileWriterResult> write(ByteString signature, IOFunction<OutputStream, Long> writer)
+    public Map<ICloud.MBSFile, WriterResult> write(ByteString signature, IOFunction<OutputStream, Long> writer)
             throws IOException, InterruptedException {
 
         logger.trace("<< write() < signature: {}", Bytes.hex(signature));
@@ -123,7 +123,7 @@ public final class SignatureWriter {
                 return null;
             }
 
-            Map<ICloud.MBSFile, CloudFileWriterResult> results = new HashMap<>();
+            Map<ICloud.MBSFile, WriterResult> results = new HashMap<>();
             for (ICloud.MBSFile file : files) {
                 results.put(file, cloudWriter.write(file, writer));
                 outBytes += file.getSize();
