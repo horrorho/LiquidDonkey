@@ -24,6 +24,7 @@
 package com.github.horrorho.liquiddonkey.util;
 
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -65,6 +66,7 @@ public class Selector<T> {
     private final String footer;
     private final Supplier<List<T>> onLineIsEmpty;
     private final Supplier<List<T>> onQuit;
+    private final PrintStream output;
 
     Selector(
             String prompt,
@@ -74,7 +76,8 @@ public class Selector<T> {
             Function<T, String> formatter,
             String footer,
             Supplier<List<T>> onLineIsEmpty,
-            Supplier<List<T>> onQuit) {
+            Supplier<List<T>> onQuit,
+            PrintStream output) {
 
         this.prompt = prompt;
         this.quit = quit;
@@ -84,6 +87,7 @@ public class Selector<T> {
         this.footer = footer;
         this.onLineIsEmpty = onLineIsEmpty;
         this.onQuit = onQuit;
+        this.output = Objects.requireNonNull(output);
     }
 
     /**
@@ -177,6 +181,7 @@ public class Selector<T> {
         private String footer = null;
         private Supplier<List<T>> onLineIsEmpty = ArrayList::new;
         private Supplier<List<T>> onQuit = ArrayList::new;
+        private PrintStream output = System.out;
 
         /**
          * Selector Builder.
@@ -222,8 +227,13 @@ public class Selector<T> {
             return this;
         }
 
+        public Builder<T> output(PrintStream output) {
+            this.output = output;
+            return this;
+        }
+
         public Selector<T> build() {
-            return new Selector<>(prompt, quit, header, options, formatter, footer, onLineIsEmpty, onQuit);
+            return new Selector<>(prompt, quit, header, options, formatter, footer, onLineIsEmpty, onQuit, output);
         }
     }
 }
