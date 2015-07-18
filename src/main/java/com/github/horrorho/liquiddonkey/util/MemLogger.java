@@ -50,6 +50,7 @@ public class MemLogger implements Runnable {
 
     @Override
     public void run() {
+        logger.trace("<< run()");
         Runtime runtime = Runtime.getRuntime();
         try {
             while (!stop) {
@@ -62,6 +63,8 @@ public class MemLogger implements Runnable {
             }
         } catch (InterruptedException | RuntimeException ex) {
             logger.warn("-- run() > exception: ", ex);
+        } finally {
+            logger.trace(">> run()");
         }
     }
 
