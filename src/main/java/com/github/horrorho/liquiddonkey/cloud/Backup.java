@@ -3,15 +3,15 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * Permission is hereby granted, free from charge, to any person obtaining a copy
+ * from this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * copies from the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * all copies or substantial portions from the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -26,7 +26,6 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
@@ -37,11 +36,11 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpResponseException;
@@ -72,28 +71,33 @@ public final class Backup {
      * @return a new instance, may be null
      * @throws IOException
      */
-    public static Backup of(Client client, Account account, ByteString udid) throws IOException {
+    public static Backup from(Client client, Account account, ByteString udid) throws IOException {
+        Backup instance;
         try {
-            logger.trace("<< of() < udid: {}", Bytes.hex(udid));
+            logger.trace("<< from() < udid: {}", Bytes.hex(udid));
 
             ICloud.MBSBackup backup = client.backup(udid);
             ICloud.MBSKeySet keySet = client.keys(udid);
             KeyBag keyBag = KeyBag.from(keySet);
 
-            Backup instance = Backup.of(account, backup, keyBag);
+            instance = Backup.from(account, backup, keyBag);
 
-            logger.trace(">> of() > {}", instance);
-            return instance;
-
-        } catch (AuthenticationException ex) {
-            throw ex;
-        } catch (BadDataException | HttpResponseException ex) {
-            logger.warn("-- of() > exception: ", ex);
-            return null;
+        } catch (HttpResponseException ex) {
+            if (ex.getStatusCode() == 401) {
+                throw ex;
+            }
+            logger.warn("-- from() > exception: ", ex);
+            instance = null;
+        } catch (BadDataException ex) {
+            logger.warn("-- from() > exception: ", ex);
+            instance = null;
         }
+
+        logger.trace(">> from() > {}", instance);
+        return instance;
     }
 
-    public static Backup of(
+    public static Backup from(
             Account account,
             ICloud.MBSBackup backup,
             KeyBag keyBag) {
@@ -115,27 +119,39 @@ public final class Backup {
             serialNumber = NA;
         }
 
-        Instant.ofEpochSecond(backup.getSnapshot().getLastModified());
+        List<ICloud.MBSSnapshot> snapshots = backup.getSnapshotList().stream()
+                .filter(s -> {
+                    if (s.getQuotaReserved() == 0) {
+                        logger.warn("-- from() > incomplete snapshot: {}", s);
+                        return false;
+                    }
+                    return true;
+                }).sorted(Comparator.comparingLong(ICloud.MBSSnapshot::getSnapshotID))
+                .collect(Collectors.toList());
 
-        long lastModified = backup.hasSnapshot() && backup.getSnapshot().hasLastModified()
-                ? backup.getSnapshot().getLastModified()
-                : 0;
+        // Last modified/ id may be different.
+        long lastModified = backup.getSnapshotList().stream()
+                .mapToLong(ICloud.MBSSnapshot::getLastModified)
+                .max().orElse(0);
+
+        ICloud.MBSSnapshot latest = snapshots.isEmpty()
+                ? null
+                : snapshots.get(snapshots.size() - 1);
 
         String deviceName;
         String productVerson;
-        if (backup.hasSnapshot() && backup.getSnapshot().hasAttributes()) {
-            ICloud.MBSSnapshotAttributes snapshotAttributes = backup.getSnapshot().getAttributes();
-            deviceName = snapshotAttributes.getDeviceName();
-            productVerson = snapshotAttributes.getProductVersion();
-        } else {
+        if (latest == null) {
             deviceName = NA;
             productVerson = NA;
+        } else {
+            deviceName = latest.getAttributes().getDeviceName();
+            productVerson = latest.getAttributes().getProductVersion();
         }
 
         return new Backup(
                 account,
                 backup,
-                availableSnapshots(latestSnapshot(backup)),
+                snapshots,
                 size,
                 hardwareModel,
                 marketingName,
@@ -144,40 +160,15 @@ public final class Backup {
                 productVerson,
                 Bytes.hex(backup.getBackupUDID()),
                 keyBag,
+                latest == null ? -1 : latest.getSnapshotID(),
                 lastModified);
-    }
-
-    static int latestSnapshot(ICloud.MBSBackup backup) {
-        if (!backup.hasSnapshot() || !backup.getSnapshot().hasSnapshotID()) {
-            return 0;
-        }
-
-        ICloud.MBSSnapshot snapshot = backup.getSnapshot();
-        if (!snapshot.hasCommitted() || snapshot.getCommitted() == 0) {
-            logger.debug("-- latestSnapshot() > the latest snapshot is incomplete: {}", snapshot.getSnapshotID());
-            return snapshot.getSnapshotID() - 1;
-        }
-        return snapshot.getSnapshotID();
-    }
-
-    static List<Integer> availableSnapshots(int latestSnapshot) {
-        // Unaware of iCloud api call to achieve this.
-        // Instead we assume that the snapshots exit at index 1, latest_index -1, latest_index (not always true)
-        return latestSnapshot == 0
-                ? new ArrayList<>()
-                : IntStream.of(1, latestSnapshot - 1, latestSnapshot)
-                .filter(id -> id > 0)
-                .distinct()
-                .sorted()
-                .mapToObj(Integer::valueOf)
-                .collect(Collectors.toList());
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Backup.class);
 
     private final Account account;
     private final ICloud.MBSBackup backup;
-    private final List<Integer> snapshots;
+    private final List<ICloud.MBSSnapshot> snapshots;
     private final String size;
     private final String hardwareModel;
     private final String marketingName;
@@ -186,12 +177,13 @@ public final class Backup {
     private final String productVerson;
     private final String udid;
     private final KeyBag keyBag;
+    private final int latestSnapshotId;
     private final long lastModified;
 
     Backup(
             Account account,
             ICloud.MBSBackup backup,
-            List<Integer> snapshots,
+            List<ICloud.MBSSnapshot> snapshots,
             String size,
             String hardwareModel,
             String marketingName,
@@ -200,6 +192,7 @@ public final class Backup {
             String productVerson,
             String udid,
             KeyBag keyBag,
+            int latestSnapshotId,
             long lastModified) {
 
         this.account = Objects.requireNonNull(account);
@@ -214,14 +207,19 @@ public final class Backup {
         this.udid = udid;
         this.keyBag = Objects.requireNonNull(keyBag);
         this.lastModified = lastModified;
+        this.latestSnapshotId = latestSnapshotId;
     }
 
-    public List<Integer> snapshots() {
+    public List<ICloud.MBSSnapshot> snapshots() {
         return new ArrayList<>(snapshots);
     }
 
     public ICloud.MBSBackup backup() {
         return backup;
+    }
+
+    public int latestSnapshotId() {
+        return latestSnapshotId;
     }
 
     public ByteString udid() {
@@ -248,12 +246,12 @@ public final class Backup {
             dateTimeFormatter = dateTimeFormatter.withZone(ZoneId.systemDefault());
         }
 
-        String lastModifiedStr
-                = dateTimeFormatter.format(Instant.ofEpochSecond(backup.getSnapshot().getLastModified()));
+        String lastModifiedStr = dateTimeFormatter.format(Instant.ofEpochSecond(lastModified));
 
         String snapshotsString = snapshots.isEmpty()
                 ? "none or incomplete"
-                : snapshots.stream().map(Object::toString).collect(Collectors.joining(" "));
+                : snapshots.stream().map(ICloud.MBSSnapshot::getSnapshotID).map(Object::toString)
+                .collect(Collectors.joining(" "));
 
         print.println(INDENT + "Name:\t" + deviceName);
         print.println(INDENT + "Device:\t" + marketingName + " " + hardwareModel);
@@ -305,7 +303,8 @@ public final class Backup {
     @Override
     public String toString() {
         return "Backup{"
-                + "backup=" + backup
+                + "account=" + account
+                + ", backup=" + backup
                 + ", snapshots=" + snapshots
                 + ", size=" + size
                 + ", hardwareModel=" + hardwareModel
@@ -315,6 +314,7 @@ public final class Backup {
                 + ", productVerson=" + productVerson
                 + ", udid=" + udid
                 + ", keyBag=" + keyBag
+                + ", latestSnapshotId=" + latestSnapshotId
                 + ", lastModified=" + lastModified
                 + '}';
     }

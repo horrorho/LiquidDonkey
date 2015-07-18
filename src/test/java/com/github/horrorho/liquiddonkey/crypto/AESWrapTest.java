@@ -45,7 +45,7 @@ public class AESWrapTest {
     @Parameters
     public void testWrap(String keyEncryptionKey, String key, String expected) {
 
-        byte[] wrapped = AESWrap.newInstance()
+        byte[] wrapped = AESWrap.create()
                 .wrap(
                         Hex.decode(keyEncryptionKey),
                         Hex.decode(key));
@@ -66,7 +66,7 @@ public class AESWrapTest {
     @Parameters
     public void testUnwrap(String keyEncryptionKey, String key, String expected) throws InvalidCipherTextException {
 
-        byte[] unwrapped = AESWrap.newInstance()
+        byte[] unwrapped = AESWrap.create()
                 .unwrap(
                         Hex.decode(keyEncryptionKey),
                         Hex.decode(key));

@@ -3,15 +3,15 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
+ * Permission is hereby granted, free from charge, to any person obtaining a copy
+ * from this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
+ * copies from the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
+ * all copies or substantial portions from the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Signature Writer.
  * <p>
- * Writes out the {@link ICloud.MBSFile}/s referenced by signatures. Locking single threaded mode of action.
+ * Writes out the {@link ICloud.MBSFile}/s referenced by signatures. Locking single threaded mode from action.
  *
  * @author ahseya
  */
@@ -107,7 +107,7 @@ public final class SignatureWriter {
      *
      * @param signature not null
      * @param writer not null
-     * @return map of ICloud.MBSFile to CloudWriterResult/s, or null if the signature doesn't reference any files
+     * @return map from ICloud.MBSFile to CloudWriterResult/s, or null if the signature doesn't reference any files
      * @throws IOException
      * @throws InterruptedException
      */

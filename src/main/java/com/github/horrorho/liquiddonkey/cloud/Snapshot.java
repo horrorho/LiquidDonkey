@@ -25,12 +25,10 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -60,11 +58,11 @@ public final class Snapshot {
      * @param predicate, not null
      * @return new instance, not null
      */
-    public static Snapshot of(Snapshot snapshot, Predicate<ICloud.MBSFile> predicate) {
+    public static Snapshot from(Snapshot snapshot, Predicate<ICloud.MBSFile> predicate) {
         logger.trace("--of() < snapshot: {}", snapshot);
 
         Snapshot filtered = new Snapshot(
-                snapshot.id(),
+                snapshot.snapshot(),
                 snapshot.backup(),
                 snapshot.files().stream().filter(predicate::test).collect(Collectors.toSet()));
 
@@ -77,72 +75,54 @@ public final class Snapshot {
      *
      * @param client, not null
      * @param backup, not null
-     * @param id
-     * @param config, not null
+     * @param id, negative for relative offset from the latest snapshot
      * @return new instance, may be null
      * @throws IOException
      */
-    public static Snapshot of(Client client, Backup backup, int id, EngineConfig config) throws IOException {
+    public static Snapshot from(Client client, Backup backup, int id) throws IOException {
         logger.trace("<< of() < id: {}", id);
-        int latest = backup.snapshots().stream().mapToInt(Integer::intValue).max().orElse(0);
 
-        Snapshot snapshot = of(
-                client,
-                backup,
-                id < 0 ? latest + id + 1 : id,
-                config.isAggressive());
+        int resolved = id < 0 ? backup.latestSnapshotId() + id + 1 : id;
 
-        logger.trace(">> of() > snapshot: {}", snapshot);
-        return snapshot;
-    }
+        ICloud.MBSSnapshot snapshot = backup.snapshots().stream()
+                .filter(s -> s.getSnapshotID() == resolved)
+                .findFirst().orElse(null);
 
-    static Snapshot of(Client client, Backup backup, int id, boolean toHunt) throws IOException {
-        List<Integer> snapshots = backup.snapshots();
-
-        if (!snapshots.contains(id)) {
-            logger.warn("-- of() > no snapshot: {}", id);
-            return null;
-        }
-
-        int to = toHunt && id == 1 && snapshots.size() > 1
-                ? snapshots.get(1)
-                : id + 1;
-
-        return snapshot(client, backup, id, to);
-    }
-
-    static Snapshot snapshot(Client client, Backup backup, int from, int to) throws IOException {
-        int id = from;
-        Snapshot snapshot = null;
-
-        // The initial snapshot isn't always at 1.
-        while (id < to && snapshot == null) {
+        Snapshot instance;
+        if (snapshot != null) {
             try {
-                snapshot = new Snapshot(id, backup, client.files(backup.udid(), id++));
+                instance = new Snapshot(snapshot, backup, client.files(backup.udid(), resolved));
+                id++;
             } catch (HttpResponseException ex) {
                 if (ex.getStatusCode() == 401) {
                     throw ex;
                 }
-                logger.warn("-- snapshot() > exception: ", ex);
+                logger.warn("-- of() > exception: ", ex);
+                instance = null;
             }
+        } else {
+            logger.warn("-- of() > not such snapshot: {}", resolved);
+            instance = null;
         }
-        return snapshot;
+
+        logger.trace(">> of() > snapshot: {}", snapshot);
+        return instance;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Snapshot.class);
 
-    private final int id;
+    private final ICloud.MBSSnapshot snapshot;
     private final Backup backup;
     private final Set<ICloud.MBSFile> files;
 
-    Snapshot(int id, Backup backup, Collection<ICloud.MBSFile> files) {
-        this.id = id;
+    public Snapshot(ICloud.MBSSnapshot snapshot, Backup backup, Collection<ICloud.MBSFile> files) {
+        this.snapshot = Objects.requireNonNull(snapshot);
         this.backup = Objects.requireNonNull(backup);
         this.files = new HashSet<>(files);
     }
 
-    public int id() {
-        return id;
+    public ICloud.MBSSnapshot snapshot() {
+        return snapshot;
     }
 
     public Backup backup() {
@@ -153,17 +133,29 @@ public final class Snapshot {
         return new HashSet<>(files);
     }
 
+    public int id() {
+        return snapshot.getSnapshotID();
+    }
+
+    public boolean isComplete() {
+        return snapshot.getQuotaReserved() != 0;
+    }
+
+    public long lastModified() {
+        return snapshot.getLastModified();
+    }
+
     public ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures() {
-        // ConcurrentMap, non-concurrent Set
         return files().stream()
                 .collect(Collectors.groupingByConcurrent(ICloud.MBSFile::getSignature, Collectors.toSet()));
     }
 
+    public ByteString keybagUuid() {
+        return snapshot.getAttributes().getKeybagUUID();
+    }
+
     @Override
     public String toString() {
-        return "Snapshot{"
-                + "id=" + id
-                + ", files=" + files.size()
-                + '}';
+        return "Snapshot{" + "snapshot=" + snapshot + ", backup=" + backup + ", files=" + files + '}';
     }
 }

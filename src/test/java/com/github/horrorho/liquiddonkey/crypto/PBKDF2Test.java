@@ -48,7 +48,7 @@ public class PBKDF2Test {
     @Parameters
     public void testGenerate(String password, String salt, int iterations, int keyLengthBytes, String expected) {
 
-        byte[] generated = PBKDF2.newInstance()
+        byte[] generated = PBKDF2.create()
                 .generate(
                         password.getBytes(charset),
                         salt.getBytes(charset), iterations,

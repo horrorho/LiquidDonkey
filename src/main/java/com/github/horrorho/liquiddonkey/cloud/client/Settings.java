@@ -57,7 +57,7 @@ public final class Settings {
     }
 
     public static Settings from(SimplePropertyList settings) throws BadDataException {
-        logger.trace("<< from()");
+        logger.trace("<< from() < settings: {}", settings);
 
         String fullName = settings.valueOr("Unknown", "appleAccountInfo", "fullName");
         String appleId = settings.valueOr("Unknown", "appleAccountInfo", "appleId");

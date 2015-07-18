@@ -44,7 +44,7 @@ public class Curve25519Test {
     @Parameters
     public void testAgreement(String publicKey, String privateKey, String expected) {
 
-        byte[] sharedKey = Curve25519.getInstance()
+        byte[] sharedKey = Curve25519.create()
                 .agreement(
                         Hex.decode(publicKey),
                         Hex.decode(privateKey));

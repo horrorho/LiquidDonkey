@@ -113,7 +113,7 @@ public class Looter implements Closeable {
 
         List<Backup> backups = new ArrayList<>();
         for (ByteString udid : account.list()) {
-            backups.add(Backup.of(client, account, udid));
+            backups.add(Backup.from(client, account, udid));
         }
 
         for (Backup backup : backupSelector.apply(backups)) {
@@ -129,14 +129,14 @@ public class Looter implements Closeable {
         for (int id : config.selection().snapshots()) {
 
             logger.info("-- backup() > id");
-            Snapshot snapshot = Snapshot.of(client, backup, id, config.engine());
+            Snapshot snapshot = Snapshot.from(client, backup, id);
 
             if (snapshot == null) {
                 logger.warn("-- backup() > snapshot not found: {}", id);
                 continue;
             }
 
-            Snapshot filtered = Snapshot.of(snapshot, filter);
+            Snapshot filtered = Snapshot.from(snapshot, filter);
 
             IOPredicate<ICloud.MBSFile> localFilter = LocalFileFilter.from(snapshot, config.file());
             Predicate<ICloud.MBSFile> localFilterUnchecked = file -> {
@@ -146,13 +146,19 @@ public class Looter implements Closeable {
                     throw new UncheckedIOException(ex);
                 }
             };
+            // TODO handle UncheckedIOException
 
             long a = System.currentTimeMillis();
             // TODO force overwrite flag
-            Snapshot filteredLocal = Snapshot.of(filtered, localFilterUnchecked);
+            Snapshot filteredLocal = Snapshot.from(filtered, localFilterUnchecked);
             long b = System.currentTimeMillis();
             logger.info("-- backup() > delay: {}", (b - a));
             System.out.println("delay " + (b - a));
+
+            Predicate<ICloud.MBSFile> decryptableFilter
+                    = file -> !file.getAttributes().hasEncryptionKey() || backup.keybag().fileKey(file) != null;
+
+            Snapshot decryptable = Snapshot.from(filteredLocal, decryptableFilter);
 
 //            filteredLocal.signatures().values().stream().forEach(System.out::print);
 //            filteredLocal.signatures().values().stream().flatMap(Set::stream)
@@ -162,9 +168,7 @@ public class Looter implements Closeable {
 //                            System.out.println(x);
 //                        }
 //                    });
-
-
-                        //            SnapshotDownloader sd = new SnapshotDownloader(
+            //            SnapshotDownloader sd = new SnapshotDownloader(
             //                    http,
             //                    client,
             //                    ChunkDataFetcher.newInstance(http, client),
@@ -174,7 +178,7 @@ public class Looter implements Closeable {
 
                 SnapshotDownloader downloader = new SnapshotDownloader(config.file(), printer);
 
-                downloader.download(client, filteredLocal);
+                downloader.download(client, decryptable);
 
 //            try {
 //                ChunkServer.FileGroups fetchFileGroups = client.fetchFileGroups(http, backup.udid(), id, filtered.files());

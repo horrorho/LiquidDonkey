@@ -71,23 +71,26 @@ public final class Http implements Closeable {
      * @throws IOException
      */
     public <T> T request(HttpUriRequest request, ResponseHandler<T> handler) throws IOException {
-        logger.trace(http, "<< request() < {}", request);
+        logger.trace("<< request() < {}", request);
 
         int count = 0;
         while (true) {
             try {
                 T response = client.execute(request, handler);
+
+                logger.debug(http, "-- request() > response: {}", response);
+                logger.trace(">> request()");
                 return response;
             } catch (SocketTimeoutException ex) {
                 // Not handled by the retry handler.
                 if (count++ < socketTimeoutRetryCount) {
-                    logger.trace("-- request() > retrying: ", ex);
+                    logger.warn("-- request() > retrying: ", ex);
                 } else {
-                    logger.trace(http, "-- request() > ", ex);
+                    logger.warn("-- request() > ", ex);
                     throw ex;
                 }
             } catch (IOException ex) {
-                logger.trace(http, "-- request() > ", ex);
+                logger.warn("-- request() > ", ex);
                 throw ex;
             }
         }
