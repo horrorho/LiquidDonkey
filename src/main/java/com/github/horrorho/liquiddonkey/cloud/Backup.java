@@ -24,7 +24,7 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.client.Client;
-import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
+import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.util.Bytes;
@@ -78,9 +78,9 @@ public final class Backup {
 
             ICloud.MBSBackup backup = client.backup(udid);
             ICloud.MBSKeySet keySet = client.keys(udid);
-            KeyBag keyBag = KeyBag.from(keySet);
+            KeyBagManager keyBagManager = KeyBagManager.from(keySet);
 
-            instance = Backup.from(account, backup, keyBag);
+            instance = Backup.from(account, backup, keyBagManager);
 
         } catch (HttpResponseException ex) {
             if (ex.getStatusCode() == 401) {
@@ -100,7 +100,7 @@ public final class Backup {
     public static Backup from(
             Account account,
             ICloud.MBSBackup backup,
-            KeyBag keyBag) {
+            KeyBagManager keyBagManager) {
 
         String size = Bytes.humanize(backup.getQuotaUsed());
 
@@ -159,7 +159,8 @@ public final class Backup {
                 deviceName,
                 productVerson,
                 Bytes.hex(backup.getBackupUDID()),
-                keyBag,
+                keyBagManager,
+                snapshots.isEmpty() ? -1 : snapshots.get(0).getSnapshotID(),
                 latest == null ? -1 : latest.getSnapshotID(),
                 lastModified);
     }
@@ -176,7 +177,8 @@ public final class Backup {
     private final String deviceName;
     private final String productVerson;
     private final String udid;
-    private final KeyBag keyBag;
+    private final KeyBagManager keyBagManager;
+    private final int firstSnapshotId;
     private final int latestSnapshotId;
     private final long lastModified;
 
@@ -191,7 +193,8 @@ public final class Backup {
             String deviceName,
             String productVerson,
             String udid,
-            KeyBag keyBag,
+            KeyBagManager keyBagManager,
+            int firstSnapshotId,
             int latestSnapshotId,
             long lastModified) {
 
@@ -205,8 +208,9 @@ public final class Backup {
         this.deviceName = deviceName;
         this.productVerson = productVerson;
         this.udid = udid;
-        this.keyBag = Objects.requireNonNull(keyBag);
+        this.keyBagManager = Objects.requireNonNull(keyBagManager);
         this.lastModified = lastModified;
+        this.firstSnapshotId = firstSnapshotId;
         this.latestSnapshotId = latestSnapshotId;
     }
 
@@ -216,6 +220,10 @@ public final class Backup {
 
     public ICloud.MBSBackup backup() {
         return backup;
+    }
+
+    public int firstSnapshotId() {
+        return firstSnapshotId;
     }
 
     public int latestSnapshotId() {
@@ -292,8 +300,8 @@ public final class Backup {
         return productVerson;
     }
 
-    public KeyBag keybag() {
-        return keyBag;
+    public KeyBagManager keybagManager() {
+        return keyBagManager;
     }
 
     public Account account() {
@@ -313,7 +321,7 @@ public final class Backup {
                 + ", deviceName=" + deviceName
                 + ", productVerson=" + productVerson
                 + ", udid=" + udid
-                + ", keyBag=" + keyBag
+                + ", keyBagManager=" + keyBagManager
                 + ", latestSnapshotId=" + latestSnapshotId
                 + ", lastModified=" + lastModified
                 + '}';

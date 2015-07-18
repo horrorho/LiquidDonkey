@@ -24,7 +24,7 @@
 package com.github.horrorho.liquiddonkey.cloud.file;
 
 import com.github.horrorho.liquiddonkey.cloud.Snapshot;
-import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
+import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction; 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
@@ -71,19 +71,19 @@ public final class CloudFileWriter {
 
         return new CloudFileWriter(
                 FileDecrypter.create(),
-                snapshot.backup().keybag(),
+                snapshot.backup().keybagManager(),
                 SnapshotDirectory.from(snapshot, fileConfig),
                 fileConfig.setLastModifiedTimestamp());
     }
 
     private final FileDecrypter decrypter;
-    private final KeyBag keyBag;
+    private final KeyBagManager keyBag;
     private final SnapshotDirectory directory;
     private final boolean setLastModifiedTime;
 
     CloudFileWriter(
             FileDecrypter decrypter,
-            KeyBag keyBagTools,
+            KeyBagManager keyBagTools,
             SnapshotDirectory directory,
             boolean setLastModifiedTime) {
 

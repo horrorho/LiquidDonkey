@@ -129,7 +129,7 @@ public class Looter implements Closeable {
         for (int id : config.selection().snapshots()) {
 
             logger.info("-- backup() > id");
-            Snapshot snapshot = Snapshot.from(client, backup, id);
+            Snapshot snapshot = Snapshot.from(client, backup, id); // TODO important, use a link set, don't repeated downloads
 
             if (snapshot == null) {
                 logger.warn("-- backup() > snapshot not found: {}", id);
@@ -156,7 +156,7 @@ public class Looter implements Closeable {
             System.out.println("delay " + (b - a));
 
             Predicate<ICloud.MBSFile> decryptableFilter
-                    = file -> !file.getAttributes().hasEncryptionKey() || backup.keybag().fileKey(file) != null;
+                    = file -> !file.getAttributes().hasEncryptionKey() || backup.keybagManager().fileKey(file) != null;
 
             Snapshot decryptable = Snapshot.from(filteredLocal, decryptableFilter);
 

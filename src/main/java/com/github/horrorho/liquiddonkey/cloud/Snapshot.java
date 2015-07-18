@@ -82,7 +82,7 @@ public final class Snapshot {
     public static Snapshot from(Client client, Backup backup, int id) throws IOException {
         logger.trace("<< of() < id: {}", id);
 
-        int resolved = id < 0 ? backup.latestSnapshotId() + id + 1 : id;
+        int resolved = id < 0 ? backup.latestSnapshotId() + id + 1 : id + backup.firstSnapshotId() - 1;
 
         ICloud.MBSSnapshot snapshot = backup.snapshots().stream()
                 .filter(s -> s.getSnapshotID() == resolved)
