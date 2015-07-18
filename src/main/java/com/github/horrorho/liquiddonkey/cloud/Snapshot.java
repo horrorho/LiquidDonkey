@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Snapshot.
  * <p>
- * Container {@link ICloud.MBSFile}.
+ * Describes an {@link ICloud.MBSSnapshot}.
  *
  * @author Ahseya
  */
@@ -72,17 +72,36 @@ public final class Snapshot {
 
     /**
      * Queries the Client and returns a new instance.
+     * <p>
+     * Snapshot ids from 1 are treated as absolute. Zero id refers to the first available snapshot. Negative ids refer
+     * to relative offsets from the latest snapshot.
+     * <p>
+     * Example. Snapshots available 5 10 11:
+     * <p>
+     * id 0 > 1
+     * <p>
+     * id 1 > null
+     * <p>
+     * id 5 > 5
+     * <p>
+     * id -1 > 11
+     * <p>
+     * id -2 > 10
      *
      * @param client, not null
      * @param backup, not null
-     * @param id, negative for relative offset from the latest snapshot
+     * @param id snapshot id
      * @return new instance, may be null
      * @throws IOException
      */
     public static Snapshot from(Client client, Backup backup, int id) throws IOException {
         logger.trace("<< from() < id: {}", id);
 
-        int resolved = id < 0 ? backup.latestSnapshotId() + id + 1 : id + backup.firstSnapshotId() - 1;
+        int resolved = id == 0
+                ? backup.firstSnapshotId()
+                : (id > 0)
+                        ? id
+                        : id + backup.latestSnapshotId() - 1;
 
         ICloud.MBSSnapshot snapshot = backup.snapshots().stream()
                 .filter(s -> s.getSnapshotID() == resolved)
@@ -95,13 +114,14 @@ public final class Snapshot {
                 id++;
             } catch (HttpResponseException ex) {
                 if (ex.getStatusCode() == 401) {
+                    // Authentication failed.
                     throw ex;
                 }
                 logger.warn("-- from() > exception: ", ex);
                 instance = null;
             }
         } else {
-            logger.warn("-- from() > not such snapshot: {}", resolved);
+            logger.warn("-- from() > no such snapshot: {}", resolved);
             instance = null;
         }
 
@@ -129,29 +149,27 @@ public final class Snapshot {
         return backup;
     }
 
-    public Set<ICloud.MBSFile> files() {
-        return new HashSet<>(files);
-    }
-
     public int id() {
         return snapshot.getSnapshotID();
     }
 
-    public boolean isComplete() {
-        return snapshot.getQuotaReserved() != 0;
+    /**
+     * Returns a new non-concurrent Set of files contained within this Snapshot.
+     *
+     * @return a new Set of files contained within this Snapshot, not null.
+     */
+    public Set<ICloud.MBSFile> files() {
+        return new HashSet<>(files);
     }
 
-    public long lastModified() {
-        return snapshot.getLastModified();
-    }
-
+    /**
+     * Returns a new concurrent map referencing signature to file Set.
+     *
+     * @return a new concurrent map referencing signature to file Set, not null
+     */
     public ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures() {
         return files().stream()
                 .collect(Collectors.groupingByConcurrent(ICloud.MBSFile::getSignature, Collectors.toSet()));
-    }
-
-    public ByteString keybagUuid() {
-        return snapshot.getAttributes().getKeybagUUID();
     }
 
     @Override
