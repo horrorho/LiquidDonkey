@@ -156,6 +156,9 @@ public final class Snapshot {
 
     @Override
     public String toString() {
-        return "Snapshot{" + "snapshot=" + snapshot + ", backup=" + backup + ", files=" + files + '}';
+        return "Snapshot{"
+                + "snapshot=" + snapshot
+                + ", backup=" + backup.udidString()
+                + ", files=" + files + '}';
     }
 }
