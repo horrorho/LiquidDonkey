@@ -195,7 +195,7 @@ public class Client {
         logger.trace("<< fileGroups() < backupUdid: {} snapshot: {} files: {}",
                 hex(backupUdid), snapshotId, files.size());
 
-        // Rationalize signatures. Collisions improbable. Null signatures are empty files or other structures.
+        // Rationalize signatures. Collisions improbable. Null signatures are empty files/ non-downloadables.
         Set<ICloud.MBSFile> unique = files.stream()
                 .filter(ICloud.MBSFile::hasSignature)
                 .collect(Collectors.toMap(ICloud.MBSFile::getSignature, Function.identity(), (a, b) -> a))
