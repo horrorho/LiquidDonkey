@@ -36,10 +36,10 @@ import org.bouncycastle.util.Arrays;
 @ThreadSafe
 public final class Curve25519 {
 
-    private static final Curve25519 INSTANCE = new Curve25519();
+    private static final Curve25519 instance = new Curve25519();
 
-    public static Curve25519 getInstance() {
-        return INSTANCE;
+    public static Curve25519 create() {
+        return instance;
     }
 
     private final org.whispersystems.curve25519.Curve25519 curve25519

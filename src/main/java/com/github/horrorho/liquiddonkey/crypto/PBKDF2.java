@@ -37,7 +37,7 @@ public final class PBKDF2 {
 
     private final PKCS5S2ParametersGenerator generator;
 
-    public static PBKDF2 newInstance() {
+    public static PBKDF2 create() {
         return new PBKDF2();
     }
 

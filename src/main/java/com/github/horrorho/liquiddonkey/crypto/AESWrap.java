@@ -38,7 +38,7 @@ public final class AESWrap {
 
     private final AESWrapEngine engine = new AESWrapEngine();
 
-    public static AESWrap newInstance() {
+    public static AESWrap create() {
         return new AESWrap();
     }
 
