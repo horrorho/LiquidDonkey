@@ -58,7 +58,7 @@ public final class KeyBag {
      * @throws BadDataException if the KeyBag cannot be unlocked or a data handling error occurred
      */
     public static KeyBag from(ICloud.MBSKeySet keySet) throws BadDataException {
-        logger.trace("<< from() < keySet: {}", keySet);
+        logger.trace("<< from()");
 
         KeyBagAssistant assistant = KeyBagAssistant.from(keySet);
 
