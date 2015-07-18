@@ -87,6 +87,8 @@ public final class Snapshot {
      * id -1 > 11
      * <p>
      * id -2 > 10
+     * <p>
+     * id -3 > null
      *
      * @param client, not null
      * @param backup, not null
