@@ -59,14 +59,14 @@ public final class Snapshot {
      * @return new instance, not null
      */
     public static Snapshot from(Snapshot snapshot, Predicate<ICloud.MBSFile> predicate) {
-        logger.trace("--of() < snapshot: {}", snapshot);
+        logger.trace("--from() < snapshot: {}", snapshot);
 
         Snapshot filtered = new Snapshot(
                 snapshot.snapshot(),
                 snapshot.backup(),
                 snapshot.files().stream().filter(predicate::test).collect(Collectors.toSet()));
 
-        logger.trace("--of() > filter: {}", filtered);
+        logger.trace("--from() > filter: {}", filtered);
         return filtered;
     }
 
@@ -80,7 +80,7 @@ public final class Snapshot {
      * @throws IOException
      */
     public static Snapshot from(Client client, Backup backup, int id) throws IOException {
-        logger.trace("<< of() < id: {}", id);
+        logger.trace("<< from() < id: {}", id);
 
         int resolved = id < 0 ? backup.latestSnapshotId() + id + 1 : id + backup.firstSnapshotId() - 1;
 
@@ -97,15 +97,15 @@ public final class Snapshot {
                 if (ex.getStatusCode() == 401) {
                     throw ex;
                 }
-                logger.warn("-- of() > exception: ", ex);
+                logger.warn("-- from() > exception: ", ex);
                 instance = null;
             }
         } else {
-            logger.warn("-- of() > not such snapshot: {}", resolved);
+            logger.warn("-- from() > not such snapshot: {}", resolved);
             instance = null;
         }
 
-        logger.trace(">> of() > snapshot: {}", snapshot);
+        logger.trace(">> from() > snapshot: {}", snapshot);
         return instance;
     }
 
@@ -159,6 +159,6 @@ public final class Snapshot {
         return "Snapshot{"
                 + "snapshot=" + snapshot
                 + ", backup=" + backup.udidString()
-                + ", files=" + files + '}';
+                + ", files count=" + files.size() + '}';
     }
 }
