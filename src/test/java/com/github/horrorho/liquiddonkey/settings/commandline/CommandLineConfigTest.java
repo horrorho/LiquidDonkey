@@ -42,6 +42,7 @@ import static org.junit.Assert.*;
 import org.junit.runner.RunWith;
 
 /**
+ * CommandLineConfigTest.
  *
  * @author Ahseya
  */
