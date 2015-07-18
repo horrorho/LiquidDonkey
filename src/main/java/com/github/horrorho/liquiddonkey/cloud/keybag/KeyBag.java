@@ -122,6 +122,12 @@ public final class KeyBag {
 
     ByteString fileKey(ICloud.MBSFile file, AESWrap aesWrap, SHA256Digest sha256) {
         ICloud.MBSFileAttributes fileAttributes = file.getAttributes();
+
+        if (!fileAttributes.hasEncryptionKey()) {
+            logger.warn("-- file() > no encryption key: {}", file.getRelativePath());
+            return null;
+        }
+
         ByteString key = fileAttributes.getEncryptionKey();
         int protectionClass = key.substring(0x18, 0x1C).asReadOnlyByteBuffer().getInt();
 
