@@ -39,28 +39,41 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * KeyBagAssistant.
+ * KeyBagFactory.
  *
  * @author Ahseya
  */
 @NotThreadSafe
-public final class KeyBagAssistant {
+public final class KeyBagFactory {
 
-    public static KeyBagAssistant from(ICloud.MBSKeySet keySet) throws BadDataException {
-        logger.trace("<< unlock()");
+    /**
+     * Returns a new unlocked KeyBag instance.
+     *
+     * @param key, not null
+     * @param passcode, not null
+     * @return a new unlocked KeyBag instance, not null
+     * @throws BadDataException if the KeyBag cannot be unlocked or a data handling error occurred
+     */
+    public static KeyBag from(ICloud.MBSKey key, ByteString passcode) throws BadDataException {
+        logger.trace("<< from()");
 
-        KeyBagAssistant keyBagAssistant = new KeyBagAssistant(keySet, new HashMap<>(), new HashMap<>()).unlock();
+        KeyBagFactory factory = new KeyBagFactory(key, passcode).unlock();
 
-        logger.trace(">> unlock()");
-        return keyBagAssistant;
+        logger.trace(">> from()");
+        return new KeyBag(
+                factory.classKeys(),
+                factory.attributes(),
+                factory.uuid(),
+                factory.type());
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(KeyBagAssistant.class);
+    private static final Logger logger = LoggerFactory.getLogger(KeyBagFactory.class);
 
     private static final int WRAP_DEVICE = 1;
     private static final int WRAP_PASSCODE = 2;
 
-    private final ICloud.MBSKeySet keySet;
+    private final ICloud.MBSKey key;
+    private final ByteString passcode;
     private final Map<Integer, Map<String, ByteString>> classKeys;
     private final Map<String, ByteString> attributes;
     private ByteString salt;
@@ -68,17 +81,23 @@ public final class KeyBagAssistant {
     private KeyBagType type;
     private int iterations;
 
-    public KeyBagAssistant(
-            ICloud.MBSKeySet keySet,
+    KeyBagFactory(
+            ICloud.MBSKey key,
+            ByteString passcode,
             Map<Integer, Map<String, ByteString>> classKeys,
             Map<String, ByteString> attributes) {
 
-        this.keySet = keySet;
+        this.key = key;
+        this.passcode = passcode;
         this.classKeys = classKeys;
         this.attributes = attributes;
     }
 
-    KeyBagAssistant unlock() throws BadDataException {
+    KeyBagFactory(ICloud.MBSKey key, ByteString passcode) {
+        this(key, passcode, new HashMap<>(), new HashMap<>());
+    }
+
+    KeyBagFactory unlock() throws BadDataException {
         parseKeySet();
 
         iterations = Bytes.integer32(attribute("ITER"));
@@ -86,18 +105,14 @@ public final class KeyBagAssistant {
         uuid = attribute("UUID");
         type = KeyBagType.from(Bytes.integer32(attribute("TYPE")));
 
-        unlock(keySet.getKey(0).getKeyData());
+        unlock(passcode);
         return this;
     }
 
     void parseKeySet() throws BadDataException {
-        if (keySet.getKeyCount() < 2) {
-            throw new BadDataException("Bad keybag.");
-        }
-
         Map<String, ByteString> block = new HashMap<>();
 
-        for (TagValue tagValue : TagValue.from(keySet.getKey(keySet.getKeyCount() - 1).getKeyData())) {
+        for (TagValue tagValue : TagValue.from(key.getKeyData())) {
             if (tagValue.tag().equals("UUID")) {
                 sort(block);
                 block.clear();
@@ -156,25 +171,25 @@ public final class KeyBagAssistant {
 
     ByteString attribute(String tag) throws BadDataException {
         if (!attributes.containsKey(tag)) {
-            throw new BadDataException("-- attribute() - attribute missing: " + tag);
+            throw new BadDataException("-- attribute() > missing: " + tag);
         }
         return attributes.get(tag);
     }
 
-    public ByteString uuid() {
+    ByteString uuid() {
         return uuid;
     }
 
-    public KeyBagType type() {
+    KeyBagType type() {
         return type;
     }
 
-    public Map<Integer, Map<String, ByteString>> copyClassKeys() {
+    Map<Integer, Map<String, ByteString>> classKeys() {
         return classKeys.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> new HashMap<>(entry.getValue())));
     }
 
-    public Map<String, ByteString> copyAttributes() {
+    Map<String, ByteString> attributes() {
         return new HashMap<>(attributes);
     }
 }
