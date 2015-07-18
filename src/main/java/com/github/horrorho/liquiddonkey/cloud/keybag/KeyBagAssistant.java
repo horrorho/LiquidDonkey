@@ -33,7 +33,7 @@ import com.google.protobuf.ByteString;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
-import net.jcip.annotations.ThreadSafe;
+import net.jcip.annotations.NotThreadSafe;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author Ahseya
  */
-@ThreadSafe
+@NotThreadSafe
 public final class KeyBagAssistant {
 
     public static KeyBagAssistant from(ICloud.MBSKeySet keySet) throws BadDataException {
