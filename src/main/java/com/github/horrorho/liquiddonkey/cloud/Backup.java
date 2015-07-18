@@ -78,7 +78,7 @@ public final class Backup {
 
             ICloud.MBSBackup backup = client.backup(udid);
             ICloud.MBSKeySet keySet = client.keys(udid);
-            KeyBag keyBag = KeyBag.of(keySet);
+            KeyBag keyBag = KeyBag.from(keySet);
 
             Backup instance = Backup.of(account, backup, keyBag);
 

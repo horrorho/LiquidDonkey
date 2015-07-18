@@ -25,10 +25,13 @@ package com.github.horrorho.liquiddonkey;
 
 import com.github.horrorho.liquiddonkey.util.DumpStackTraceHook;
 import com.github.horrorho.liquiddonkey.cloud.Looter;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.commandline.CommandLineConfig;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
+import com.github.horrorho.liquiddonkey.util.MemLogger;
+import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,14 +84,19 @@ public class Main {
             DumpStackTraceHook.add();
         }
 
+        if (logger.isDebugEnabled()) {
+            // Memory leakage a real concern. Lightweight reporting on all debugged runs.
+            MemLogger memLogger = MemLogger.from(5000);
+            Thread thread = new Thread(memLogger);
+            thread.setDaemon(true);
+            thread.start();
+        }
+
         Printer printer = Printer.instanceOf(config.printer());
 
         try (Looter looter = Looter.of(config, printer)) {
             looter.loot();
-        } catch (RuntimeException ex) {
-            logger.warn("-- main() > exception", ex);
-            printer.println(Level.ERROR, ex);
-        } catch (Exception ex) {
+        } catch (BadDataException | InterruptedException | IOException | RuntimeException ex) {
             logger.warn("-- main() > exception", ex);
             printer.println(Level.ERROR, ex);
         }
@@ -97,6 +105,7 @@ public class Main {
             DumpStackTraceHook.remove();
         }
 
+        // TODO run with finally block
         logger.trace(">> main()");
     }
 }

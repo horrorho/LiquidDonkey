@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.store;
 
+import com.github.horrorho.liquiddonkey.util.BiMapSet;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.settings.Markers;
@@ -132,7 +133,7 @@ public final class StoreManager {
 
     Map<ByteString, StoreWriter> process(ChunkServer.StorageHostChunkList chunkList) {
 
-        Map<ByteString, StoreWriter> writers = references.key(chunkList).stream()
+        Map<ByteString, StoreWriter> writers = references.keys(chunkList).stream()
                 .map(signature -> new SimpleEntry<>(signature, process(signature)))
                 .filter(entry -> entry.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
