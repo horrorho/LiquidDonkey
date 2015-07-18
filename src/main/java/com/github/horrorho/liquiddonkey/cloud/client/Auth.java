@@ -72,7 +72,7 @@ public final class Auth {
     private final List<Header> contentHeaders;
     private final Instant timestamp;
 
-    public Auth(
+    Auth(
             String dsPrsId,
             String mmeAuthToken,
             List<Header> mobileBackupHeaders,
