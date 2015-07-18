@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.store;
 
-import com.github.horrorho.liquiddonkey.crypto.MessageDigestFactory;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.util.Bytes;
@@ -35,6 +34,8 @@ import java.util.Objects;
 import net.jcip.annotations.NotThreadSafe;
 import org.bouncycastle.crypto.DataLengthException;
 import org.bouncycastle.crypto.StreamBlockCipher;
+import org.bouncycastle.crypto.digests.GeneralDigest;
+import org.bouncycastle.crypto.digests.SHA256Digest;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.modes.CFBBlockCipher;
 import org.bouncycastle.crypto.params.KeyParameter;
@@ -57,17 +58,17 @@ public final class ChunkDecrypter {
     public static ChunkDecrypter create() {
         return new ChunkDecrypter(
                 new CFBBlockCipher(new AESEngine(), 128),
-                MessageDigestFactory.getInstance().SHA256());
+                new SHA256Digest());
     }
 
     private static final Logger logger = LoggerFactory.getLogger(ChunkDecrypter.class);
 
     private final StreamBlockCipher cfbAes;
-    private final MessageDigest chunkDigest;
+    private final GeneralDigest digest;
 
-    ChunkDecrypter(StreamBlockCipher cfbAes, MessageDigest chunkDigest) {
+    ChunkDecrypter(StreamBlockCipher cfbAes, GeneralDigest digest) {
         this.cfbAes = Objects.requireNonNull(cfbAes);
-        this.chunkDigest = Objects.requireNonNull(chunkDigest);
+        this.digest = Objects.requireNonNull(digest);
     }
 
     /**
@@ -77,7 +78,7 @@ public final class ChunkDecrypter {
      * @param data the chunk data, not null
      * @return the decrypted chunk list, not null
      * @throws BadDataException if a decryption error occurs
-     */ 
+     */
     public List<byte[]> decrypt(ChunkServer.StorageHostChunkList chunkList, byte[] data) throws BadDataException {
         List<byte[]> decrypted = new ArrayList<>();
         int offset = 0;
@@ -92,11 +93,11 @@ public final class ChunkDecrypter {
 
     byte[] decrypt(ChunkServer.ChunkInfo chunkInfo, byte[] data, int offset) throws BadDataException {
         try {
-            if (!chunkInfo.hasChunkEncryptionKey()) { 
+            if (!chunkInfo.hasChunkEncryptionKey()) {
                 throw new BadDataException("Missing key");
             }
 
-            if (keyType(chunkInfo) != 1) { 
+            if (keyType(chunkInfo) != 1) {
                 throw new BadDataException("Unknown key type: " + keyType(chunkInfo));
             }
 
@@ -118,7 +119,7 @@ public final class ChunkDecrypter {
         }
     }
 
-    byte[] decryptCfbAes(ChunkServer.ChunkInfo chunkInfo, byte[] data, int offset) { 
+    byte[] decryptCfbAes(ChunkServer.ChunkInfo chunkInfo, byte[] data, int offset) {
         cfbAes.init(false, key(chunkInfo));
         byte[] decrypted = new byte[chunkInfo.getChunkLength()];
         cfbAes.processBytes(data, offset, chunkInfo.getChunkLength(), decrypted, 0);
@@ -138,9 +139,15 @@ public final class ChunkDecrypter {
     }
 
     ByteString checksum(byte[] data) {
-        chunkDigest.reset();
-        byte[] hash = chunkDigest.digest(data);
-        byte[] hashhash = chunkDigest.digest(hash);
-        return ByteString.copyFrom(hashhash).substring(0, 20);
+        byte[] hash = new byte[digest.getDigestSize()];
+        byte[] hashHash = new byte[digest.getDigestSize()];
+
+        digest.reset();
+        digest.update(data, 0, data.length);
+        digest.doFinal(hash, 0);
+        digest.update(hash, 0, hash.length);
+        digest.doFinal(hashHash, 0);
+
+        return ByteString.copyFrom(hashHash).substring(0, 20);
     }
 }

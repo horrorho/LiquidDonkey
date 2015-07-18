@@ -24,15 +24,15 @@
 package com.github.horrorho.liquiddonkey.cloud.file;
 
 import com.github.horrorho.liquiddonkey.cloud.Snapshot;
-import com.github.horrorho.liquiddonkey.crypto.MessageDigestFactory;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.nio.file.Path;
-import java.security.MessageDigest;
 import java.util.function.Function;
 import net.jcip.annotations.NotThreadSafe;
+import org.bouncycastle.crypto.digests.GeneralDigest;
+import org.bouncycastle.crypto.digests.SHA1Digest;
 
 /**
  * SnapshotDirectory.
@@ -67,15 +67,15 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
             boolean isFlat,
             boolean isCombined) {
 
-        MessageDigest digest = MessageDigestFactory.getInstance().SHA1();
+        SHA1Digest sha1 = new SHA1Digest();
 
         Path folder = isCombined
                 ? base.resolve(udidStr)
                 : base.resolve(udidStr).resolve(snapshotIdStr);
 
         return isFlat
-                ? new FlatSnapshotDirectory(folder, digest)
-                : new NonFlatSnapshotDirectory(folder, digest);
+                ? new FlatSnapshotDirectory(folder, sha1)
+                : new NonFlatSnapshotDirectory(folder, sha1);
     }
 
     private static final String FILTER = "[:|*<>?\"].";
@@ -83,11 +83,11 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
     private static final ByteString HYPHEN = ByteString.copyFromUtf8("-");
 
     private final Path folder;
-    private final MessageDigest messageDigest;
+    private final GeneralDigest digest;
 
-    SnapshotDirectory(Path folder, MessageDigest messageDigest) {
+    SnapshotDirectory(Path folder, GeneralDigest digest) {
         this.folder = folder;
-        this.messageDigest = messageDigest;
+        this.digest = digest;
     }
 
     String clean(String string) {
@@ -97,8 +97,8 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
     @NotThreadSafe
     public static final class NonFlatSnapshotDirectory extends SnapshotDirectory {
 
-        NonFlatSnapshotDirectory(Path folder, MessageDigest messageDigest) {
-            super(folder, messageDigest);
+        NonFlatSnapshotDirectory(Path folder, SHA1Digest sha1) {
+            super(folder, sha1);
         }
 
         @Override
@@ -112,16 +112,19 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
     @NotThreadSafe
     public static final class FlatSnapshotDirectory extends SnapshotDirectory {
 
-        FlatSnapshotDirectory(Path folder, MessageDigest messageDigest) {
-            super(folder, messageDigest);
+        FlatSnapshotDirectory(Path folder, SHA1Digest sha1) {
+            super(folder, sha1);
         }
 
         @Override
         public Path apply(ICloud.MBSFile file) {
-            byte[] hash = super.messageDigest.digest(
-                    file.getDomainBytes()
-                    .concat(HYPHEN)
-                    .concat(file.getRelativePathBytes()).toByteArray());
+            byte[] hash = new byte[super.digest.getDigestSize()];
+            byte[] array = file.getDomainBytes().concat(HYPHEN).concat(file.getRelativePathBytes()).toByteArray();
+
+            super.digest.reset();
+            super.digest.update(array, 0, array.length);
+            super.digest.doFinal(hash, 0);
+
             return super.folder.resolve(Bytes.hex(hash));
         }
     }

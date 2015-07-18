@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.file;
 
-import com.github.horrorho.liquiddonkey.crypto.MessageDigestFactory;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -39,11 +38,12 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
-import java.security.MessageDigest;
 import java.util.Arrays;
 import net.jcip.annotations.NotThreadSafe;
 import org.bouncycastle.crypto.BufferedBlockCipher;
 import org.bouncycastle.crypto.DataLengthException;
+import org.bouncycastle.crypto.digests.GeneralDigest;
+import org.bouncycastle.crypto.digests.SHA1Digest;
 import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.modes.CBCBlockCipher;
 import org.bouncycastle.crypto.params.KeyParameter;
@@ -67,23 +67,23 @@ public final class FileDecrypter {
      * @return a new instance, not null
      */
     public static FileDecrypter create() {
-        return FileDecrypter.create(
+        return FileDecrypter.from(
                 new BufferedBlockCipher(new CBCBlockCipher(new AESEngine())),
-                MessageDigestFactory.getInstance().SHA1());
+                new SHA1Digest());
     }
 
-    static FileDecrypter create(BufferedBlockCipher cbcAes, MessageDigest sha1) {
+    static FileDecrypter from(BufferedBlockCipher cbcAes, SHA1Digest sha1) {
         return new FileDecrypter(cbcAes, sha1);
     }
 
     private final BufferedBlockCipher cbcAes;
-    private final MessageDigest sha1;
+    private final GeneralDigest digest;
     private final byte[] in = new byte[0x1000];
     private final byte[] out = new byte[0x1000];
 
-    FileDecrypter(BufferedBlockCipher cbcAes, MessageDigest sha1) {
+    FileDecrypter(BufferedBlockCipher cbcAes, GeneralDigest digest) {
         this.cbcAes = cbcAes;
-        this.sha1 = sha1;
+        this.digest = digest;
     }
 
     /**
@@ -161,19 +161,22 @@ public final class FileDecrypter {
             ParametersWithIV ivKey,
             KeyParameter fileKey) throws IOException {
 
-        sha1.reset();
+        byte[] hash = new byte[digest.getDigestSize()];
+        digest.reset();
+        
         for (int block = 0; block < blockCount; block++) {
             int length = input.read(in);
             if (length == -1) {
                 logger.warn("-- decrypt() > empty block");
                 break;
             }
-            sha1.update(in, 0, length);
+            digest.update(in, 0, length);
             decryptBlock(fileKey, deriveIv(ivKey, block), in, length, out);
             output.write(out, 0, length);
         }
 
-        return sha1.digest();
+        digest.doFinal(hash, 0);
+        return hash;
     }
 
     void decryptBlock(KeyParameter fileKey, byte[] iv, byte[] in, int length, byte[] out) {
@@ -210,9 +213,14 @@ public final class FileDecrypter {
     }
 
     ParametersWithIV deriveIvKey(ByteString key) {
-        sha1.reset();
+        byte[] hash = new byte[digest.getDigestSize()];
+        
+        digest.reset();
+        digest.update(key.toByteArray(), 0, key.size());
+        digest.doFinal(hash, 0);
+
         return new ParametersWithIV(
-                new KeyParameter(Arrays.copyOfRange(sha1.digest(key.toByteArray()), 0, 16)),
+                new KeyParameter(Arrays.copyOfRange(hash, 0, 16)),
                 new byte[16]);
     }
 
