@@ -57,8 +57,8 @@ import org.slf4j.MarkerFactory;
 @RunWith(JUnitParamsRunner.class)
 public class BiMapSetTest {
 
-    private static final Logger logger = LoggerFactory.getLogger(BiMapSetTest.class);
-    private static final Marker marker = MarkerFactory.getMarker("TEST");
+    public static final Logger logger = LoggerFactory.getLogger(BiMapSetTest.class);
+    public static final Marker marker = MarkerFactory.getMarker("TEST");
 
     public static int threads = 4;
     public static int maxEven = 1000;
