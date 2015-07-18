@@ -24,9 +24,9 @@
 package com.github.horrorho.liquiddonkey.cloud.file;
 
 import com.github.horrorho.liquiddonkey.cloud.Snapshot;
+import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBag;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
-import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagTools;
+import com.github.horrorho.liquiddonkey.iofunction.IOFunction; 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
@@ -71,24 +71,24 @@ public final class CloudFileWriter {
 
         return new CloudFileWriter(
                 FileDecrypter.create(),
-                KeyBagTools.newInstance(snapshot.backup().keybag()),
+                snapshot.backup().keybag(),
                 SnapshotDirectory.from(snapshot, fileConfig),
                 fileConfig.setLastModifiedTimestamp());
     }
 
     private final FileDecrypter decrypter;
-    private final KeyBagTools keyBagTools;
+    private final KeyBag keyBag;
     private final SnapshotDirectory directory;
     private final boolean setLastModifiedTime;
 
     CloudFileWriter(
             FileDecrypter decrypter,
-            KeyBagTools keyBagTools,
+            KeyBag keyBagTools,
             SnapshotDirectory directory,
             boolean setLastModifiedTime) {
 
         this.decrypter = Objects.requireNonNull(decrypter);
-        this.keyBagTools = Objects.requireNonNull(keyBagTools);
+        this.keyBag = Objects.requireNonNull(keyBagTools);
         this.directory = Objects.requireNonNull(directory);
         this.setLastModifiedTime = setLastModifiedTime;
     }
@@ -150,7 +150,7 @@ public final class CloudFileWriter {
     }
 
     WriterResult decrypt(Path path, MBSFile file) throws IOException {
-        ByteString key = keyBagTools.fileKey(file);
+        ByteString key = keyBag.fileKey(file);
 
         if (key == null) {
             logger.warn("-- decrypt() > failed to derive key: {}", file.getRelativePath());
