@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.util;
 
-import com.github.horrorho.liquiddonkey.util.BiMapSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
