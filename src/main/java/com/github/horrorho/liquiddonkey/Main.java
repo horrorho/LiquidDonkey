@@ -23,13 +23,13 @@
  */
 package com.github.horrorho.liquiddonkey;
 
-import com.github.horrorho.liquiddonkey.util.DumpStackTraceHook;
 import com.github.horrorho.liquiddonkey.cloud.Looter;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.commandline.CommandLineConfig;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
+import com.github.horrorho.liquiddonkey.util.DumpStackTraceHook;
 import com.github.horrorho.liquiddonkey.util.MemLogger;
 import java.io.IOException;
 import org.slf4j.Logger;

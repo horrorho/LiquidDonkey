@@ -73,14 +73,14 @@ public final class Snapshot {
     /**
      * Queries the Client and returns a new instance.
      * <p>
-     * Snapshot ids from 1 are treated as absolute. Zero id refers to the first available snapshot. Negative ids refer
-     * to relative offsets from the latest snapshot.
+     * Snapshot ids from 1 inclusive are treated as absolute. Zero id refers to the first available snapshot. Negative
+     * ids refer to relative offsets from the latest snapshot.
      * <p>
      * Example. Snapshots available 5 10 11:
      * <p>
      * id 0 > 1
      * <p>
-     * id 1 > null
+     * id 1 > 1 (unavailable)
      * <p>
      * id 5 > 5
      * <p>
@@ -88,7 +88,7 @@ public final class Snapshot {
      * <p>
      * id -2 > 10
      * <p>
-     * id -3 > null
+     * id -3 > 9 (unavailable)
      *
      * @param client, not null
      * @param backup, not null
@@ -98,12 +98,15 @@ public final class Snapshot {
      */
     public static Snapshot from(Client client, Backup backup, int id) throws IOException {
         logger.trace("<< from() < id: {}", id);
+        logger.debug("-- from() > first snapshot: {}", backup.firstSnapshotId());
+        logger.debug("-- from() > last snapshot: {}", backup.lastSnapshotId());
 
         int resolved = id == 0
                 ? backup.firstSnapshotId()
                 : (id > 0)
                         ? id
-                        : id + backup.latestSnapshotId() - 1;
+                        : id + backup.lastSnapshotId() + 1;
+        logger.debug("-- from() > resolved snapshot: {}", backup.lastSnapshotId());
 
         ICloud.MBSSnapshot snapshot = backup.snapshots().stream()
                 .filter(s -> s.getSnapshotID() == resolved)
@@ -113,10 +116,8 @@ public final class Snapshot {
         if (snapshot != null) {
             try {
                 instance = new Snapshot(snapshot, backup, client.files(backup.udid(), resolved));
-                id++;
             } catch (HttpResponseException ex) {
                 if (ex.getStatusCode() == 401) {
-                    // Authentication failed.
                     throw ex;
                 }
                 logger.warn("-- from() > exception: ", ex);
@@ -137,7 +138,7 @@ public final class Snapshot {
     private final Backup backup;
     private final Set<ICloud.MBSFile> files;
 
-    public Snapshot(ICloud.MBSSnapshot snapshot, Backup backup, Collection<ICloud.MBSFile> files) {
+    Snapshot(ICloud.MBSSnapshot snapshot, Backup backup, Collection<ICloud.MBSFile> files) {
         this.snapshot = Objects.requireNonNull(snapshot);
         this.backup = Objects.requireNonNull(backup);
         this.files = new HashSet<>(files);

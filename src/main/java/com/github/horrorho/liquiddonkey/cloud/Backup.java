@@ -129,7 +129,7 @@ public final class Backup {
                 }).sorted(Comparator.comparingLong(ICloud.MBSSnapshot::getSnapshotID))
                 .collect(Collectors.toList());
 
-        // Last modified/ id may be different.
+        // Last modified snapshot and highest id snapshot may be different.
         long lastModified = backup.getSnapshotList().stream()
                 .mapToLong(ICloud.MBSSnapshot::getLastModified)
                 .max().orElse(0);
@@ -161,7 +161,7 @@ public final class Backup {
                 Bytes.hex(backup.getBackupUDID()),
                 keyBagManager,
                 snapshots.isEmpty() ? -1 : snapshots.get(0).getSnapshotID(),
-                latest == null ? -1 : latest.getSnapshotID(),
+                snapshots.isEmpty() ? -1 : snapshots.get(snapshots.size() - 1).getSnapshotID(),
                 lastModified);
     }
 
@@ -179,7 +179,7 @@ public final class Backup {
     private final String udid;
     private final KeyBagManager keyBagManager;
     private final int firstSnapshotId;
-    private final int latestSnapshotId;
+    private final int lastSnapshotId;
     private final long lastModified;
 
     Backup(
@@ -195,7 +195,7 @@ public final class Backup {
             String udid,
             KeyBagManager keyBagManager,
             int firstSnapshotId,
-            int latestSnapshotId,
+            int lastSnapshotId,
             long lastModified) {
 
         this.account = Objects.requireNonNull(account);
@@ -211,7 +211,7 @@ public final class Backup {
         this.keyBagManager = Objects.requireNonNull(keyBagManager);
         this.lastModified = lastModified;
         this.firstSnapshotId = firstSnapshotId;
-        this.latestSnapshotId = latestSnapshotId;
+        this.lastSnapshotId = lastSnapshotId;
     }
 
     public List<ICloud.MBSSnapshot> snapshots() {
@@ -226,8 +226,8 @@ public final class Backup {
         return firstSnapshotId;
     }
 
-    public int latestSnapshotId() {
-        return latestSnapshotId;
+    public int lastSnapshotId() {
+        return lastSnapshotId;
     }
 
     public ByteString udid() {
@@ -322,7 +322,7 @@ public final class Backup {
                 + ", productVerson=" + productVerson
                 + ", udid=" + udid
                 + ", keyBagManager=" + keyBagManager
-                + ", latestSnapshotId=" + latestSnapshotId
+                + ", latestSnapshotId=" + lastSnapshotId
                 + ", lastModified=" + lastModified
                 + '}';
     }
