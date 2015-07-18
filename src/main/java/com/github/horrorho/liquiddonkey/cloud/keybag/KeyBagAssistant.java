@@ -26,42 +26,60 @@ package com.github.horrorho.liquiddonkey.cloud.keybag;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.crypto.AESWrap;
 import com.github.horrorho.liquiddonkey.crypto.PBKDF2;
-import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.data.TagValue;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.util.HashMap;
 import java.util.Map;
-import net.jcip.annotations.NotThreadSafe;
+import java.util.stream.Collectors;
+import net.jcip.annotations.ThreadSafe;
 import org.bouncycastle.crypto.InvalidCipherTextException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * KeyBag factory.
+ * KeyBagAssistant.
  *
  * @author Ahseya
  */
-@NotThreadSafe
-public class KeyBagFactory {
+@ThreadSafe
+public final class KeyBagAssistant {
 
-    private static final Logger logger = LoggerFactory.getLogger(KeyBagFactory.class);
+    public static KeyBagAssistant from(ICloud.MBSKeySet keySet) throws BadDataException {
+        logger.trace("<< unlock()");
+
+        KeyBagAssistant keyBagAssistant = new KeyBagAssistant(keySet, new HashMap<>(), new HashMap<>()).unlock();
+
+        logger.trace(">> unlock()");
+        return keyBagAssistant;
+    }
+
+    private static final Logger logger = LoggerFactory.getLogger(KeyBagAssistant.class);
 
     private static final int WRAP_DEVICE = 1;
     private static final int WRAP_PASSCODE = 2;
 
-    private final Map<Integer, Map<String, ByteString>> classKeys = new HashMap<>();
-    private final Map<String, ByteString> attributes = new HashMap<>();
+    private final ICloud.MBSKeySet keySet;
+    private final Map<Integer, Map<String, ByteString>> classKeys;
+    private final Map<String, ByteString> attributes;
     private ByteString salt;
     private ByteString uuid;
     private KeyBagType type;
     private int iterations;
 
-    KeyBagFactory() {
+    public KeyBagAssistant(
+            ICloud.MBSKeySet keySet,
+            Map<Integer, Map<String, ByteString>> classKeys,
+            Map<String, ByteString> attributes) {
+
+        this.keySet = keySet;
+        this.classKeys = classKeys;
+        this.attributes = attributes;
     }
 
-    KeyBag unlock(ICloud.MBSKeySet keySet) throws BadDataException {
-        parse(keySet);
+    KeyBagAssistant unlock() throws BadDataException {
+        parseKeySet();
 
         iterations = Bytes.integer32(attribute("ITER"));
         salt = attribute("SALT");
@@ -69,11 +87,10 @@ public class KeyBagFactory {
         type = KeyBagType.from(Bytes.integer32(attribute("TYPE")));
 
         unlock(keySet.getKey(0).getKeyData());
-
-        return new KeyBag(classKeys, attributes, uuid, type);
+        return this;
     }
 
-    void parse(ICloud.MBSKeySet keySet) throws BadDataException {
+    void parseKeySet() throws BadDataException {
         if (keySet.getKeyCount() < 2) {
             throw new BadDataException("Bad keybag.");
         }
@@ -100,6 +117,7 @@ public class KeyBagFactory {
 
     void unlock(ByteString passCode) throws BadDataException {
         logger.trace("-- unlock() < {}", Bytes.hex(passCode));
+
         if (type != KeyBagType.BACKUP && type != KeyBagType.OTA) {
             throw new BadDataException("Not a backup keybag");
         }
@@ -141,5 +159,22 @@ public class KeyBagFactory {
             throw new BadDataException("-- attribute() - attribute missing: " + tag);
         }
         return attributes.get(tag);
+    }
+
+    public ByteString uuid() {
+        return uuid;
+    }
+
+    public KeyBagType type() {
+        return type;
+    }
+
+    public Map<Integer, Map<String, ByteString>> copyClassKeys() {
+        return classKeys.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> new HashMap<>(entry.getValue())));
+    }
+
+    public Map<String, ByteString> copyAttributes() {
+        return new HashMap<>(attributes);
     }
 }
