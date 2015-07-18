@@ -66,7 +66,7 @@ public class Selector<T> {
     private final String footer;
     private final Supplier<List<T>> onLineIsEmpty;
     private final Supplier<List<T>> onQuit;
-    private final PrintStream output;
+    private final String delimiter;
 
     Selector(
             String prompt,
@@ -77,7 +77,7 @@ public class Selector<T> {
             String footer,
             Supplier<List<T>> onLineIsEmpty,
             Supplier<List<T>> onQuit,
-            PrintStream output) {
+            String delimiter) {
 
         this.prompt = prompt;
         this.quit = quit;
@@ -87,47 +87,60 @@ public class Selector<T> {
         this.footer = footer;
         this.onLineIsEmpty = onLineIsEmpty;
         this.onQuit = onQuit;
-        this.output = Objects.requireNonNull(output);
+        this.delimiter = Objects.requireNonNull(delimiter);
     }
 
     /**
-     * Prints options.
-     *
+     * @see Selector#printOptions(java.io.PrintStream)
      * @return this Selector, not null
      */
     public Selector printOptions() {
+        return printOptions(System.out);
+    }
+
+    /**
+     * Prints options. First option is 1.
+     *
+     * @param output, not null
+     * @return this Selector, not null
+     */
+    public Selector printOptions(PrintStream output) {
         if (header != null) {
-            System.out.println(header);
+            output.println(header);
         }
         for (int i = 0; i < options.size(); i++) {
-            System.out.println(i + ":" + formatter.apply(options.get(i)));
+            output.println((i + 1) + ":" + formatter.apply(options.get(i)));
         }
         if (footer != null) {
-            System.out.println(footer);
+            output.println(footer);
         }
         return this;
     }
 
     /**
-     *
-     * @see Selector#selection(java.io.InputStream)
-     *
+     * @see Selector#selection(java.io.InputStream, java.io.PrintStream)
      * @return the user's selection
      */
     public List<T> selection() {
-        return selection(System.in);
+        return selection(System.in, System.out);
     }
 
     /**
-     * Prompts, acquires, validates and returns the user's selection/s with the ordering preserved.
+     * Returns the user's selection.
+     * <p>
+     * Prompts, acquires, validates and returns the user's selection/s with the ordering preserved. Duplicates are
+     * ignored.
+     * <p>
+     * Streams are not closed after use.
      *
      * @param source, not null
-     * @return the user's selection/s, not null
+     * @param output, not null
+     * @return the user's selection, not null
      */
-    public List<T> selection(InputStream source) {
+    public List<T> selection(InputStream source, PrintStream output) {
         Scanner console = new Scanner(source, StandardCharsets.UTF_8.name());
         while (true) {
-            System.out.print(prompt);
+            output.print(prompt);
             String line = console.nextLine();
             if (line == null || line.toLowerCase(Locale.getDefault()).equals(quit)) {
                 return onQuit.get();
@@ -137,34 +150,35 @@ public class Selector<T> {
                 return onLineIsEmpty.get();
             }
 
-            Set<Integer> numbers = parseLineToNumbers(line);
-            if (numbers != null && validate(numbers, options)) {
+            Set<Integer> numbers = parseLineToNumbers(output, line);
+            if (numbers != null && validate(output, numbers, options)) {
                 return numbers.stream()
+                        .map(i -> i - 1)
                         .map(options::get)
                         .collect(Collectors.toList());
             }
         }
     }
 
-    boolean validate(Set<Integer> selected, List<T> options) {
+    boolean validate(PrintStream output, Set<Integer> selected, List<T> options) {
         for (Integer i : selected) {
-            if (i < 0 || i >= options.size()) {
-                System.out.println("Invalid selection: " + i);
+            if (i < 1 || i > options.size()) {
+                output.println("Invalid selection: " + i);
                 return false;
             }
         }
         return true;
     }
 
-    Set<Integer> parseLineToNumbers(String line) {
-        Scanner tokens = new Scanner(line).useDelimiter("[,\\s]+");
+    Set<Integer> parseLineToNumbers(PrintStream output, String line) {
+        Scanner tokens = new Scanner(line).useDelimiter(delimiter);
         // LinkedHashSet to preserve the input order and avoid duplicates
         Set<Integer> numbers = new LinkedHashSet<>();
         while (tokens.hasNext()) {
             if (tokens.hasNextInt()) {
                 numbers.add(tokens.nextInt());
             } else {
-                System.out.println("Bad number: " + tokens.next());
+                output.println("Bad number: " + tokens.next());
                 return null;
             }
         }
@@ -177,11 +191,11 @@ public class Selector<T> {
         private String quit = "q";
         private String prompt = ": ";
         private String header = null;
+        private String delimiter = "[,\\s]+";
         private Function<T, String> formatter = Object::toString;
         private String footer = null;
         private Supplier<List<T>> onLineIsEmpty = ArrayList::new;
         private Supplier<List<T>> onQuit = ArrayList::new;
-        private PrintStream output = System.out;
 
         /**
          * Selector Builder.
@@ -207,6 +221,11 @@ public class Selector<T> {
             return this;
         }
 
+        public Builder<T> delimiter(String delimiter) {
+            this.delimiter = delimiter;
+            return this;
+        }
+
         public Builder<T> formatter(Function<T, String> formatter) {
             this.formatter = formatter;
             return this;
@@ -227,13 +246,8 @@ public class Selector<T> {
             return this;
         }
 
-        public Builder<T> output(PrintStream output) {
-            this.output = output;
-            return this;
-        }
-
         public Selector<T> build() {
-            return new Selector<>(prompt, quit, header, options, formatter, footer, onLineIsEmpty, onQuit, output);
+            return new Selector<>(prompt, quit, header, options, formatter, footer, onLineIsEmpty, onQuit, delimiter);
         }
     }
 }
