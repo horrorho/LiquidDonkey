@@ -107,7 +107,7 @@ public final class KeyBag {
             ByteString uuid,
             KeyBagType type) {
 
-        this(classKeys, attributes, uuid, type, AESWrap::newInstance, SHA256Digest::new);
+        this(classKeys, attributes, uuid, type, AESWrap::create, SHA256Digest::new);
     }
 
     /**
@@ -181,7 +181,7 @@ public final class KeyBag {
         }
 
         byte[] otherPublicKey = key.substring(0, 32).toByteArray();
-        byte[] shared = Curve25519.getInstance().agreement(otherPublicKey, myPrivateKey);
+        byte[] shared = Curve25519.create().agreement(otherPublicKey, myPrivateKey);
         byte[] pad = new byte[]{0x00, 0x00, 0x00, 0x01};
         byte[] hash = new byte[sha256.getDigestSize()];
 

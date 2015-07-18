@@ -122,14 +122,14 @@ public final class KeyBagAssistant {
             throw new BadDataException("Not a backup keybag");
         }
 
-        byte[] passCodeKey = PBKDF2.newInstance().generate(
+        byte[] passCodeKey = PBKDF2.create().generate(
                 passCode.toByteArray(),
                 salt.toByteArray(),
                 iterations,
                 32);
         logger.debug("-- unlock() > passCodeKey: {}", Bytes.hex(passCodeKey));
 
-        AESWrap aesWrap = AESWrap.newInstance();
+        AESWrap aesWrap = AESWrap.create();
 
         for (Map.Entry<Integer, Map<String, ByteString>> entrySet : classKeys.entrySet()) {
             Map<String, ByteString> keys = entrySet.getValue();
