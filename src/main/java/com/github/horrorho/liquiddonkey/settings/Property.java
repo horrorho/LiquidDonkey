@@ -93,7 +93,7 @@ public enum Property {
     PROJECT_VERSION("N/A"),
     PROPERTIES_GUI_PATH("gui.properties"),
     PROPERTIES_JAR("/liquiddonkey.properties"),
-    SELECTION_SNAPSHOT("-2 -1 1"),
+    SELECTION_SNAPSHOT("-1 -2 0"),
     SELECTION_UDID(null);
 
     public static DateTimeFormatter commandLineInputDateTimeFormatter() {
