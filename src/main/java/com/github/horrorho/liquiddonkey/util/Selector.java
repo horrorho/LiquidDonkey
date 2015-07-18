@@ -47,11 +47,11 @@ import net.jcip.annotations.NotThreadSafe;
 public class Selector<T> {
 
     /**
-     * Selector builder.
+     * Returns a new Builder instance.
      *
      * @param <T> the item type
      * @param options the available options, not null and no null elements
-     * @return a Selector builder
+     * @return a new Builder instance, not null
      */
     public static <T> Selector.Builder<T> builder(List<T> options) {
         return new Builder(options);
@@ -87,9 +87,9 @@ public class Selector<T> {
     }
 
     /**
-     * Print options.
+     * Prints options.
      *
-     * @return this Selector
+     * @return this Selector, not null
      */
     public Selector printOptions() {
         if (header != null) {
@@ -105,7 +105,6 @@ public class Selector<T> {
     }
 
     /**
-     * User selection. Defaults to {@link System#in} input.
      *
      * @see Selector#selection(java.io.InputStream)
      *
@@ -116,15 +115,12 @@ public class Selector<T> {
     }
 
     /**
-     * User selection.
+     * Prompts, acquires, validates and returns the user's selection/s with the ordering preserved.
      *
-     * Prompt, acquire, validate and return the user's selection.
-     *
-     * @param source the source
-     * @return the user's selection
+     * @param source, not null
+     * @return the user's selection/s, not null
      */
     public List<T> selection(InputStream source) {
-
         Scanner console = new Scanner(source, StandardCharsets.UTF_8.name());
         while (true) {
             System.out.print(prompt);
@@ -147,7 +143,6 @@ public class Selector<T> {
     }
 
     boolean validate(Set<Integer> selected, List<T> options) {
-
         for (Integer i : selected) {
             if (i < 0 || i >= options.size()) {
                 System.out.println("Invalid selection: " + i);
@@ -158,7 +153,6 @@ public class Selector<T> {
     }
 
     Set<Integer> parseLineToNumbers(String line) {
-
         Scanner tokens = new Scanner(line).useDelimiter("[,\\s]+");
         // LinkedHashSet to preserve the input order and avoid duplicates
         Set<Integer> numbers = new LinkedHashSet<>();
@@ -193,88 +187,41 @@ public class Selector<T> {
             this.options = options;
         }
 
-        /**
-         * Set the prompt.
-         *
-         * @param prompt the prompt
-         * @return this builder
-         */
         public Builder<T> prompt(String prompt) {
             this.prompt = prompt;
             return this;
         }
 
-        /**
-         * Set the quit string.
-         *
-         * @param quit the quit String
-         * @return this builder
-         */
         public Builder<T> quit(String quit) {
             this.quit = quit;
             return this;
         }
 
-        /**
-         * Add a selection header.
-         *
-         * @param header the selection header
-         * @return this builder
-         */
         public Builder<T> header(String header) {
             this.header = header;
             return this;
         }
 
-        /**
-         * Add an item formatter.
-         *
-         * @param formatter the item formatter
-         * @return this builder
-         */
         public Builder<T> formatter(Function<T, String> formatter) {
             this.formatter = formatter;
             return this;
         }
 
-        /**
-         * Add a selection footer.
-         *
-         * @param footer the selection footer
-         * @return this builder
-         */
         public Builder<T> footer(String footer) {
             this.footer = footer;
             return this;
         }
 
-        /**
-         * Add a default selection list.
-         *
-         * @param onLineIsEmpty the default selection list
-         * @return this builder
-         */
         public Builder<T> onLineIsEmpty(Supplier<List<T>> onLineIsEmpty) {
             this.onLineIsEmpty = onLineIsEmpty;
             return this;
         }
 
-        /**
-         * Add a quit selection list.
-         *
-         * @param onQuit the quit selection list
-         * @return this builder
-         */
         public Builder<T> onQuit(Supplier<List<T>> onQuit) {
             this.onQuit = onQuit;
             return this;
         }
 
-        /**
-         * Build Selector.
-         *
-         * @return the built Selector
-         */
         public Selector<T> build() {
             return new Selector<>(prompt, quit, header, options, formatter, footer, onLineIsEmpty, onQuit);
         }
