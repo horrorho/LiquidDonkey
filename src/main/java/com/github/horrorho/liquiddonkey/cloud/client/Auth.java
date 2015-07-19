@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Auth.
  * <p>
- * Authorization data.
+ * Authorization data/ headers.
  *
  * @author Ahseya
  */
@@ -45,10 +45,10 @@ import org.slf4j.LoggerFactory;
 public final class Auth {
 
     public static Auth from(String dsPrsId, String mmeAuthToken) {
-        return of(dsPrsId, mmeAuthToken, Instant.now());
+        return from(dsPrsId, mmeAuthToken, Instant.now());
     }
 
-    public static Auth of(String dsPrsId, String mmeAuthToken, Instant timestamp) {
+    public static Auth from(String dsPrsId, String mmeAuthToken, Instant timestamp) {
         logger.trace("<< of() < dsPrsId: {} mmeAuthToken: {} timestamp: {}", dsPrsId, mmeAuthToken, timestamp);
 
         String authMme = Tokens.create().mobilemeAuthToken(dsPrsId, mmeAuthToken);
