@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 /**
- * Dictionary property list.
+ * SimplePropertyList. Lightweight handling of (nested) dictionaries.
  *
  * @author ahseya
  */
