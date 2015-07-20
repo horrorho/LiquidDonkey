@@ -23,8 +23,9 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.donkey;
 
-import com.github.horrorho.liquiddonkey.cloud.client.Client;
+import com.github.horrorho.liquiddonkey.cloud.clients.ChunksClient;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.util.pool.Release;
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -47,11 +48,13 @@ public final class FetchDonkey extends Donkey {
 
     private static final Logger log = LoggerFactory.getLogger(FetchDonkey.class);
 
-    private final Client client;
+    private final Http http;
+    private final ChunksClient chunks;
     private final BiFunction<FetchDonkey, byte[], WriterDonkey> writerDonkeys;
 
     FetchDonkey(
-            Client client,
+            Http http,
+            ChunksClient chunks,
             BiFunction<FetchDonkey, byte[], WriterDonkey> writerDonkeys,
             ChunkServer.StorageHostChunkList chunkList,
             List<Exception> exceptions,
@@ -60,7 +63,8 @@ public final class FetchDonkey extends Donkey {
 
         super(chunkList, exceptions, retryCount, fatal);
 
-        this.client = Objects.requireNonNull(client);
+        this.http = Objects.requireNonNull(http);
+        this.chunks = Objects.requireNonNull(chunks);
         this.writerDonkeys = Objects.requireNonNull(writerDonkeys);
     }
 
@@ -70,11 +74,11 @@ public final class FetchDonkey extends Donkey {
 
         Release<Track, Donkey> toDo;
         try {
-            byte[] data = client.chunks(chunkList);
+            byte[] data = chunks.get(http, chunkList);
             toDo = Release.requeue(Track.DECODE_WRITE, writerDonkeys.apply(this, data));
         } catch (UnknownHostException ex) {
             log.warn("-- toProcess() > exception: ", ex);
-            
+
             toDo = isExceptionLimit(ex)
                     ? Release.dispose()
                     : Release.requeue(this);
