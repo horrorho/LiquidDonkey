@@ -54,7 +54,7 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
     public static SnapshotDirectory from(Snapshot snapshot, FileConfig config) {
         return SnapshotDirectory.from(
                 config.base(),
-                snapshot.backup().udidString(),
+                snapshot.udid(),
                 Integer.toString(snapshot.id()),
                 config.isFlat(),
                 config.isCombined());
