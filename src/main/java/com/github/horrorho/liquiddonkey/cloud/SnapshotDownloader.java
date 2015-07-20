@@ -23,14 +23,16 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.client.Client;
+import com.github.horrorho.liquiddonkey.cloud.clients.FileGroupsClient;
 import com.github.horrorho.liquiddonkey.cloud.donkey.Donkey;
 import com.github.horrorho.liquiddonkey.cloud.donkey.DonkeyFactory;
 import com.github.horrorho.liquiddonkey.cloud.donkey.Track;
 import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.github.horrorho.liquiddonkey.util.pool.WorkPools;
@@ -69,13 +71,20 @@ public class SnapshotDownloader {
         this.printer = printer;
     }
 
-    void download(Client client, Snapshot snapshot) throws BadDataException, IOException, InterruptedException {
+    void download(Http http, Snapshot snapshot) throws BadDataException, IOException, InterruptedException {
         // TODO empty list
-        ChunkServer.FileGroups fileGroups = fetchFileGroups(client, snapshot);
+
+        Backup backup = snapshot.backup();
+        FileGroupsClient client = FileGroupsClient.create(
+                backup.account().authenticator(), backup.udidString(),
+                backup.account().settings().mobileBackupUrl(),
+                backup.account().settings().contentUrl());
+
+        ChunkServer.FileGroups fileGroups = client.fileGroups(http, snapshot.id(), snapshot.files());
 
         SignatureWriter writer = SignatureWriter.from(snapshot, fileConfig);
         StoreManager manager = StoreManager.from(fileGroups);
-        DonkeyFactory factory = DonkeyFactory.from(client, printer, writer, manager, retryCount);
+        DonkeyFactory factory = DonkeyFactory.from(http, printer, writer, manager, retryCount);
 
         Map<Track, List<Donkey>> donkies = manager.chunkListList().stream().map(factory::fetchDonkey)
                 .collect(Collectors.groupingBy(list -> Track.FETCH));
@@ -109,15 +118,22 @@ public class SnapshotDownloader {
         logger.trace(">> download()");
     }
 
-    ChunkServer.FileGroups fetchFileGroups(Client client, Snapshot snapshot) throws BadDataException, IOException {
+    ChunkServer.FileGroups fetchFileGroups(Http http, Snapshot snapshot)
+            throws AuthenticationException, BadDataException, InterruptedException, IOException {
 
         logger.trace("<< fetchFileGroups() < snapshot: {}", snapshot.id());
 
         int count = retryCount;
         while (true) {
             try {
-                ChunkServer.FileGroups fileGroups
-                        = client.fileGroups(snapshot.backup().udid(), snapshot.id(), snapshot.files());
+                Backup backup = snapshot.backup();
+                FileGroupsClient client = FileGroupsClient.create(
+                        backup.account().authenticator(),
+                        backup.udidString(),
+                        backup.account().settings().mobileBackupUrl(),
+                        backup.account().settings().contentUrl());
+
+                ChunkServer.FileGroups fileGroups = client.fileGroups(http, snapshot.id(), snapshot.files());
 
                 logger.info("-- fetchFileGroups() > fileChunkErrorList: {}", fileGroups.getFileChunkErrorList());
                 logger.info("-- fetchFileGroups() > fileErrorList: {}", fileGroups.getFileErrorList());

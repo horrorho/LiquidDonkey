@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
@@ -32,6 +33,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
@@ -44,21 +46,26 @@ import org.slf4j.LoggerFactory;
  * @author Ahseya
  */
 @ThreadSafe
-public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
+public abstract class BackupSelector implements UnaryOperator<List<ICloud.MBSBackup>> {
 
     /**
      * Returns a new instance.
      * <p>
-     * The newInstance UDIDs will be fully or partially matched against the supplied UDIDs, case-insensitive. If the
-     * supplied UDIDs list is empty, the user will be prompted for a selection.
+     * The from UDIDs will be fully or partially matched against the supplied UDIDs, case-insensitive. If the supplied
+     * UDIDs list is empty, the user will be prompted for a selection.
      *
      * @param commandLineUdids the command line UDID/s, not null
+     * @param formatter ICloud.MBSBackup user display formatter, not null
      * @param printer the Printer, not null
      * @return a new instance, not null
      */
-    public static UnaryOperator<List<Backup>> newInstance(Collection<String> commandLineUdids, Printer printer) {
+    public static UnaryOperator<List<ICloud.MBSBackup>> from(
+            Collection<String> commandLineUdids,
+            Function<ICloud.MBSBackup, String> formatter,
+            Printer printer) {
+
         return commandLineUdids.isEmpty()
-                ? new User(printer)
+                ? new User(printer, formatter)
                 : new Udid(printer, new ArrayList<>(commandLineUdids));
     }
 
@@ -71,7 +78,7 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
     }
 
     @Override
-    public List<Backup> apply(List<Backup> available) {
+    public List<ICloud.MBSBackup> apply(List<ICloud.MBSBackup> available) {
         logger.trace("<< apply < available: {}", udids(available));
 
         if (available.isEmpty()) {
@@ -79,11 +86,11 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
             return new ArrayList<>();
         }
 
-        List<Backup> selected = doApply(available);
+        List<ICloud.MBSBackup> selected = doApply(available);
         String selectedStr = selected.isEmpty()
                 ? "None"
                 : selected.stream()
-                .map(Backup::udid)
+                .map(ICloud.MBSBackup::getBackupUDID)
                 .map(Bytes::hex)
                 .collect(Collectors.joining(" "));
 
@@ -93,13 +100,13 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
         return selected;
     }
 
-    List<String> udids(List<Backup> backups) {
+    List<String> udids(List<ICloud.MBSBackup> backups) {
         return backups == null
                 ? null
-                : backups.stream().map(Backup::udidString).collect(Collectors.toList());
+                : backups.stream().map(ICloud.MBSBackup::getBackupUDID).map(Bytes::hex).collect(Collectors.toList());
     }
 
-    protected abstract List<Backup> doApply(List<Backup> backups);
+    protected abstract List<ICloud.MBSBackup> doApply(List<ICloud.MBSBackup> backups);
 
     static final class Udid extends BackupSelector {
 
@@ -111,28 +118,31 @@ public abstract class BackupSelector implements UnaryOperator<List<Backup>> {
         }
 
         @Override
-        protected List<Backup> doApply(List<Backup> availableBackups) {
+        protected List<ICloud.MBSBackup> doApply(List<ICloud.MBSBackup> availableBackups) {
             return availableBackups.stream().filter(this::matches).collect(Collectors.toList());
         }
 
-        boolean matches(Backup backup) {
+        boolean matches(ICloud.MBSBackup backup) {
             return commandLineUdids.stream()
-                    .anyMatch(udid -> backup.udidString().toLowerCase(Locale.US).contains(udid));
+                    .anyMatch(udid -> Bytes.hex(backup.getBackupUDID()).toLowerCase(Locale.US).contains(udid));
         }
     }
 
     static final class User extends BackupSelector {
 
-        User(Printer printer) {
+        private final Function<ICloud.MBSBackup, String> formatter;
+
+        User(Printer printer, Function<ICloud.MBSBackup, String> formatter) {
             super(printer);
+            this.formatter = formatter;
         }
 
         @Override
-        protected List<Backup> doApply(List<Backup> availableBackups) {
+        protected List<ICloud.MBSBackup> doApply(List<ICloud.MBSBackup> availableBackups) {
             return Selector.builder(availableBackups)
                     .header("Listed backups:\n")
                     .footer("Select backup/s to download (leave blank to select all, q to quit):")
-                    .formatter(Backup::format)
+                    .formatter(backup -> formatter.apply(backup))
                     .onLineIsEmpty(() -> availableBackups)
                     .onQuit(ArrayList::new)
                     .build()

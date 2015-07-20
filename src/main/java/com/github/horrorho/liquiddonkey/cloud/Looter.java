@@ -23,13 +23,9 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.client.Auth;
-import com.github.horrorho.liquiddonkey.cloud.client.Authenticator;
-import com.github.horrorho.liquiddonkey.cloud.client.Client;
-import com.github.horrorho.liquiddonkey.cloud.client.Settings;
+import com.github.horrorho.liquiddonkey.cloud.clients.Authenticator;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
-import com.github.horrorho.liquiddonkey.cloud.file.Mode;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
@@ -39,15 +35,15 @@ import com.github.horrorho.liquiddonkey.iofunction.IOPredicate;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
-import com.google.protobuf.ByteString;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,38 +94,43 @@ public class Looter implements Closeable {
         // TODO reauthentication
 
         Authenticator authenticator = Authenticator.from(config.authentication());
-        Auth auth = authenticator.auth(http);
-        Settings settings = Settings.from(http, auth);
-        Client client = Client.from(auth, settings, http, config.client());
 
         if (config.engine().toDumpToken()) {
-            printer.println(Level.V, "Authorization token: " + auth.token());
+            printer.println(Level.V, "Authorization token: " + authenticator.token(http));
             return;
         }
 
-        Account account = Account.of(client);
+        Account account = Account.from(http, authenticator);
+        List<Backup> backups = Backup.from(http, account);
 
-        UnaryOperator<List<Backup>> backupSelector = BackupSelector.newInstance(config.selection().udids(), printer);
+        UnaryOperator<List<ICloud.MBSBackup>> backupSelector
+                = BackupSelector.from(config.selection().udids(), BackupFormatter.create(), printer);
 
-        List<Backup> backups = new ArrayList<>();
-        for (ByteString udid : account.list()) {
-            backups.add(Backup.from(client, account, udid));
-        }
+        // TODO rework for when udid know, also command to dump info only
+        Map<ICloud.MBSBackup, Backup> udidToBackup
+                = backups.stream().collect(Collectors.toMap(Backup::backup, Function.identity()));
 
-        for (Backup backup : backupSelector.apply(backups)) {
-            backup(http, client, backup);
+        List<ICloud.MBSBackup> filtered = backupSelector.apply(backups.stream().map(Backup::backup).collect(Collectors.toList()));
+
+        for (ICloud.MBSBackup b : filtered) {
+            Backup bb = udidToBackup.get(b);
+
+            backup(http, bb);
         }
 
         logger.trace(">> loot()");
     }
 
-    void backup(Http http, Client client, Backup backup) throws AuthenticationException, IOException, InterruptedException {
+    void backup(Http http, Backup backup) throws AuthenticationException, BadDataException, IOException, InterruptedException {
 
         logger.info("-- backup() > snapshots: {}", backup.snapshots());
         for (int id : config.selection().snapshots()) {
 
+            // TODO resolve ids
+            // TODO use set, important, don't duplicate downloads. preserve order
             logger.info("-- backup() > id");
-            Snapshot snapshot = Snapshot.from(client, backup, id); // TODO important, use a link set, don't repeated downloads
+
+            Snapshot snapshot = Snapshot.from(http, backup, id, config.client().listLimit());
 
             if (snapshot == null) {
                 logger.warn("-- backup() > snapshot not found: {}", id);
@@ -178,10 +179,10 @@ public class Looter implements Closeable {
 
                 SnapshotDownloader downloader = new SnapshotDownloader(config.file(), printer);
 
-                downloader.download(client, decryptable);
+                downloader.download(http, decryptable);
 
 //            try {
-//                ChunkServer.FileGroups fetchFileGroups = client.fetchFileGroups(http, backup.udid(), id, filtered.files());
+//                ChunkServer.FileGroups fetchFileGroups = client.fetchFileGroups(http, backup.udidString(), id, filtered.files());
 //                logger.debug("-- back() > fileChunkErrorList: {}", fetchFileGroups.getFileChunkErrorList());
 //                logger.debug("-- back() > fileErrorList: {}", fetchFileGroups.getFileErrorList());
 //

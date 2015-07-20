@@ -23,146 +23,84 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.client.Client;
+import com.github.horrorho.liquiddonkey.cloud.clients.BackupClient;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Backup.
- * <p>
- * Describes {@link com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSBackup}.
  *
  * @author Ahseya
  */
-@Immutable
 @ThreadSafe
 public final class Backup {
 
-    private static final String NA = "N/A";
-    private static final String INDENT = "\t";
-    private static final DateTimeFormatter defaultDateTimeFormatter = DateTimeFormatter.RFC_1123_DATE_TIME;
+    public static List<Backup> from(Http http, Account account)
+            throws AuthenticationException, BadDataException, InterruptedException, IOException {
 
-    /**
-     * Queries the Client and returns a new instance.
-     *
-     * @param client not null
-     * @param account not null
-     * @param udid not null
-     * @return a new instance, may be null
-     * @throws IOException
-     */
-    public static Backup from(Client client, Account account, ByteString udid) throws IOException {
-        Backup instance;
-        try {
-            logger.trace("<< from() < udid: {}", Bytes.hex(udid));
-
-            ICloud.MBSBackup backup = client.backup(udid);
-            ICloud.MBSKeySet keySet = client.keys(udid);
-            KeyBagManager keyBagManager = KeyBagManager.from(keySet);
-
-            instance = Backup.from(account, backup, keyBagManager);
-
-        } catch (HttpResponseException ex) {
-            if (ex.getStatusCode() == 401) {
-                throw ex;
-            }
-            logger.warn("-- from() > exception: ", ex);
-            instance = null;
-        } catch (BadDataException ex) {
-            logger.warn("-- from() > exception: ", ex);
-            instance = null;
+        List<Backup> backups = new ArrayList<>();
+        for (ByteString udid : account.backupUdids()) {
+            backups.add(Backup.from(http, account, udid));
         }
 
-        logger.trace(">> from() > {}", instance);
+        return backups;
+    }
+
+    /**
+     * Queries the server and returns a new Backup instance.
+     *
+     * @param http, not null
+     * @param account, not null
+     * @param backupUdid, not null
+     * @return a new Backup instance, not null
+     * @throws AuthenticationException
+     * @throws BadDataException
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    public static Backup from(Http http, Account account, ByteString backupUdid)
+            throws AuthenticationException, BadDataException, InterruptedException, IOException {
+
+        logger.trace("<< from() < account: {} backup: {}", account.settings().appleId(), backupUdid);
+
+        BackupClient backups = BackupClient.create(account.authenticator(), account.settings().mobileBackupUrl());
+
+        ICloud.MBSBackup mbsBackup = backups.backup(http, backupUdid);
+        ICloud.MBSKeySet mbsKeySet = backups.keySet(http, backupUdid);
+
+        Backup instance = from(account, mbsBackup, mbsKeySet);
+
+        logger.trace(">> from() > udid: {}", instance);
         return instance;
     }
 
-    public static Backup from(
-            Account account,
-            ICloud.MBSBackup backup,
-            KeyBagManager keyBagManager) {
+    static Backup from(Account account, ICloud.MBSBackup backup, ICloud.MBSKeySet mbsKeySet)
+            throws BadDataException {
 
-        String size = Bytes.humanize(backup.getQuotaUsed());
+        KeyBagManager keyBagManager = KeyBagManager.from(mbsKeySet);
 
-        String hardwareModel;
-        String marketingName;
-        String serialNumber;
-
-        if (backup.hasAttributes()) {
-            ICloud.MBSBackupAttributes attributes = backup.getAttributes();
-            hardwareModel = attributes.getHardwareModel();
-            marketingName = attributes.getMarketingName();
-            serialNumber = attributes.getSerialNumber();
-        } else {
-            hardwareModel = NA;
-            marketingName = NA;
-            serialNumber = NA;
-        }
-
-        List<ICloud.MBSSnapshot> snapshots = backup.getSnapshotList().stream()
-                .filter(s -> {
-                    if (s.getQuotaReserved() == 0) {
-                        logger.warn("-- from() > incomplete snapshot: {}", s);
-                        return false;
-                    }
-                    return true;
-                }).sorted(Comparator.comparingLong(ICloud.MBSSnapshot::getSnapshotID))
-                .collect(Collectors.toList());
-
-        // Last modified snapshot and highest id snapshot may be different.
-        long lastModified = backup.getSnapshotList().stream()
-                .mapToLong(ICloud.MBSSnapshot::getLastModified)
-                .max().orElse(0);
-
-        ICloud.MBSSnapshot latest = snapshots.isEmpty()
-                ? null
-                : snapshots.get(snapshots.size() - 1);
-
-        String deviceName;
-        String productVerson;
-        if (latest == null) {
-            deviceName = NA;
-            productVerson = NA;
-        } else {
-            deviceName = latest.getAttributes().getDeviceName();
-            productVerson = latest.getAttributes().getProductVersion();
-        }
+        List<ICloud.MBSSnapshot> snapshots = new ArrayList<>(backup.getSnapshotList());
+        Collections.sort(snapshots, Comparator.comparingLong(ICloud.MBSSnapshot::getSnapshotID));
 
         return new Backup(
                 account,
                 backup,
                 snapshots,
-                size,
-                hardwareModel,
-                marketingName,
-                serialNumber,
-                deviceName,
-                productVerson,
-                Bytes.hex(backup.getBackupUDID()),
-                keyBagManager,
-                snapshots.isEmpty() ? -1 : snapshots.get(0).getSnapshotID(),
-                snapshots.isEmpty() ? -1 : snapshots.get(snapshots.size() - 1).getSnapshotID(),
-                lastModified);
+                keyBagManager);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Backup.class);
@@ -170,160 +108,71 @@ public final class Backup {
     private final Account account;
     private final ICloud.MBSBackup backup;
     private final List<ICloud.MBSSnapshot> snapshots;
-    private final String size;
-    private final String hardwareModel;
-    private final String marketingName;
-    private final String serialNumber;
-    private final String deviceName;
-    private final String productVerson;
-    private final String udid;
     private final KeyBagManager keyBagManager;
-    private final int firstSnapshotId;
-    private final int lastSnapshotId;
-    private final long lastModified;
 
     Backup(
             Account account,
             ICloud.MBSBackup backup,
             List<ICloud.MBSSnapshot> snapshots,
-            String size,
-            String hardwareModel,
-            String marketingName,
-            String serialNumber,
-            String deviceName,
-            String productVerson,
-            String udid,
-            KeyBagManager keyBagManager,
-            int firstSnapshotId,
-            int lastSnapshotId,
-            long lastModified) {
+            KeyBagManager keyBagManager) {
 
         this.account = Objects.requireNonNull(account);
         this.backup = Objects.requireNonNull(backup);
-        this.snapshots = new ArrayList<>(snapshots);
-        this.size = size;
-        this.hardwareModel = hardwareModel;
-        this.marketingName = marketingName;
-        this.serialNumber = serialNumber;
-        this.deviceName = deviceName;
-        this.productVerson = productVerson;
-        this.udid = udid;
+        this.snapshots = Objects.requireNonNull(snapshots);
         this.keyBagManager = Objects.requireNonNull(keyBagManager);
-        this.lastModified = lastModified;
-        this.firstSnapshotId = firstSnapshotId;
-        this.lastSnapshotId = lastSnapshotId;
     }
 
-    public List<ICloud.MBSSnapshot> snapshots() {
-        return new ArrayList<>(snapshots);
+    /**
+     * Returns the Account.
+     *
+     * @return the dsPrsId, not null
+     */
+    public Account account() {
+        return account;
     }
 
+    /**
+     * Returns ICloud.MBSBackup.
+     *
+     * @return ICloud.MBSBackup, not null
+     */
     public ICloud.MBSBackup backup() {
         return backup;
     }
 
-    public int firstSnapshotId() {
-        return firstSnapshotId;
-    }
-
-    public int lastSnapshotId() {
-        return lastSnapshotId;
-    }
-
-    public ByteString udid() {
-        return backup.getBackupUDID();
-    }
-
-    public String udidString() {
-        return udid;
-    }
-
-    public String format() {
-        return format(defaultDateTimeFormatter);
-    }
-
-    public String format(DateTimeFormatter dateTimeFormatter) {
-        StringWriter stringWriter = new StringWriter();
-        PrintWriter print = new PrintWriter(stringWriter);
-
-        if (dateTimeFormatter.getLocale() == null) {
-            dateTimeFormatter = dateTimeFormatter.withLocale(Locale.getDefault());
-        }
-
-        if (dateTimeFormatter.getZone() == null) {
-            dateTimeFormatter = dateTimeFormatter.withZone(ZoneId.systemDefault());
-        }
-
-        String lastModifiedStr = dateTimeFormatter.format(Instant.ofEpochSecond(lastModified));
-
-        String snapshotsString = snapshots.isEmpty()
-                ? "none or incomplete"
-                : snapshots.stream().map(ICloud.MBSSnapshot::getSnapshotID).map(Object::toString)
-                .collect(Collectors.joining(" "));
-
-        print.println(INDENT + "Name:\t" + deviceName);
-        print.println(INDENT + "Device:\t" + marketingName + " " + hardwareModel);
-        print.println(INDENT + "SN:\t" + serialNumber);
-        print.println(INDENT + "UDID:\t" + udidString());
-        print.println(INDENT + "iOS:\t" + productVerson);
-        print.println(INDENT + "Size:\t" + size + " (Snapshot/s: " + snapshotsString + ")");
-        print.println(INDENT + "Last:\t" + lastModifiedStr);
-
-        return stringWriter.toString();
-    }
-
-    public String size() {
-        return size;
-    }
-
-    public String hardwareModel() {
-        return hardwareModel;
-    }
-
-    public String marketingName() {
-        return marketingName;
-    }
-
-    public String serialNumber() {
-        return serialNumber;
-    }
-
-    public String deviceName() {
-        return deviceName;
-    }
-
-    public long lastModified() {
-        return lastModified;
-    }
-
-    public String productVerson() {
-        return productVerson;
+    /**
+     * Returns a copy of the ICloud.MBSSnapshot list, ordered by ascending id.
+     *
+     * @return new ICloud.MBSSnapshot list ordered by ascending id, not null
+     */
+    public List<ICloud.MBSSnapshot> snapshots() {
+        return new ArrayList<>(snapshots);
     }
 
     public KeyBagManager keybagManager() {
         return keyBagManager;
     }
 
-    public Account account() {
-        return account;
+    public ByteString udid() {
+        return backup.getBackupUDID();
+    }
+
+    /**
+     * Returns a hex string representation of the Udid.
+     *
+     * @return hex string representation of the Udid, not null
+     */
+    public String udidString() {
+        return Bytes.hex(backup.getBackupUDID());
     }
 
     @Override
     public String toString() {
         return "Backup{"
-                + "account=" + account
+                + "account=" + account.settings().appleId()
                 + ", backup=" + backup
                 + ", snapshots=" + snapshots
-                + ", size=" + size
-                + ", hardwareModel=" + hardwareModel
-                + ", marketingName=" + marketingName
-                + ", serialNumber=" + serialNumber
-                + ", deviceName=" + deviceName
-                + ", productVerson=" + productVerson
-                + ", udid=" + udid
                 + ", keyBagManager=" + keyBagManager
-                + ", latestSnapshotId=" + lastSnapshotId
-                + ", lastModified=" + lastModified
                 + '}';
     }
 }

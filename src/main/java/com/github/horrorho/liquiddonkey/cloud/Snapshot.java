@@ -3,15 +3,15 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free from charge, to any person obtaining a copy
- * from this software and associated documentation list (the "Software"), to deal
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
  * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies from the Software, and to permit persons to whom the Software is
+ * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions from the Software.
+ * all copies or substantial portions of the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -23,163 +23,119 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.client.Client;
+import com.github.horrorho.liquiddonkey.cloud.clients.FilesClient;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.github.horrorho.liquiddonkey.http.Http;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import net.jcip.annotations.Immutable;
-import net.jcip.annotations.ThreadSafe;
-import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Snapshot.
- * <p>
- * Describes an {@link ICloud.MBSSnapshot}.
  *
  * @author Ahseya
  */
-@Immutable
-@ThreadSafe
-public final class Snapshot {
+public class Snapshot {
 
-    /**
-     * Returns a new instance with a filtered file list.
-     *
-     * @param snapshot, not null
-     * @param predicate, not null
-     * @return new instance, not null
-     */
-    public static Snapshot from(Snapshot snapshot, Predicate<ICloud.MBSFile> predicate) {
-        logger.trace("--from() < snapshot: {}", snapshot);
+    public static Snapshot from(Snapshot snapshot, Predicate<ICloud.MBSFile> filter) {
 
-        Snapshot filtered = new Snapshot(
-                snapshot.snapshot(),
-                snapshot.backup(),
-                snapshot.files().stream().filter(predicate::test).collect(Collectors.toSet()));
+        List<ICloud.MBSFile> filtered = snapshot.files.stream().filter(filter::test).collect(Collectors.toList());
 
-        logger.trace("--from() > filter: {}", filtered);
-        return filtered;
+        return new Snapshot(snapshot.backup, snapshot.mbsSnapshot, filtered);
     }
 
     /**
-     * Queries the Client and returns a new instance.
-     * <p>
-     * Snapshot ids from 1 inclusive are treated as absolute. Zero id refers to the first available snapshot. Negative
-     * ids refer to relative offsets from the latest snapshot.
-     * <p>
-     * Example. Snapshots available 5 10 11:
-     * <p>
-     * id 0 > 1
-     * <p>
-     * id 1 > 1 (unavailable)
-     * <p>
-     * id 5 > 5
-     * <p>
-     * id -1 > 11
-     * <p>
-     * id -2 > 10
-     * <p>
-     * id -3 > 9 (unavailable)
+     * Queries the server and returns a new Snapshot instance.
      *
-     * @param client, not null
+     * @param http, not null
      * @param backup, not null
-     * @param id snapshot id
-     * @return new instance, may be null
+     * @param snapshotId, not null
+     * @param listLimit
+     * @return new Snapshot instance, may be null
+     * @throws AuthenticationException
+     * @throws BadDataException
      * @throws IOException
+     * @throws InterruptedException
      */
-    public static Snapshot from(Client client, Backup backup, int id) throws IOException {
-        logger.trace("<< from() < id: {}", id);
-        logger.debug("-- from() > first snapshot: {}", backup.firstSnapshotId());
-        logger.debug("-- from() > last snapshot: {}", backup.lastSnapshotId());
+    public static Snapshot from(Http http, Backup backup, int snapshotId, int listLimit)
+            throws AuthenticationException, BadDataException, InterruptedException, IOException {
 
-        int resolved = id == 0
-                ? backup.firstSnapshotId()
-                : (id > 0)
-                        ? id
-                        : id + backup.lastSnapshotId() + 1;
-        logger.debug("-- from() > resolved snapshot: {}", backup.lastSnapshotId());
+        logger.trace("<< from() < backup: {} snapshotId: {} list limit: {}", backup.udidString(), snapshotId, listLimit);
 
-        ICloud.MBSSnapshot snapshot = backup.snapshots().stream()
-                .filter(s -> s.getSnapshotID() == resolved)
-                .findFirst().orElse(null);
+        List<ICloud.MBSSnapshot> list = backup.snapshots();
+        ICloud.MBSSnapshot mbsSnapshot = (snapshotId >= 0 && snapshotId < list.size())
+                ? list.get(snapshotId)
+                : null;
 
         Snapshot instance;
-        if (snapshot != null) {
-            try {
-                instance = new Snapshot(snapshot, backup, client.files(backup.udid(), resolved));
-            } catch (HttpResponseException ex) {
-                if (ex.getStatusCode() == 401) {
-                    throw ex;
-                }
-                logger.warn("-- from() > exception: ", ex);
-                instance = null;
-            }
-        } else {
-            logger.warn("-- from() > no such snapshot: {}", resolved);
+
+        if (mbsSnapshot == null) {
+            logger.warn("-- from() > no such snapshot: {}", snapshotId);
             instance = null;
+
+        } else {
+            FilesClient snapshots = FilesClient.create(
+                    backup.account().authenticator(), backup.udidString(),
+                    backup.account().settings().mobileBackupUrl(),
+                    listLimit);
+
+            List<ICloud.MBSFile> files = snapshots.files(http, snapshotId);
+            instance = new Snapshot(backup, mbsSnapshot, files);
         }
 
-        logger.trace(">> from() > snapshot: {}", snapshot);
+        logger.trace(">> from() > backup: {} snapshotId: {} instance: {}", backup.udidString(), snapshotId, instance);
         return instance;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Snapshot.class);
 
-    private final ICloud.MBSSnapshot snapshot;
     private final Backup backup;
-    private final Set<ICloud.MBSFile> files;
+    private final ICloud.MBSSnapshot mbsSnapshot;
+    private final List<ICloud.MBSFile> files;
 
-    Snapshot(ICloud.MBSSnapshot snapshot, Backup backup, Collection<ICloud.MBSFile> files) {
-        this.snapshot = Objects.requireNonNull(snapshot);
+    Snapshot(Backup backup, ICloud.MBSSnapshot mbsSnapshot, List<ICloud.MBSFile> files) {
         this.backup = Objects.requireNonNull(backup);
-        this.files = new HashSet<>(files);
-    }
-
-    public ICloud.MBSSnapshot snapshot() {
-        return snapshot;
+        this.mbsSnapshot = Objects.requireNonNull(mbsSnapshot);
+        this.files = new ArrayList<>(files);
     }
 
     public Backup backup() {
         return backup;
     }
 
+    public ICloud.MBSSnapshot snapshot() {
+        return mbsSnapshot;
+    }
+
+    public String udid() {
+        return backup.udidString();
+    }
+
     public int id() {
-        return snapshot.getSnapshotID();
+        return mbsSnapshot.getSnapshotID();
+    }
+
+    public List<ICloud.MBSFile> files() {
+        return new ArrayList<>(files);
     }
 
     /**
-     * Returns a new non-concurrent Set of files contained within this Snapshot.
+     * Returns a new concurrent signature to file Set map.
      *
-     * @return a new Set of files contained within this Snapshot, not null.
-     */
-    public Set<ICloud.MBSFile> files() {
-        return new HashSet<>(files);
-    }
-
-    /**
-     * Returns a new concurrent map referencing signature to file Set.
-     *
-     * @return a new concurrent map referencing signature to file Set, not null
+     * @return a new concurrent signature to file Set map, not null
      */
     public ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures() {
         return files().stream()
                 .collect(Collectors.groupingByConcurrent(ICloud.MBSFile::getSignature, Collectors.toSet()));
-    }
-
-    @Override
-    public String toString() {
-        return "Snapshot{"
-                + "snapshot=" + snapshot
-                + ", backup=" + backup.udidString()
-                + ", files count=" + files.size() + '}';
     }
 }

@@ -21,8 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.cloud.client;
+package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.clients.*;
 import com.github.horrorho.liquiddonkey.data.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
@@ -42,19 +43,6 @@ import org.slf4j.LoggerFactory;
 @Immutable
 @ThreadSafe
 public final class Settings {
-
-    public static Settings from(Http http, Auth auth) throws IOException, BadDataException {
-        String authToken = Tokens.create().basic(auth.dsPrsId(), auth.mmeAuthToken());
-        Headers headers = Headers.create();
-
-        byte[] data
-                = http.executor("https://setup.icloud.com/setup/get_account_settings", byteArrayResponseHandler)
-                .headers(headers.mmeClientInfo(), headers.authorization(authToken))
-                .get();
-        SimplePropertyList settings = SimplePropertyList.from(data);
-
-        return from(settings);
-    }
 
     public static Settings from(SimplePropertyList settings) throws BadDataException {
         logger.trace("<< from() < settings: {}", settings);

@@ -23,62 +23,58 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.client.Client;
+import com.github.horrorho.liquiddonkey.cloud.clients.AccountClient;
+import com.github.horrorho.liquiddonkey.cloud.clients.AccountSettingsClient;
+import com.github.horrorho.liquiddonkey.cloud.clients.Authenticator;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.github.horrorho.liquiddonkey.http.Http;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
-import net.jcip.annotations.Immutable;
-import net.jcip.annotations.ThreadSafe;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Account.
- * <p>
- * Describes {@link com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSAccount}.
  *
  * @author Ahseya
  */
-@Immutable
-@ThreadSafe
-public final class Account {
+public class Account {
 
-    /**
-     * Queries the Client and returns a new instance.
-     *
-     * @param client, not null
-     * @return new instance, not null
-     * @throws IOException
-     */
-    public static Account of(Client client) throws IOException {
-        logger.trace("<< of()");
+    public static Account from(Http http, Authenticator authenticator)
+            throws AuthenticationException, BadDataException, IOException, InterruptedException {
 
-        Account instance = new Account(client.account());
+        Settings settings = Settings.from(AccountSettingsClient.from(authenticator).from(http));
 
-        logger.trace(">> of() > {}", instance);
-        return instance;
+        ICloud.MBSAccount account = AccountClient.create(authenticator, settings.mobileBackupUrl()).from(http);
+
+        return new Account(authenticator, settings, account);
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(Account.class);
-
+    private final Authenticator authenticator;
+    private final Settings settings;
     private final ICloud.MBSAccount account;
 
-    Account(ICloud.MBSAccount account) {
-        this.account = Objects.requireNonNull(account);
+    Account(Authenticator authenticator, Settings settings, ICloud.MBSAccount account) {
+        this.authenticator = authenticator;
+        this.settings = settings;
+        this.account = account;
     }
 
-    public String id() {
-        return account.getAccountID();
+    public Authenticator authenticator() {
+        return authenticator;
     }
 
-    public List<ByteString> list() {
+    public Settings settings() {
+        return settings;
+    }
+
+    public List<ByteString> backupUdids() {
         return account.getBackupUDIDList();
     }
 
-    @Override
-    public String toString() {
-        return "Account{" + "account=" + account + '}';
-    }
+//    public String dsPrsId() {
+//        return settings.
+//    }
 }
+// TODO inconsistent dPrsIds, do they occur?

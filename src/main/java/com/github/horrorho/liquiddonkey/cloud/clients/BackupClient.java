@@ -29,6 +29,7 @@ import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
+import com.github.horrorho.liquiddonkey.settings.Markers;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -37,6 +38,8 @@ import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.ResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 /**
  * BackupClient.
@@ -57,6 +60,7 @@ public final class BackupClient {
     }
 
     private static final Logger logger = LoggerFactory.getLogger(BackupClient.class);
+    private static final Marker client = MarkerFactory.getMarker(Markers.CLIENT);
 
     private static final ResponseHandler<ICloud.MBSBackup> defaultMbsaBackupResponseHandler
             = ResponseHandlerFactory.of(ICloud.MBSBackup.PARSER::parseFrom);
@@ -126,13 +130,14 @@ public final class BackupClient {
 
         ICloud.MBSKeySet keySet = authenticator.process(http, auth -> {
 
-            String uri = path(mobileBackupUrl, "mbs", auth.dsPrsId(),  Bytes.hex(backupUdid), "getKeys");
+            String uri = path(mobileBackupUrl, "mbs", auth.dsPrsId(), Bytes.hex(backupUdid), "getKeys");
             return http.executor(uri, mbsaKeySetResponseHandler)
                     .headers(auth.mobileBackupHeaders())
                     .get();
         });
 
-        logger.trace(">> keySet() > {}", keySet);
+        logger.debug(client, "-- keySet() > keyset: {}", keySet);
+        logger.trace(">> keySet() > backupUdid: {} keySet count: {}", backupUdid, keySet.getKeyCount());
         return keySet;
     }
 }

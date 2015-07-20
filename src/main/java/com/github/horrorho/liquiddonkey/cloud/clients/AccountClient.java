@@ -30,7 +30,6 @@ import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
 import java.io.IOException;
-import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.ResponseHandler;
 import org.slf4j.Logger;
@@ -41,7 +40,6 @@ import org.slf4j.LoggerFactory;
  *
  * @author Ahseya
  */
-@Immutable
 @ThreadSafe
 public final class AccountClient {
 
@@ -49,8 +47,7 @@ public final class AccountClient {
         return new AccountClient(
                 defaultMbsaAccountResponseHandler,
                 authenticator,
-                mobileBackupUrl,
-                Headers.create());
+                mobileBackupUrl);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(AccountClient.class);
@@ -61,18 +58,15 @@ public final class AccountClient {
     private final ResponseHandler<ICloud.MBSAccount> mbsaAccountResponseHandler;
     private final Authenticator authenticator;
     private final String mobileBackupUrl;
-    private final Headers headers;
 
     public AccountClient(
             ResponseHandler<ICloud.MBSAccount> mbsaAccountResponseHandler,
             Authenticator authenticator,
-            String mobileBackupUrl,
-            Headers headers) {
+            String mobileBackupUrl) {
 
         this.mbsaAccountResponseHandler = mbsaAccountResponseHandler;
         this.authenticator = authenticator;
         this.mobileBackupUrl = mobileBackupUrl;
-        this.headers = headers;
     }
 
     /**
