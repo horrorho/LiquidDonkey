@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.file;
 
-import com.github.horrorho.liquiddonkey.cloud.Snapshot;
+import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.github.horrorho.liquiddonkey.util.Bytes;
@@ -54,7 +54,7 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
     public static SnapshotDirectory from(Snapshot snapshot, FileConfig config) {
         return SnapshotDirectory.from(
                 config.base(),
-                snapshot.udid(),
+                Bytes.hex(snapshot.udid()),
                 Integer.toString(snapshot.id()),
                 config.isFlat(),
                 config.isCombined());

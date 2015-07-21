@@ -23,14 +23,15 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.clients.Core;
 import com.github.horrorho.liquiddonkey.cloud.clients.FileGroupsClient;
+import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.donkey.Donkey;
 import com.github.horrorho.liquiddonkey.cloud.donkey.DonkeyFactory;
 import com.github.horrorho.liquiddonkey.cloud.donkey.Track;
 import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.printer.Printer;
@@ -45,7 +46,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,16 +71,12 @@ public class SnapshotDownloader {
         this.printer = printer;
     }
 
-    void download(Http http, Snapshot snapshot) throws BadDataException, IOException, InterruptedException {
+    void download(Http http, Core core, Snapshot snapshot) throws BadDataException, IOException, InterruptedException {
         // TODO empty list
 
-        Backup backup = snapshot.backup();
-        FileGroupsClient client = FileGroupsClient.create(
-                backup.account().authenticator(), backup.udidString(),
-                backup.account().settings().mobileBackupUrl(),
-                backup.account().settings().contentUrl());
+        FileGroupsClient client = FileGroupsClient.create(snapshot);
 
-        ChunkServer.FileGroups fileGroups = client.fileGroups(http, snapshot.id(), snapshot.files());
+        ChunkServer.FileGroups fileGroups = client.get(http, core, snapshot); // TODO retry?
 
         SignatureWriter writer = SignatureWriter.from(snapshot, fileConfig);
         StoreManager manager = StoreManager.from(fileGroups);
@@ -118,41 +114,41 @@ public class SnapshotDownloader {
         logger.trace(">> download()");
     }
 
-    ChunkServer.FileGroups fetchFileGroups(Http http, Snapshot snapshot)
-            throws AuthenticationException, BadDataException, InterruptedException, IOException {
-
-        logger.trace("<< fetchFileGroups() < snapshot: {}", snapshot.id());
-
-        int count = retryCount;
-        while (true) {
-            try {
-                Backup backup = snapshot.backup();
-                FileGroupsClient client = FileGroupsClient.create(
-                        backup.account().authenticator(),
-                        backup.udidString(),
-                        backup.account().settings().mobileBackupUrl(),
-                        backup.account().settings().contentUrl());
-
-                ChunkServer.FileGroups fileGroups = client.fileGroups(http, snapshot.id(), snapshot.files());
-
-                logger.info("-- fetchFileGroups() > fileChunkErrorList: {}", fileGroups.getFileChunkErrorList());
-                logger.info("-- fetchFileGroups() > fileErrorList: {}", fileGroups.getFileErrorList());
-                logger.trace(">> fetchFileGroups()");
-                return fileGroups;
-
-            } catch (HttpResponseException ex) {
-                if (ex.getStatusCode() == 401 || count-- <= 0) {
-                    throw ex;
-                }
-                logger.warn("-- fetchFileGroups() > exception: {}", ex);
-            } catch (BadDataException ex) {
-                if (count-- <= 0) {
-                    throw ex;
-                }
-                logger.warn("-- fetchFileGroups() > exception: {}", ex);
-            }
-        }
-    }
+//    ChunkServer.FileGroups fetchFileGroups(Http http, Authenticator authenticator, Snapshot snapshot)
+//            throws AuthenticationException, BadDataException, InterruptedException, IOException {
+//
+//        logger.trace("<< fetchFileGroups() < snapshot: {}", snapshot.id());
+//
+//        int count = retryCount;
+//        while (true) {
+//            try {
+//                Backup backup = snapshot.backup();
+//                FileGroupsClient client = FileGroupsClient.create(
+//                        backup.account().authenticator(),
+//                        backup.udidString(),
+//                        backup.account().settings().mobileBackupUrl(),
+//                        backup.account().settings().contentUrl());
+//
+//                ChunkServer.FileGroups fileGroups = client.get(http, snapshot.id(), snapshot.files());
+//
+//                logger.info("-- fetchFileGroups() > fileChunkErrorList: {}", fileGroups.getFileChunkErrorList());
+//                logger.info("-- fetchFileGroups() > fileErrorList: {}", fileGroups.getFileErrorList());
+//                logger.trace(">> fetchFileGroups()");
+//                return fileGroups;
+//
+//            } catch (HttpResponseException ex) {
+//                if (ex.getStatusCode() == 401 || count-- <= 0) {
+//                    throw ex;
+//                }
+//                logger.warn("-- fetchFileGroups() > exception: {}", ex);
+//            } catch (BadDataException ex) {
+//                if (count-- <= 0) {
+//                    throw ex;
+//                }
+//                logger.warn("-- fetchFileGroups() > exception: {}", ex);
+//            }
+//        }
+//    }
 }
 
 // TODO error count before fail?

@@ -77,9 +77,9 @@ public class SettingsClient {
 
         logger.trace("<< from()");
 
-        byte[] data = authenticator.process(http, auth -> {
+        byte[] data = authenticator.process(http, authenticator.dsPrsID(http), auth -> {
 
-            String authToken = Tokens.create().basic(auth.dsPrsId(), auth.mmeAuthToken());
+            String authToken = Tokens.create().basic(auth.dsPrsID(), auth.mmeAuthToken());
             return http.executor("https://setup.icloud.com/setup/get_account_settings", byteArrayResponseHandler)
                     .headers(headers.mmeClientInfo(), headers.authorization(authToken))
                     .get();

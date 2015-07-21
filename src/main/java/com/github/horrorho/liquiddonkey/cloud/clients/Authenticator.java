@@ -33,6 +33,7 @@ import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
+import com.github.horrorho.liquiddonkey.settings.Markers;
 import com.github.horrorho.liquiddonkey.settings.config.AuthenticationConfig;
 import java.io.IOException;
 import java.util.concurrent.locks.Lock;
@@ -43,6 +44,8 @@ import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 /**
  * Authenticator.
@@ -65,14 +68,15 @@ public class Authenticator {
                 ? Auth.from(config.dsPrsId(), config.mmeAuthToken())
                 : null;
 
-        Authenticator instance = from(idPassword, auth);
+        Authenticator instance = new Authenticator(idPassword, auth);
 
         logger.trace(">> from() > {}", instance);
         return instance;
     }
 
     public static Authenticator from(IdPassword idPassword, Auth auth) {
-        logger.trace("<< from() < idPassword: {} Auth:{}", idPassword, auth);
+        logger.trace("<< from() < idPassword: {} Auth dsPrsId:{}", idPassword, auth.dsPrsID());
+        logger.debug(marker, "-- from() < auth: {}", auth);
 
         Authenticator instance = new Authenticator(idPassword, auth);
 
@@ -81,7 +85,8 @@ public class Authenticator {
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Authenticator.class);
-    // Thread safe.
+    private static final Marker marker = MarkerFactory.getMarker(Markers.CLIENT);
+
     private static final ResponseHandler<byte[]> byteArrayResponseHandler = ResponseHandlerFactory.toByteArray();
 
     private final Headers headers;
@@ -114,19 +119,24 @@ public class Authenticator {
 
     public String token(Http http) throws AuthenticationException, BadDataException, IOException, InterruptedException {
         Auth local = auth(http);
-        return local.dsPrsId() + ":" + local.mmeAuthToken();
+        return local.dsPrsID() + ":" + local.mmeAuthToken();
     }
 
     public String dsPrsID(Http http) throws AuthenticationException, BadDataException, IOException, InterruptedException {
         Auth local = auth(http);
-        return local.dsPrsId();
+        return local.dsPrsID();
     }
 
-    public <T> T process(Http http, IOFunction<Auth, T> function)
+    public <T> T process(Http http, String dsPrsID, IOFunction<Auth, T> function)
             throws AuthenticationException, BadDataException, IOException, InterruptedException {
 
         while (true) {
             Auth local = auth(http);
+
+            if (!dsPrsID.equals(local.dsPrsID())) {
+                // For now we'll just issue an error rather than throw an illegal state exception.
+                logger.error("-- process() > mismatch, supplied: {} auth: {}", dsPrsID, local.dsPrsID());
+            }
 
             try {
                 return function.apply(local);

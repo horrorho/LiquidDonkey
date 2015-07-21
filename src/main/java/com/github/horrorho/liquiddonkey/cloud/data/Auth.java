@@ -90,7 +90,7 @@ public final class Auth {
         return mmeAuthToken;
     }
 
-    public String dsPrsId() {
+    public String dsPrsID() {
         return dsPrsId;
     }
 

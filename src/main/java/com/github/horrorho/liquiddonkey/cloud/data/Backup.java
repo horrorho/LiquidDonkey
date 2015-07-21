@@ -26,13 +26,13 @@ package com.github.horrorho.liquiddonkey.cloud.data;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
 /**
@@ -40,10 +40,11 @@ import net.jcip.annotations.ThreadSafe;
  *
  * @author Ahseya
  */
+@Immutable
 @ThreadSafe
 public final class Backup {
 
-    public static Backup from(Account account, ICloud.MBSBackup backup, ICloud.MBSKeySet mbsKeySet)
+    public static Backup from(ICloud.MBSAccount account, ICloud.MBSBackup backup, ICloud.MBSKeySet mbsKeySet)
             throws BadDataException {
 
         KeyBagManager keyBagManager = KeyBagManager.from(mbsKeySet);
@@ -52,45 +53,49 @@ public final class Backup {
         Collections.sort(snapshots, Comparator.comparingLong(ICloud.MBSSnapshot::getSnapshotID));
 
         return new Backup(
-                account,
+                account.getAccountID(), // dsPrsID
                 backup,
                 snapshots,
                 keyBagManager);
     }
 
-    private final Account account;
+    private final String dsPrsID;
     private final ICloud.MBSBackup backup;
     private final List<ICloud.MBSSnapshot> snapshots;
     private final KeyBagManager keyBagManager;
 
-    Backup(
-            Account account,
-            ICloud.MBSBackup backup,
-            List<ICloud.MBSSnapshot> snapshots,
-            KeyBagManager keyBagManager) {
-
-        this.account = Objects.requireNonNull(account);
+    Backup(String dsPrsID, ICloud.MBSBackup backup, List<ICloud.MBSSnapshot> snapshots, KeyBagManager keyBagManager) {
+        this.dsPrsID = Objects.requireNonNull(dsPrsID);
         this.backup = Objects.requireNonNull(backup);
         this.snapshots = Objects.requireNonNull(snapshots);
         this.keyBagManager = Objects.requireNonNull(keyBagManager);
     }
 
     /**
-     * Returns the Account.
-     *
-     * @return the dsPrsId, not null
-     */
-    public Account account() {
-        return account;
-    }
-
-    /**
-     * Returns ICloud.MBSBackup.
+     * Returns the ICloud.MBSBackup.
      *
      * @return ICloud.MBSBackup, not null
      */
     public ICloud.MBSBackup backup() {
         return backup;
+    }
+
+    /**
+     * Returns the dsPrsID.
+     *
+     * @return dsPrsID, not null
+     */
+    public String dsPrsID() {
+        return dsPrsID;
+    }
+
+    /**
+     * Returns the keyBagManager.
+     *
+     * @return keyBagManager, not null
+     */
+    public KeyBagManager keybagManager() {
+        return keyBagManager;
     }
 
     /**
@@ -102,27 +107,19 @@ public final class Backup {
         return new ArrayList<>(snapshots);
     }
 
-    public KeyBagManager keybagManager() {
-        return keyBagManager;
-    }
-
+    /**
+     * Returns the UDID.
+     *
+     * @return UDID, not null
+     */
     public ByteString udid() {
         return backup.getBackupUDID();
-    }
-
-    /**
-     * Returns a hex string representation of the Udid.
-     *
-     * @return hex string representation of the Udid, not null
-     */
-    public String udidString() {
-        return Bytes.hex(backup.getBackupUDID());
     }
 
     @Override
     public String toString() {
         return "Backup{"
-                + "account=" + account.settings().appleId()
+                + "dsPrsID=" + dsPrsID
                 + ", backup=" + backup
                 + ", snapshots=" + snapshots
                 + ", keyBagManager=" + keyBagManager

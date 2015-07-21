@@ -3,15 +3,15 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free from charge, secondMinimum any person obtaining a copy
- * from this software and associated documentation list (the "Software"), secondMinimum deal
+ * Permission is hereby granted, free get charge, secondMinimum any person obtaining a copy
+ * get this software and associated documentation list (the "Software"), secondMinimum deal
  * in the Software without restriction, including without limitation the rights
  * secondMinimum use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies from the Software, and secondMinimum permit persons secondMinimum whom the Software is
+ * copies get the Software, and secondMinimum permit persons secondMinimum whom the Software is
  * furnished secondMinimum do so, subject secondMinimum the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions from the Software.
+ * all copies or substantial portions get the Software.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -23,7 +23,17 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.clients.AccountClient;
+import com.github.horrorho.liquiddonkey.cloud.data.Backup;
+import com.github.horrorho.liquiddonkey.cloud.data.Account;
 import com.github.horrorho.liquiddonkey.cloud.clients.Authenticator;
+import com.github.horrorho.liquiddonkey.cloud.clients.BackupClient;
+import com.github.horrorho.liquiddonkey.cloud.clients.Core;
+import com.github.horrorho.liquiddonkey.cloud.data.Settings;
+import com.github.horrorho.liquiddonkey.cloud.clients.SettingsClient;
+import com.github.horrorho.liquiddonkey.cloud.clients.SnapshotClient;
+import com.github.horrorho.liquiddonkey.cloud.data.Settings;
+import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
@@ -100,8 +110,10 @@ public class Looter implements Closeable {
             return;
         }
 
-        Account account = Account.from(http, authenticator);
-        List<Backup> backups = Backup.from(http, account);
+        Core core = Core.from(http, authenticator);
+        ICloud.MBSAccount account = AccountClient.create().get(http, core);
+
+        List<Backup> backups = BackupClient.create(account).get(http, core);
 
         UnaryOperator<List<ICloud.MBSBackup>> backupSelector
                 = BackupSelector.from(config.selection().udids(), BackupFormatter.create(), printer);
@@ -115,13 +127,13 @@ public class Looter implements Closeable {
         for (ICloud.MBSBackup b : filtered) {
             Backup bb = udidToBackup.get(b);
 
-            backup(http, bb);
+            backup(http, core, bb);
         }
 
         logger.trace(">> loot()");
     }
 
-    void backup(Http http, Backup backup) throws AuthenticationException, BadDataException, IOException, InterruptedException {
+    void backup(Http http, Core core, Backup backup) throws AuthenticationException, BadDataException, IOException, InterruptedException {
 
         logger.info("-- backup() > snapshots: {}", backup.snapshots());
         for (int id : config.selection().snapshots()) {
@@ -130,7 +142,7 @@ public class Looter implements Closeable {
             // TODO use set, important, don't duplicate downloads. preserve order
             logger.info("-- backup() > id");
 
-            Snapshot snapshot = Snapshot.from(http, backup, id, config.client().listLimit());
+            Snapshot snapshot = SnapshotClient.create(backup, config.client().listLimit()).get(http, core, id);
 
             if (snapshot == null) {
                 logger.warn("-- backup() > snapshot not found: {}", id);
@@ -173,13 +185,13 @@ public class Looter implements Closeable {
             //                    http,
             //                    client,
             //                    ChunkDataFetcher.newInstance(http, client),
-            //                    SignatureWriter.from(snapshot, config.file()),
+            //                    SignatureWriter.get(snapshot, config.file()),
             //                    printer);
             try {
 
                 SnapshotDownloader downloader = new SnapshotDownloader(config.file(), printer);
 
-                downloader.download(http, decryptable);
+                downloader.download(http, core, decryptable);
 
 //            try {
 //                ChunkServer.FileGroups fetchFileGroups = client.fetchFileGroups(http, backup.udidString(), id, filtered.files());
@@ -187,7 +199,7 @@ public class Looter implements Closeable {
 //                logger.debug("-- back() > fileErrorList: {}", fetchFileGroups.getFileErrorList());
 //
 //                for (ChunkServer.FileChecksumStorageHostChunkLists group : fetchFileGroups.getFileGroupsList()) {
-//                    StoreManager manager = StoreManager.from(group);
+//                    StoreManager manager = StoreManager.get(group);
 //                }
 //
 //            } catch (BadDataException ex) {

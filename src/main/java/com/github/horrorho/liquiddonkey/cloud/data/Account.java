@@ -36,20 +36,20 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public class Account {
 
-    public static Account from(Settings settings, ICloud.MBSAccount account) {
-        return new Account(settings, account);
+    public static Account from(String dsPrsID, ICloud.MBSAccount account) {
+        return new Account(dsPrsID, account);
     }
 
-    private final Settings settings;
+    private final String dsPrsID;
     private final ICloud.MBSAccount account;
 
-    Account(Settings settings, ICloud.MBSAccount account) {
-        this.settings = settings;
+    Account(String dsPrsID, ICloud.MBSAccount account) {
+        this.dsPrsID = dsPrsID;
         this.account = account;
     }
 
-    public Settings settings() {
-        return settings;
+    public String dsPrsID() {
+        return dsPrsID;
     }
 
     public ICloud.MBSAccount account() {

@@ -34,6 +34,7 @@ import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
 import com.github.horrorho.liquiddonkey.settings.Markers;
+import com.github.horrorho.liquiddonkey.util.Bytes;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -93,7 +94,7 @@ public final class SnapshotClient {
      * Queries the server and returns an ICloud.MBSFile list.
      *
      * @param http, not null
-     * @param authenticator, not null
+     * @param core, not null
      * @param snapshotId
      * @return ICloud.MBSFile list, not null
      * @throws AuthenticationException
@@ -101,7 +102,7 @@ public final class SnapshotClient {
      * @throws IOException
      * @throws InterruptedException
      */
-    public Snapshot get(Http http, Authenticator authenticator, int snapshotId)
+    public Snapshot get(Http http, Core core, int snapshotId)
             throws AuthenticationException, BadDataException, InterruptedException, IOException {
 
         logger.trace("<< get()");
@@ -120,7 +121,7 @@ public final class SnapshotClient {
             instance = null;
 
         } else {
-            instance = doGet(http, authenticator, snapshot);
+            instance = doGet(http, core, snapshot);
         }
 
         logger.debug(client, "-- files() > files: {}", instance.files());
@@ -128,7 +129,7 @@ public final class SnapshotClient {
         return instance;
     }
 
-    Snapshot doGet(Http http, Authenticator authenticator, ICloud.MBSSnapshot snapshot)
+    Snapshot doGet(Http http, Core core, ICloud.MBSSnapshot snapshot)
             throws AuthenticationException, BadDataException, InterruptedException, IOException {
 
         logger.trace("<< files()");
@@ -139,10 +140,15 @@ public final class SnapshotClient {
         do {
             NameValuePair offsetParameter = new BasicNameValuePair("offset", Integer.toString(offset));
 
-            Settings settings = backup.account().settings();
+            data = core.process(http, backup.dsPrsID(), (auth, settings) -> {
+                String uri = path(
+                        settings.mobileBackupUrl(),
+                        "mbs",
+                        auth.dsPrsID(),
+                        Bytes.hex(backup.udid()),
+                        Integer.toString(snapshot.getSnapshotID()),
+                        "listFiles");
 
-            data = authenticator.process(http, auth -> {
-                String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsId(), backup.udidString(), Integer.toString(snapshot.getSnapshotID()));
                 return http.executor(uri, mbsFileListHandler)
                         .headers(auth.mobileBackupHeaders())
                         .parameters(offsetParameter, limitParameter)

@@ -69,7 +69,6 @@ public class Main {
         logger.trace("<< main()");
 
         Config config = CommandLineConfig.getInstance().fromArgs(args);
-        logger.debug("-- main() > options: {}", config);
 
         if (config == null) {
             return;

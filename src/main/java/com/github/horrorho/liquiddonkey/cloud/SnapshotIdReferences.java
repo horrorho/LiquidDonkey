@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.data.Backup;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import java.util.Comparator;
 import java.util.HashMap;

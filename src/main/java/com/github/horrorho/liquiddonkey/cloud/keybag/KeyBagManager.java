@@ -25,6 +25,7 @@ package com.github.horrorho.liquiddonkey.cloud.keybag;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.github.horrorho.liquiddonkey.settings.Markers;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.util.HashMap;
@@ -33,6 +34,8 @@ import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 /**
  * KeyBagManager.
@@ -51,7 +54,8 @@ public final class KeyBagManager {
      * @throws BadDataException if the KeyBagManager cannot be unlocked or a data handling error occurred
      */
     public static KeyBagManager from(ICloud.MBSKeySet keySet) throws BadDataException {
-        logger.trace("<< from() < {}", keySet);
+        logger.trace("<< from() < keySet count: {}", keySet.getKeyCount());
+        logger.debug(marker, "<-- from() < keySet: {}", keySet);
 
         if (keySet.getKeyCount() < 2) {
             throw new BadDataException("Bad keybag.");
@@ -67,11 +71,13 @@ public final class KeyBagManager {
 
         KeyBagManager instance = new KeyBagManager(uuidToKeyBag, FileKeyFactory.create());
 
+        logger.debug(marker, "-- from() > {}", uuidToKeyBag);
         logger.trace(">> from() > {}", instance);
         return instance;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(KeyBagManager.class);
+    private static final Marker marker = MarkerFactory.getMarker(Markers.KEYBAG);
 
     private final Map<ByteString, KeyBag> uuidToKeyBag;
     private final FileKeyFactory fileKeyFactory;
@@ -103,6 +109,6 @@ public final class KeyBagManager {
 
     @Override
     public String toString() {
-        return "KeyBagManager{" + "uuidToKeyBag=" + uuidToKeyBag + '}';
+        return "KeyBagManager{" + "uuids=" + uuidToKeyBag.keySet() + '}';
     }
 }

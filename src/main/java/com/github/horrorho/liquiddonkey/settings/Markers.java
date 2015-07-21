@@ -41,6 +41,7 @@ public final class Markers {
 
     // TODO redo to String
     public static final String CLIENT = "CLIENT";
+    public static final String KEYBAG = "KEYBAG";
     public static final String POOL = "POOL";
     public static final String STORE = "STORE";
 

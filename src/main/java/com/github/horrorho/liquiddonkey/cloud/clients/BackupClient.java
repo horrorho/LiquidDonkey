@@ -24,7 +24,6 @@
 package com.github.horrorho.liquiddonkey.cloud.clients;
 
 import com.github.horrorho.liquiddonkey.cloud.data.Backup;
-import com.github.horrorho.liquiddonkey.cloud.data.Account;
 import com.github.horrorho.liquiddonkey.cloud.data.Settings;
 import static com.github.horrorho.liquiddonkey.cloud.clients.Util.path;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
@@ -56,7 +55,7 @@ import org.slf4j.MarkerFactory;
 @ThreadSafe
 public final class BackupClient {
 
-    public static BackupClient create(Account account)
+    public static BackupClient create(ICloud.MBSAccount account)
             throws IOException {
 
         return new BackupClient(
@@ -75,25 +74,25 @@ public final class BackupClient {
 
     private final ResponseHandler<ICloud.MBSBackup> mbsaBackupResponseHandler;
     private final ResponseHandler<ICloud.MBSKeySet> mbsaKeySetResponseHandler;
-    private final Account account;
+    private final ICloud.MBSAccount account;
 
     public BackupClient(
             ResponseHandler<ICloud.MBSBackup> mbsaBackupResponseHandler,
             ResponseHandler<ICloud.MBSKeySet> mbsaKeySetResponseHandler,
-            Account account) {
+            ICloud.MBSAccount account) {
 
         this.mbsaBackupResponseHandler = Objects.requireNonNull(mbsaBackupResponseHandler);
         this.mbsaKeySetResponseHandler = Objects.requireNonNull(mbsaKeySetResponseHandler);
         this.account = Objects.requireNonNull(account);
     }
 
-    public List<Backup> get(Http http, Authenticator authenticator)
+    public List<Backup> get(Http http, Core core)
             throws AuthenticationException, BadDataException, InterruptedException, IOException {
 
         List<Backup> list = new ArrayList<>();
 
-        for (ByteString udid : account.account().getBackupUDIDList()) {
-            list.add(get(http, authenticator, udid));
+        for (ByteString udid : account.getBackupUDIDList()) {
+            list.add(get(http, core, udid));
         }
 
         return list;
@@ -103,7 +102,7 @@ public final class BackupClient {
      * Queries the server and returns ICloud.MBSAccount.
      *
      * @param http, not null
-     * @param authenticators, not null
+     * @param core, not null
      * @param backupUdid, not null
      * @return ICloud.MBSAccount, not null
      * @throws AuthenticationException
@@ -111,24 +110,23 @@ public final class BackupClient {
      * @throws IOException
      * @throws InterruptedException
      */
-    public Backup get(Http http, Authenticator authenticator, ByteString backupUdid)
+    public Backup get(Http http, Core core, ByteString backupUdid)
             throws AuthenticationException, BadDataException, InterruptedException, IOException {
 
         logger.trace("<< backup()");
 // TODO no such get
-        Settings settings = account.settings();
 
-        ICloud.MBSBackup mbsBackup = authenticator.process(http, auth -> {
+        ICloud.MBSBackup mbsBackup = core.process(http, account.getAccountID(), (auth, settings) -> {
 
-            String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsId(), Bytes.hex(backupUdid));
+            String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsID(), Bytes.hex(backupUdid));
             return http.executor(uri, mbsaBackupResponseHandler)
                     .headers(auth.mobileBackupHeaders())
                     .get();
         });
 
-        ICloud.MBSKeySet mbsKeySet = authenticator.process(http, auth -> {
+        ICloud.MBSKeySet mbsKeySet = core.process(http, account.getAccountID(), (auth, settings) -> {
 
-            String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsId(), Bytes.hex(backupUdid), "getKeys");
+            String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsID(), Bytes.hex(backupUdid), "getKeys");
             return http.executor(uri, mbsaKeySetResponseHandler)
                     .headers(auth.mobileBackupHeaders())
                     .get();

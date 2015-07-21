@@ -107,7 +107,7 @@ public final class FileGroupsClient {
      * @throws IOException
      * @throws InterruptedException
      */
-    public ChunkServer.FileGroups get(Http http, Authenticator authenticator, Snapshot snapshot)
+    public ChunkServer.FileGroups get(Http http, Core core, Snapshot snapshot)
             throws AuthenticationException, BadDataException, InterruptedException, IOException {
 
         //  logger.trace("<< get() < backupUdid: {} snapshot: {} files: {}", backupUdid, snapshotId, files.size());
@@ -122,11 +122,11 @@ public final class FileGroupsClient {
 
         List<ICloud.MBSFileAuthToken> authTokens = unique.isEmpty()
                 ? new ArrayList<>()
-                : getFiles(http, snapshot.id(), unique, authenticator);
+                : getFiles(http, snapshot.id(), unique, core);
 
         ChunkServer.FileGroups fileGroups = authTokens.isEmpty()
                 ? ChunkServer.FileGroups.getDefaultInstance()
-                : authorizeGet(http, unique, authTokens, authenticator);
+                : authorizeGet(http, unique, authTokens, core);
 
         logger.debug(client, "-- fileGroups() > fileGroups: {}", fileGroups);
         logger.trace(">> fileGroups() > count: {}", fileGroups.getFileGroupsCount());
@@ -134,7 +134,7 @@ public final class FileGroupsClient {
     }
 
     List<ICloud.MBSFileAuthToken>
-            getFiles(Http http, int snapshotId, Collection<ICloud.MBSFile> files, Authenticator authenticator)
+            getFiles(Http http, int snapshotId, Collection<ICloud.MBSFile> files, Core core)
             throws AuthenticationException, BadDataException, InterruptedException, IOException {
 
         //logger.trace("<< getFiles() < backupUdid: {} snapshot: {} files: {}", backupUdid, snapshotId, files.size());
@@ -150,10 +150,9 @@ public final class FileGroupsClient {
         } catch (IOException ex) {
             throw new BadDataException(ex);
         }
-        Settings settings = snapshot.backup().account().settings();
 
-        List<ICloud.MBSFileAuthToken> tokens = authenticator.process(http, auth -> {
-            String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsId(), snapshot.backup().udidString(), Integer.toString(snapshotId), "getFiles");
+        List<ICloud.MBSFileAuthToken> tokens = core.process(http, snapshot.dsPrsID(), (auth, settings) -> {
+            String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsID(), Bytes.hex(snapshot.udid()), Integer.toString(snapshotId), "getFiles");
             return http.executor(uri, mbsFileAuthTokenListHandler)
                     .headers(auth.mobileBackupHeaders())
                     .post(encoded);
@@ -168,7 +167,7 @@ public final class FileGroupsClient {
             Http http,
             Collection<ICloud.MBSFile> files,
             Collection<ICloud.MBSFileAuthToken> fileIdAuthTokens,
-            Authenticator authenticator
+            Core core
     ) throws AuthenticationException, BadDataException, InterruptedException, IOException {
 
         logger.trace("<< authorizeGet() < tokens: {} files: {}", fileIdAuthTokens.size(), files.size());
@@ -183,10 +182,8 @@ public final class FileGroupsClient {
             Header mmcsAuth = headers.mmcsAuth(Bytes.hex(tokens.getTokens(0).getFileID())
                     + " " + tokens.getTokens(0).getAuthToken());
 
-            Settings settings = snapshot.backup().account().settings();
-
-            groups = authenticator.process(http, auth -> {
-                String uri = path(settings.contentUrl(), auth.dsPrsId(), "authorizeGet");
+            groups = core.process(http, snapshot.dsPrsID(), (auth, settings) -> {
+                String uri = path(settings.contentUrl(), auth.dsPrsID(), "authorizeGet");
                 return http.executor(uri, filesGroupsHandler)
                         .headers(mmcsAuth).headers(auth.contentHeaders())
                         .post(tokens.toByteArray());

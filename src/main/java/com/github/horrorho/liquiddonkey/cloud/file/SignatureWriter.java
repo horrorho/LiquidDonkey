@@ -22,8 +22,8 @@
  * THE SOFTWARE.
  */
 package com.github.horrorho.liquiddonkey.cloud.file;
-
-import com.github.horrorho.liquiddonkey.cloud.Snapshot;
+ 
+import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
@@ -61,7 +61,7 @@ public final class SignatureWriter {
      * @param fileConfig not null
      * @return a new instance, not null
      */
-    public static SignatureWriter from(Snapshot snapshot, FileConfig fileConfig) {
+    public static SignatureWriter from(Snapshot  snapshot, FileConfig fileConfig) {
         logger.trace("<< from() < snapshot: {} fileConfig: {}", snapshot, fileConfig);
 
         CloudFileWriter cloudWriter = CloudFileWriter.from(snapshot, fileConfig);

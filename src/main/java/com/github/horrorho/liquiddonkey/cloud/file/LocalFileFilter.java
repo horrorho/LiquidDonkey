@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.file;
 
-import com.github.horrorho.liquiddonkey.cloud.Snapshot;
+import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.iofunction.IOPredicate;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;

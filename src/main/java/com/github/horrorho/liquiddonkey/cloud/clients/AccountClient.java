@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.clients;
 
-import com.github.horrorho.liquiddonkey.cloud.data.Account;
 import com.github.horrorho.liquiddonkey.cloud.data.Settings;
 import static com.github.horrorho.liquiddonkey.cloud.clients.Util.path;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
@@ -45,10 +44,8 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class AccountClient {
 
-    public static AccountClient create(Settings settings) {
-        return new AccountClient(
-                defaultMbsaAccountResponseHandler,
-                settings);
+    public static AccountClient create() {
+        return new AccountClient(                defaultMbsaAccountResponseHandler);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(AccountClient.class);
@@ -57,42 +54,36 @@ public final class AccountClient {
             = ResponseHandlerFactory.of(ICloud.MBSAccount.PARSER::parseFrom);
 
     private final ResponseHandler<ICloud.MBSAccount> mbsaAccountResponseHandler;
-    private final Settings settings;
 
-    public AccountClient(
-            ResponseHandler<ICloud.MBSAccount> mbsaAccountResponseHandler,
-            Settings settings) {
+    public AccountClient(            ResponseHandler<ICloud.MBSAccount> mbsaAccountResponseHandler) {
 
         this.mbsaAccountResponseHandler = mbsaAccountResponseHandler;
-        this.settings = settings;
     }
 
     /**
      * Queries the server and returns ICloud.MBSAccount.
      *
      * @param http, not null
-     * @param authenticator, not null
+     * @param core, not null
      * @return ICloud.MBSAccount, not null
      * @throws IOException
      * @throws BadDataException
      * @throws AuthenticationException
      * @throws InterruptedException
      */
-    public Account get(Http http, Authenticator authenticator)
+    public ICloud.MBSAccount get(Http http, Core core)
             throws AuthenticationException, BadDataException, InterruptedException, IOException {
         logger.trace("<< from()");
 
-        ICloud.MBSAccount account = authenticator.process(http, auth -> {
+        ICloud.MBSAccount instance = core.process(http, core.dsPrsID(), (auth, settings) -> {
 
-            String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsId());
+            String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsID());
             return http.executor(uri, mbsaAccountResponseHandler)
                     .headers(auth.mobileBackupHeaders())
                     .get();
         });
-        
-        Account instance = Account.from(settings, account);
 
-        logger.trace(">> from() > {}", account);
+        logger.trace(">> from() > {}", instance);
         return instance;
     }
 }

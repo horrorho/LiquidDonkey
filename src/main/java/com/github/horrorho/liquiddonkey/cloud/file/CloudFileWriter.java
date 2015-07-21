@@ -23,10 +23,10 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.file;
 
-import com.github.horrorho.liquiddonkey.cloud.Snapshot;
+import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.iofunction.IOFunction; 
+import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
@@ -71,7 +71,7 @@ public final class CloudFileWriter {
 
         return new CloudFileWriter(
                 FileDecrypter.create(),
-                snapshot.backup().keybagManager(),
+                snapshot.keyBagManager(),
                 SnapshotDirectory.from(snapshot, fileConfig),
                 fileConfig.setLastModifiedTimestamp());
     }
