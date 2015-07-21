@@ -89,7 +89,7 @@ public final class Headers {
                     HttpHeaders.USER_AGENT,
                     "ubd (unknown version) CFNetwork/548.1.4 Darwin/11.0.0");
 
-    List<Header> mobileBackupHeaders(String authMme) {
+    public List<Header> mobileBackupHeaders(String authMme) {
         return Arrays.asList(
                 authorization(authMme),
                 mmeClientInfo,
@@ -98,7 +98,7 @@ public final class Headers {
         );
     }
 
-    List<Header> contentHeaders(String dsPrsID) {
+    public List<Header> contentHeaders(String dsPrsID) {
         return Arrays.asList(
                 mmeDsid(dsPrsID),
                 mmcsProtocolVersion,
