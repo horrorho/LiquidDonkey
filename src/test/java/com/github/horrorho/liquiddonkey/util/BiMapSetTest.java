@@ -129,7 +129,7 @@ public class BiMapSetTest {
         BiMapSet.from(map);
     }
 
-    public Object[] parametersForTestFromException() {
+    public static Object[] parametersForTestFromException() {
         return new Object[]{nullMap, nullKey, nullValue, nullKeyValue};
     }
 
@@ -152,7 +152,7 @@ public class BiMapSetTest {
         assertThat(mapSet.keys(value), is(keys));
     }
 
-    public Object[] parametersForTestKey() {
+    public static Object[] parametersForTestKey() {
         return new Object[]{
             $(numbers, null, set()),
             $(numbers, -1, set()),
@@ -174,7 +174,7 @@ public class BiMapSetTest {
         assertThat(mapSet.values(key), is(values));
     }
 
-    public Object[] parametersForTestValue() {
+    public static Object[] parametersForTestValue() {
         return new Object[]{
             $(numbers, null, set()),
             $(numbers, "", set()),
