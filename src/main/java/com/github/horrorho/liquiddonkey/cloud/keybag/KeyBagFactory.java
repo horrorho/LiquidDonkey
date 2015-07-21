@@ -131,7 +131,7 @@ public final class KeyBagFactory {
     }
 
     void unlock(ByteString passCode) throws BadDataException {
-        logger.trace("-- unlock() < {}", Bytes.hex(passCode));
+        logger.trace("<< unlock() < uuid: {} passcode: {}", Bytes.hex(uuid), Bytes.hex(passCode));
 
         if (type != KeyBagType.BACKUP && type != KeyBagType.OTA) {
             throw new BadDataException("Not a backup keybag");
@@ -167,6 +167,7 @@ public final class KeyBagFactory {
                 }
             }
         }
+        logger.trace(">> unlock()");
     }
 
     ByteString attribute(String tag) throws BadDataException {
