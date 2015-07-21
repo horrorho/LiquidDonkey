@@ -35,17 +35,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * AccountSettingsClient.
+ * SettingsClient.
  *
  * @author Ahseya
  */
-public class AccountSettingsClient {
+public class SettingsClient {
 
-    public static AccountSettingsClient from(Authenticator authenticator) {
-        return new AccountSettingsClient(defaultByteArrayResponseHandler, Headers.create(), authenticator);
+    public static SettingsClient from(Authenticator authenticator) {
+        return new SettingsClient(defaultByteArrayResponseHandler, Headers.create(), authenticator);
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(AccountSettingsClient.class);
+    private static final Logger logger = LoggerFactory.getLogger(SettingsClient.class);
 
     private static final ResponseHandler<byte[]> defaultByteArrayResponseHandler = ResponseHandlerFactory.toByteArray();
 
@@ -53,7 +53,7 @@ public class AccountSettingsClient {
     private final Headers headers;
     private final Authenticator authenticator;
 
-    AccountSettingsClient(ResponseHandler<byte[]> byteArrayResponseHandler, Headers headers, Authenticator authenticator) {
+    SettingsClient(ResponseHandler<byte[]> byteArrayResponseHandler, Headers headers, Authenticator authenticator) {
         this.byteArrayResponseHandler = Objects.requireNonNull(byteArrayResponseHandler);
         this.headers = Objects.requireNonNull(headers);
         this.authenticator = Objects.requireNonNull(authenticator);
@@ -69,7 +69,7 @@ public class AccountSettingsClient {
      * @throws AuthenticationException
      * @throws InterruptedException
      */
-    public SimplePropertyList from(Http http)
+    public Settings get(Http http)
             throws AuthenticationException, BadDataException, InterruptedException, IOException {
 
         logger.trace("<< from()");
@@ -82,7 +82,9 @@ public class AccountSettingsClient {
                     .get();
         });
 
-        SimplePropertyList settings = SimplePropertyList.from(data);
+        SimplePropertyList propertyList = SimplePropertyList.from(data);
+
+        Settings settings = Settings.from(propertyList);
 
         logger.trace(">> from() > {}", settings);
         return settings;

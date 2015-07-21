@@ -43,11 +43,10 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class AccountClient {
 
-    public static AccountClient create(Authenticator authenticator, String mobileBackupUrl) {
+    public static AccountClient create(Settings settings) {
         return new AccountClient(
                 defaultMbsaAccountResponseHandler,
-                authenticator,
-                mobileBackupUrl);
+                settings);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(AccountClient.class);
@@ -56,42 +55,42 @@ public final class AccountClient {
             = ResponseHandlerFactory.of(ICloud.MBSAccount.PARSER::parseFrom);
 
     private final ResponseHandler<ICloud.MBSAccount> mbsaAccountResponseHandler;
-    private final Authenticator authenticator;
-    private final String mobileBackupUrl;
+    private final Settings settings;
 
     public AccountClient(
             ResponseHandler<ICloud.MBSAccount> mbsaAccountResponseHandler,
-            Authenticator authenticator,
-            String mobileBackupUrl) {
+            Settings settings) {
 
         this.mbsaAccountResponseHandler = mbsaAccountResponseHandler;
-        this.authenticator = authenticator;
-        this.mobileBackupUrl = mobileBackupUrl;
+        this.settings = settings;
     }
 
     /**
      * Queries the server and returns ICloud.MBSAccount.
      *
      * @param http, not null
+     * @param authenticator, not null
      * @return ICloud.MBSAccount, not null
      * @throws IOException
      * @throws BadDataException
      * @throws AuthenticationException
      * @throws InterruptedException
      */
-    public ICloud.MBSAccount from(Http http)
+    public Account get(Http http, Authenticator authenticator)
             throws AuthenticationException, BadDataException, InterruptedException, IOException {
         logger.trace("<< from()");
 
         ICloud.MBSAccount account = authenticator.process(http, auth -> {
 
-            String uri = path(mobileBackupUrl, "mbs", auth.dsPrsId());
+            String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsId());
             return http.executor(uri, mbsaAccountResponseHandler)
                     .headers(auth.mobileBackupHeaders())
                     .get();
         });
+        
+        Account instance = Account.from(settings, account);
 
         logger.trace(">> from() > {}", account);
-        return account;
+        return instance;
     }
 }

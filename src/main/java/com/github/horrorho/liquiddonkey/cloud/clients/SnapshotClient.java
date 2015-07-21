@@ -45,81 +45,74 @@ import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
 /**
- * FilesClient.
+ * SnapshotClient.
  *
  * @author Ahseya
  */
 @ThreadSafe
-public final class FilesClient {
+public final class SnapshotClient {
 
-    public static FilesClient create(
-            Authenticator authenticator,
-            String backupUdid,
-            String mobileBackupUrl ,
+    public static SnapshotClient create(
+            Backup backup,
             int listLimit) {
 
-        return new FilesClient(
+        return new SnapshotClient(
                 defaultMbsFileListHandler,
-                authenticator,
-                backupUdid,
+                backup,
                 listLimit,
-                new BasicNameValuePair("limit", Integer.toString(listLimit)),
-                mobileBackupUrl);
+                new BasicNameValuePair("limit", Integer.toString(listLimit)));
     }
 
     private static final ResponseHandler<List<ICloud.MBSFile>> defaultMbsFileListHandler
             = ResponseHandlerFactory.of(inputStream -> ProtoBufArray.decode(inputStream, ICloud.MBSFile.PARSER));
 
-    private static final Logger logger = LoggerFactory.getLogger(FilesClient.class);
+    private static final Logger logger = LoggerFactory.getLogger(SnapshotClient.class);
     private static final Marker client = MarkerFactory.getMarker(Markers.CLIENT);
 
     private final ResponseHandler<List<ICloud.MBSFile>> mbsFileListHandler;
-    private final Authenticator authenticator;
-    private final String backupUdid;
+    private final Backup backup;
     private final int listLimit;
     private final NameValuePair limitParameter;
-    private final String mobileBackupUrl;
 
-    FilesClient(
+    SnapshotClient(
             ResponseHandler<List<ICloud.MBSFile>> mbsFileListHandler,
-            Authenticator authenticator,
-            String backupUdid,
+            Backup backup,
             int listLimit,
-            NameValuePair limitParameter,
-            String mobileBackupUrl) {
+            NameValuePair limitParameter) {
 
         this.mbsFileListHandler = Objects.requireNonNull(mbsFileListHandler);
-        this.authenticator = Objects.requireNonNull(authenticator);
-        this.backupUdid = Objects.requireNonNull(backupUdid);
+        this.backup = Objects.requireNonNull(backup);
         this.listLimit = listLimit;
         this.limitParameter = Objects.requireNonNull(limitParameter);
-        this.mobileBackupUrl = Objects.requireNonNull(mobileBackupUrl);
     }
 
     /**
      * Queries the server and returns an ICloud.MBSFile list.
      *
      * @param http, not null
-     * @param snapshotId snapshot id
+     * @param authenticators, not null
+     * @param snapshotId
      * @return ICloud.MBSFile list, not null
      * @throws AuthenticationException
      * @throws BadDataException
      * @throws IOException
      * @throws InterruptedException
      */
-    public List<ICloud.MBSFile> files(Http http, int snapshotId)
+    public Snapshot get(Http http, Authenticator authenticator, ICloud.MBSSnapshot snapshot)
             throws AuthenticationException, BadDataException, InterruptedException, IOException {
 
-        logger.trace("<< files() < backupUDID: {} snapshotId: {}", backupUdid, snapshotId);
-
+        logger.trace("<< files()");
+// TODO no such snapshot
         List<ICloud.MBSFile> files = new ArrayList<>();
         List<ICloud.MBSFile> data;
         int offset = 0;
         do {
             NameValuePair offsetParameter = new BasicNameValuePair("offset", Integer.toString(offset));
 
+            Settings settings = backup.account().settings();
+
             data = authenticator.process(http, auth -> {
-                String uri = path(mobileBackupUrl, "mbs", auth.dsPrsId(), backupUdid, Integer.toString(snapshotId));
+                String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsId(), backup.udidString(), Integer.toString(snapshot.getSnapshotID()));
                 return http.executor(uri, mbsFileListHandler)
                         .headers(auth.mobileBackupHeaders())
                         .parameters(offsetParameter, limitParameter)
@@ -130,8 +123,10 @@ public final class FilesClient {
             offset += listLimit;
         } while (!data.isEmpty());
 
+        Snapshot instance = Snapshot.from(backup, snapshot, files);
+
         logger.debug(client, "-- files() > files: {}", files);
         logger.trace(">> files() > count: {}", files.size());
-        return files;
+        return instance;
     }
 }

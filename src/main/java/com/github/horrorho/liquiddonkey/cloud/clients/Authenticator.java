@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 public class Authenticator {
 
     public static Authenticator from(AuthenticationConfig config) {
+        logger.trace("<< from() < config: {}", config);
 
         IdPassword idPassword = config.hasAppleIdPassword()
                 ? IdPassword.of(config.appleId(), config.password())
@@ -60,15 +61,18 @@ public class Authenticator {
                 ? Auth.from(config.dsPrsId(), config.mmeAuthToken())
                 : null;
 
-        return from(idPassword, auth);
+        Authenticator instance = from(idPassword, auth);
+
+        logger.trace(">> from() > {}", instance);
+        return instance;
     }
 
     public static Authenticator from(IdPassword idPassword, Auth auth) {
-        logger.trace("<< of() < idPassword: {} Auth:{}", idPassword, auth);
+        logger.trace("<< from() < idPassword: {} Auth:{}", idPassword, auth);
 
         Authenticator instance = new Authenticator(idPassword, auth);
 
-        logger.trace(">> of() > {}", instance);
+        logger.trace(">> from() > {}", instance);
         return instance;
     }
 
@@ -107,6 +111,11 @@ public class Authenticator {
     public String token(Http http) throws AuthenticationException, BadDataException, IOException, InterruptedException {
         Auth local = auth(http);
         return local.dsPrsId() + ":" + local.mmeAuthToken();
+    }
+
+    public String dsPrsID(Http http) throws AuthenticationException, BadDataException, IOException, InterruptedException {
+        Auth local = auth(http);
+        return local.dsPrsId();
     }
 
     public <T> T process(Http http, IOFunction<Auth, T> function)
