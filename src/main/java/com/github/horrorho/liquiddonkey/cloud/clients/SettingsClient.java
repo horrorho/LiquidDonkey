@@ -23,6 +23,9 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.clients;
 
+import com.github.horrorho.liquiddonkey.cloud.data.Tokens;
+import com.github.horrorho.liquiddonkey.cloud.data.Headers;
+import com.github.horrorho.liquiddonkey.cloud.data.Settings;
 import com.github.horrorho.liquiddonkey.data.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;

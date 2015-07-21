@@ -23,6 +23,9 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.clients;
 
+import com.github.horrorho.liquiddonkey.cloud.data.Headers;
+import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
+import com.github.horrorho.liquiddonkey.cloud.data.Settings;
 import static com.github.horrorho.liquiddonkey.cloud.clients.Util.path;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;

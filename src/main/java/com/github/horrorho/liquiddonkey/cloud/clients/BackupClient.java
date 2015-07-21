@@ -23,6 +23,9 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.clients;
 
+import com.github.horrorho.liquiddonkey.cloud.data.Backup;
+import com.github.horrorho.liquiddonkey.cloud.data.Account;
+import com.github.horrorho.liquiddonkey.cloud.data.Settings;
 import static com.github.horrorho.liquiddonkey.cloud.clients.Util.path;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
@@ -33,6 +36,8 @@ import com.github.horrorho.liquiddonkey.settings.Markers;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -80,6 +85,18 @@ public final class BackupClient {
         this.mbsaBackupResponseHandler = Objects.requireNonNull(mbsaBackupResponseHandler);
         this.mbsaKeySetResponseHandler = Objects.requireNonNull(mbsaKeySetResponseHandler);
         this.account = Objects.requireNonNull(account);
+    }
+
+    public List<Backup> get(Http http, Authenticator authenticator)
+            throws AuthenticationException, BadDataException, InterruptedException, IOException {
+
+        List<Backup> list = new ArrayList<>();
+
+        for (ByteString udid : account.account().getBackupUDIDList()) {
+            list.add(get(http, authenticator, udid));
+        }
+
+        return list;
     }
 
     /**

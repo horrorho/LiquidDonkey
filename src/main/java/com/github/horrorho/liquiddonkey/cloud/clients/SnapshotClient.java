@@ -23,6 +23,9 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.clients;
 
+import com.github.horrorho.liquiddonkey.cloud.data.Backup;
+import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
+import com.github.horrorho.liquiddonkey.cloud.data.Settings;
 import static com.github.horrorho.liquiddonkey.cloud.clients.Util.path;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ProtoBufArray;
@@ -90,7 +93,7 @@ public final class SnapshotClient {
      * Queries the server and returns an ICloud.MBSFile list.
      *
      * @param http, not null
-     * @param authenticators, not null
+     * @param authenticator, not null
      * @param snapshotId
      * @return ICloud.MBSFile list, not null
      * @throws AuthenticationException
@@ -98,11 +101,38 @@ public final class SnapshotClient {
      * @throws IOException
      * @throws InterruptedException
      */
-    public Snapshot get(Http http, Authenticator authenticator, ICloud.MBSSnapshot snapshot)
+    public Snapshot get(Http http, Authenticator authenticator, int snapshotId)
+            throws AuthenticationException, BadDataException, InterruptedException, IOException {
+
+        logger.trace("<< get()");
+
+        ICloud.MBSSnapshot snapshot = backup.backup().getSnapshotList().stream()
+                .filter(s -> s.getSnapshotID() == snapshotId)
+                .findFirst().orElse(null);
+
+        final Snapshot instance;
+        if (snapshot == null) {
+            logger.warn("-- get() > no such snapshot: {}", snapshotId);
+            instance = null;
+
+        } else if (snapshot.getCommitted() == 0) {
+            logger.warn("-- get() > incomplete snapshot: {}", snapshotId);
+            instance = null;
+
+        } else {
+            instance = doGet(http, authenticator, snapshot);
+        }
+
+        logger.debug(client, "-- files() > files: {}", instance.files());
+        logger.trace(">> get() > count: {}", instance.files().size());
+        return instance;
+    }
+
+    Snapshot doGet(Http http, Authenticator authenticator, ICloud.MBSSnapshot snapshot)
             throws AuthenticationException, BadDataException, InterruptedException, IOException {
 
         logger.trace("<< files()");
-// TODO no such snapshot
+
         List<ICloud.MBSFile> files = new ArrayList<>();
         List<ICloud.MBSFile> data;
         int offset = 0;

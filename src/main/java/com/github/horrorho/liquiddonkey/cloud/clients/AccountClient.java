@@ -23,6 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.clients;
 
+import com.github.horrorho.liquiddonkey.cloud.data.Account;
+import com.github.horrorho.liquiddonkey.cloud.data.Settings;
 import static com.github.horrorho.liquiddonkey.cloud.clients.Util.path;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
