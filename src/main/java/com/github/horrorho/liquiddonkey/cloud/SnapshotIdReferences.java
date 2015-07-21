@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
+import net.jcip.annotations.Immutable;
+import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * SnapshotIdReferences.
  * <p>
  * Snapshot id references from 1 inclusive are treated as absolute. Zero id references refers to the first available
- * snapshot. Negative id references refer to relative offsets from the latest snapshot.
+ * snapshot. Negative id references refer to relative index offsets from the latest snapshot.
  * <p>
  * Incomplete snapshots are not considered.
  * <p>
@@ -58,43 +60,49 @@ import org.slf4j.LoggerFactory;
  * <p>
  * id -2 > 10
  * <p>
- * id -3 > -1 (9 is unavailable)
+ * id -3 > 5
+ * <p>
+ * id -4 > -1
  *
  * @author Ahseya
  */
-public class SnapshotIdReferences implements IntUnaryOperator {
+@Immutable
+@ThreadSafe
+public final class SnapshotIdReferences implements IntUnaryOperator {
 
-    public static SnapshotIdReferences from(Backup backup) {
+    public static SnapshotIdReferences from(ICloud.MBSBackup backup) {
         logger.trace("<< from() < backup: {}", backup);
 
-        Map<Integer, Integer> resolved = new HashMap<>();
-
-        List<ICloud.MBSSnapshot> snapshots = backup.snapshots().stream()
-                .filter(SnapshotIdReferences::isComplete)
-                .sorted(Comparator.comparingLong(ICloud.MBSSnapshot::getSnapshotID))
-                .collect(Collectors.toList());
-
-        if (!snapshots.isEmpty()) {
-            resolved.put(0, snapshots.get(0).getSnapshotID());
-            int max = snapshots.stream().mapToInt(ICloud.MBSSnapshot::getSnapshotID).max().orElse(0);
-
-            for (int index = 0; index < snapshots.size(); index++) {
-                ICloud.MBSSnapshot snapshot = snapshots.get(index);
-                int id = snapshot.getSnapshotID();
-
-                resolved.put(id, snapshot.getSnapshotID());
-                resolved.put(max - index - 1, snapshot.getSnapshotID());
-            }
-        }
-
-        SnapshotIdReferences instance = new SnapshotIdReferences(resolved);
+        SnapshotIdReferences instance = new SnapshotIdReferences(references(backup));
 
         logger.trace(">> from() > {}", instance);
         return instance;
     }
 
+    static Map<Integer, Integer> references(ICloud.MBSBackup backup) {
+        Map<Integer, Integer> map = new HashMap<>();
+
+        List<ICloud.MBSSnapshot> snapshots = backup.getSnapshotList().stream()
+                .filter(SnapshotIdReferences::isComplete)
+                .sorted(Comparator.comparingLong(ICloud.MBSSnapshot::getSnapshotID))
+                .collect(Collectors.toList());
+
+        if (!snapshots.isEmpty()) {
+            map.put(0, snapshots.get(0).getSnapshotID());
+
+            for (int index = 0; index < snapshots.size(); index++) {
+                ICloud.MBSSnapshot snapshot = snapshots.get(index);
+                int id = snapshot.getSnapshotID();
+
+                map.put(id, snapshot.getSnapshotID());
+                map.put(index - snapshots.size(), snapshot.getSnapshotID());
+            }
+        }
+        return map;
+    }
+
     static boolean isComplete(ICloud.MBSSnapshot snapshot) {
-        if (snapshot.getQuotaReserved() == 0) {
+        if (snapshot.getCommitted() == 0) {
             logger.warn("-- from() > incomplete snapshot: {}", snapshot);
             return false;
         }
@@ -102,19 +110,19 @@ public class SnapshotIdReferences implements IntUnaryOperator {
     }
 
     private static final Logger logger = LoggerFactory.getLogger(SnapshotIdReferences.class);
-    private final Map<Integer, Integer> resolved;
+    private final Map<Integer, Integer> references;
 
     SnapshotIdReferences(Map<Integer, Integer> resolved) {
-        this.resolved = resolved;
+        this.references = resolved;
     }
 
     @Override
     public int applyAsInt(int idReference) {
-        return resolved.getOrDefault(idReference, -1);
+        return references.getOrDefault(idReference, -1);
     }
 
     @Override
     public String toString() {
-        return "SnapshotIdResolver{" + "resolved=" + resolved + '}';
+        return "SnapshotIdResolver{" + "resolved=" + references + '}';
     }
 }
