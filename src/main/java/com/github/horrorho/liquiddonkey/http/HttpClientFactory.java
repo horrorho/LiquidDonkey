@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.http;
 
-import com.github.horrorho.liquiddonkey.http.retryhandler.PersistentHttpRequestRetryHandler;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.HttpConfig;
 import java.security.KeyManagementException;
@@ -45,27 +44,36 @@ import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.SSLContextBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Http factory.
+ * HttpClientFactory.
  *
  * @author ahseya
  */
 @Immutable
 @ThreadSafe
-public final class HttpFactory {
+public final class HttpClientFactory {
 
-    public static HttpFactory of(HttpConfig config) {
-        return new HttpFactory(config);
+    public static HttpClientFactory from(HttpConfig config) {
+        logger.trace("<< from() < config: {}", config);
+
+        HttpClientFactory factory = new HttpClientFactory(config);
+
+        logger.trace(">> from() > {}", factory);
+        return factory;
     }
+    private static final Logger logger = LoggerFactory.getLogger(HttpClientFactory.class);
 
     private final HttpConfig config;
 
-    HttpFactory(HttpConfig config) {
+    HttpClientFactory(HttpConfig config) {
         this.config = Objects.requireNonNull(config);
     }
 
-    public Http newInstance(Printer printer) {
+    public CloseableHttpClient client(Printer printer) {
+        logger.trace("<< client()");
 
         PoolingHttpClientConnectionManager connectionManager = config.isRelaxedSSL()
                 ? new PoolingHttpClientConnectionManager(relaxedSocketFactoryRegistry())
@@ -99,7 +107,8 @@ public final class HttpFactory {
                 .setUserAgent(config.userAgent())
                 .build();
 
-        return new Http(client, config.socketTimeoutRetryCount());
+        logger.trace(">> client() > ", client);
+        return client;
     }
 
     Registry<ConnectionSocketFactory> relaxedSocketFactoryRegistry() {
@@ -121,5 +130,10 @@ public final class HttpFactory {
         } catch (NoSuchAlgorithmException | KeyStoreException | KeyManagementException ex) {
             throw new IllegalStateException("Unable to create relaxed SSL context.");
         }
+    }
+
+    @Override
+    public String toString() {
+        return "HttpFactory{" + "config=" + config + '}';
     }
 }

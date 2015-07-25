@@ -1,4 +1,3 @@
-
 /*
  * The MIT License
  *
@@ -25,6 +24,7 @@
 package com.github.horrorho.liquiddonkey.cloud.clients;
 
 import com.github.horrorho.liquiddonkey.data.SimplePropertyList;
+import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.ResponseHandlerFactory;
 import java.io.IOException;
@@ -32,62 +32,73 @@ import java.util.Objects;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * SettingsClient.
+ * AuthClient.
  *
  * @author Ahseya
  */
 @Immutable
 @ThreadSafe
-public final class SettingsClient {
+public final class AuthClient {
 
-    public static SettingsClient create() {
+    public static AuthClient create() {
         return instance;
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(SettingsClient.class);
+    private static final Logger logger = LoggerFactory.getLogger(AuthClient.class);
 
-    private static final SettingsClient instance
-            = new SettingsClient(ResponseHandlerFactory.toByteArray(), Headers.create());
+    private static final AuthClient instance
+            = new AuthClient(ResponseHandlerFactory.toByteArray(), Headers.create());
 
     private final ResponseHandler<byte[]> byteArrayResponseHandler;
     private final Headers headers;
 
-    SettingsClient(ResponseHandler<byte[]> byteArrayResponseHandler, Headers headers) {
+    AuthClient(ResponseHandler<byte[]> byteArrayResponseHandler, Headers headers) {
         this.byteArrayResponseHandler = Objects.requireNonNull(byteArrayResponseHandler);
         this.headers = Objects.requireNonNull(headers);
     }
 
     /**
-     * Queries the server and returns settings.
+     * Queries the server and returns an Authenticate property list.
      *
-     * @param client, not null
-     * @param dsPrsID, not null
-     * @param mmeAuthToken, not null
-     * @return settings, not null
-     * @throws IOException
+     * @param client
+     * @param id
+     * @param password
+     * @return Authenticate property list, not null
+     * @throws AuthenticationException
      * @throws BadDataException
+     * @throws IOException
      */
-    public SimplePropertyList get(HttpClient client, String dsPrsID, String mmeAuthToken)
-            throws BadDataException, IOException {
+    public SimplePropertyList get(HttpClient client, String id, String password)
+            throws AuthenticationException, BadDataException, IOException {
 
-        logger.trace("<< get() < dsPrsID: {} mmeAuthToken: {}", dsPrsID, mmeAuthToken);
+        logger.trace("<< get() < id: {} password: {}", id, password);
 
-        String authToken = headers.basicToken(dsPrsID, mmeAuthToken);
+        try {
+            String authBasic = headers.basicToken(id, password);
+            logger.debug("-- get() > auth header: {}", authBasic);
 
-        HttpGet get = new HttpGet("https://setup.icloud.com/setup/get_account_settings");
-        get.addHeader(headers.mmeClientInfo());
-        get.addHeader(headers.authorization(authToken));
-        byte[] data = client.execute(get, byteArrayResponseHandler);
-        
-        SimplePropertyList propertyList = SimplePropertyList.from(data);
+            HttpGet get = new HttpGet("https://setup.icloud.com/setup/authenticate/$APPLE_ID$");
+            get.addHeader(headers.mmeClientInfo());
+            get.addHeader(headers.authorization(authBasic));
+            byte[] data = client.execute(get, byteArrayResponseHandler);
 
-        logger.trace(">> get() > {}", propertyList);
-        return propertyList;
+            SimplePropertyList propertyList = SimplePropertyList.from(data);
+
+            logger.trace(">> get() > {}", propertyList);
+            return propertyList;
+
+        } catch (HttpResponseException ex) {
+            if (ex.getStatusCode() == 401) {
+                throw new AuthenticationException("Bad appleId/ password or not an iCloud account");
+            }
+            throw ex;
+        }
     }
 }

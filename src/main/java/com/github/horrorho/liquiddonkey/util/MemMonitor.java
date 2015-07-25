@@ -23,28 +23,32 @@
  */
 package com.github.horrorho.liquiddonkey.util;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * MemLogger.
+ * MemMonitor.
  *
  * @author Ahseya
  */
-public class MemLogger implements Runnable {
+public class MemMonitor implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(MemLogger.class);
+    private static final Logger logger = LoggerFactory.getLogger(MemMonitor.class);
 
-    public static MemLogger from(long intervalMs) {
-        return new MemLogger(intervalMs, false);
+    public static MemMonitor from(long intervalMs) {
+        return new MemMonitor(intervalMs, new AtomicLong(0), false);
     }
 
     private final long intervalMs;
+    private final AtomicLong max;
     private volatile boolean stop;
 
-    MemLogger(long intervalMs, boolean stop) {
+    MemMonitor(long intervalMs, AtomicLong max, boolean stop) {
         this.intervalMs = intervalMs;
+        this.max = Objects.requireNonNull(max);
         this.stop = stop;
     }
 
@@ -54,10 +58,12 @@ public class MemLogger implements Runnable {
         Runtime runtime = Runtime.getRuntime();
         try {
             while (!stop) {
-                long usedMb = (runtime.totalMemory() - runtime.freeMemory()) / 1048510;
-                long totalMb = runtime.totalMemory() / 1048510;
+                long usedMb = runtime.totalMemory() - runtime.freeMemory();
+                long totalMb = runtime.totalMemory();
+                max.getAndUpdate(current -> usedMb > current ? usedMb : current);
 
-                logger.debug("-- run() > memory (MB): {} / {}", usedMb, totalMb);
+                logger.debug("-- run() > memory (MB): {} ({}) / {}",
+                        usedMb / 1048510, max.get() / 1048510, totalMb / 1048510);
 
                 TimeUnit.MILLISECONDS.sleep(intervalMs);
             }
@@ -70,5 +76,9 @@ public class MemLogger implements Runnable {
 
     public void stop() {
         stop = true;
+    }
+
+    public long max() {
+        return max.get();
     }
 }

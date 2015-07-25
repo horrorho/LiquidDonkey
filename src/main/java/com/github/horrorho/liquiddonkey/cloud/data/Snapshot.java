@@ -23,119 +23,45 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.data;
 
-import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.google.protobuf.ByteString;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import net.jcip.annotations.Immutable;
-import net.jcip.annotations.ThreadSafe;
 
 /**
  * Snapshot.
  *
  * @author Ahseya
  */
-@Immutable
-@ThreadSafe
-public final class Snapshot {
+public class Snapshot extends Backup {
 
-    public static Snapshot from(Snapshot snapshot, Predicate<ICloud.MBSFile> filter) {
-
-        List<ICloud.MBSFile> filtered = snapshot.files.stream().filter(filter::test).collect(Collectors.toList());
-
-        return new Snapshot(
-                snapshot.dsPrsID,
-                snapshot.udid,
-                snapshot.mbsSnapshot,
-                snapshot.keyBagManager,
-                filtered);
-    }
-
-    public static Snapshot from(Backup backup, ICloud.MBSSnapshot snapshot, List<ICloud.MBSFile> files) {
-        return new Snapshot(
-                backup.dsPrsID(),
-                backup.udid(),
-                snapshot,
-                backup.keybagManager(),
-                files);
-    }
-
-    private final String dsPrsID;
-    private final ByteString udid;
-    private final ICloud.MBSSnapshot mbsSnapshot;
-    private final KeyBagManager keyBagManager;
+    private final ICloud.MBSSnapshot snapshot;
     private final List<ICloud.MBSFile> files;
+    private final Backup backup;
 
-    public Snapshot(
-            String dsPrsID,
-            ByteString udid,
-            ICloud.MBSSnapshot mbsSnapshot,
-            KeyBagManager keyBagManager,
-            List<ICloud.MBSFile> files) {
-
-        this.dsPrsID = dsPrsID;
-        this.udid = udid;
-        this.mbsSnapshot = mbsSnapshot;
-        this.keyBagManager = keyBagManager;
+    Snapshot(Backup backup, ICloud.MBSSnapshot snapshot, List<ICloud.MBSFile> files) {
+        super(backup);
+        this.snapshot = snapshot;
         this.files = files;
+        this.backup = backup;
     }
 
-    /**
-     * Returns the dsPrsID.
-     *
-     * @return dsPrsID, not null
-     */
-    public String dsPrsID() {
-        return dsPrsID;
+    Snapshot(Snapshot snapshot, List<ICloud.MBSFile> files) {
+        this(snapshot.backup, snapshot.snapshot, files);
     }
 
-    public List<ICloud.MBSFile> files() {
+    Snapshot(Snapshot snapshot) {
+        this(snapshot.backup, snapshot.snapshot, snapshot.files());
+    }
+
+    public final int snapshotID() {
+        return snapshot.getSnapshotID();
+    }
+
+    public final ICloud.MBSSnapshot snapshot() {
+        return snapshot;
+    }
+
+    public final List<ICloud.MBSFile> files() {
         return new ArrayList<>(files);
-    }
-
-    public int id() {
-        return mbsSnapshot.getSnapshotID();
-    }
-
-    /**
-     * Returns the keyBagManager.
-     *
-     * @return keyBagManager, not null
-     */
-    public KeyBagManager keyBagManager() {
-        return keyBagManager;
-    }
-
-    /**
-     * Returns a new concurrent signature to file Set map.
-     *
-     * @return a new concurrent signature to file Set map, not null
-     */
-    public ConcurrentMap<ByteString, Set<ICloud.MBSFile>> signatures() {
-        return files().stream()
-                .collect(Collectors.groupingByConcurrent(ICloud.MBSFile::getSignature, Collectors.toSet()));
-    }
-
-    /**
-     * Returns the ICloud.MBSSnapshot.
-     *
-     * @return ICloud.MBSSnapshot, not null
-     */
-    public ICloud.MBSSnapshot snapshot() {
-        return mbsSnapshot;
-    }
-
-    /**
-     * Returns the UDID.
-     *
-     * @return UDID, not null
-     */
-    public ByteString udid() {
-        return udid;
     }
 }

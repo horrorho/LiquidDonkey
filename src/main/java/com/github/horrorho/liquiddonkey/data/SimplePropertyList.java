@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 /**
- * SimplePropertyList. Lightweight handling of (nested) dictionaries.
+ * SimplePropertyList. Lightweight and limited wrapper of property lists.
  *
  * @author ahseya
  */
@@ -68,22 +68,18 @@ public final class SimplePropertyList {
         this.dictionary = Objects.requireNonNull(dictionary);
     }
 
-    public String valueOr(String defaultValue, String... path) {
+    public String defaultOr(String defaultValue, String... path) {
         try {
             return value(path);
         } catch (BadDataException ex) {
-            logger.debug("--valueOr() > exception: ", ex);
+            // TODO without exception handling
+            logger.debug("--defaultOr() > exception: ", ex);
             return defaultValue;
         }
     }
 
-    public String valueOrNull(String... path) {
-        try {
-            return value(path);
-        } catch (BadDataException ex) {
-            logger.debug("--valueOrNull() > exception: ", ex);
-            return null;
-        }
+    public String nullOr(String... path) {
+        return defaultOr(null, path);
     }
 
     public String value(String... path) throws BadDataException {

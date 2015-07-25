@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.http.retryhandler;
+package com.github.horrorho.liquiddonkey.http;
 
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
@@ -107,6 +107,7 @@ public final class PersistentHttpRequestRetryHandler implements HttpRequestRetry
         HttpClientContext clientContext = HttpClientContext.adapt(context);
         HttpRequest request = clientContext.getRequest();
 
+        // TODO test this, probably doesn't belong here
         if (request instanceof HttpExecutionAware && (((HttpExecutionAware) request).isAborted())) {
             logger.debug("-- doRetryRequest() > {} {} > false (aborted)",
                     request.getRequestLine(), exception.toString());

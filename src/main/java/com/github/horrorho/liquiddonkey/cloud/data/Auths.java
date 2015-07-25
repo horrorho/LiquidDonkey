@@ -27,40 +27,43 @@ import com.github.horrorho.liquiddonkey.cloud.clients.AuthClient;
 import com.github.horrorho.liquiddonkey.data.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import java.io.IOException;
-import java.util.Objects;
-import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Auth.
  *
  * @author Ahseya
  */
-@ThreadSafe
-public class Auth {
+public class Auths {
 
+    public static Auth from(String dsPrsID, String mmeAuthToken) {
+        logger.trace("<< from() < dsPrsID: {} mmeAuthToken: {}", dsPrsID, mmeAuthToken);
 
+        Auth auth = new Auth(dsPrsID, mmeAuthToken);
 
-    private final String dsPrsID;
-    private final String mmeAuthToken;
-
-    Auth(String dsPrsId, String mmeAuthToken) {
-        this.dsPrsID = Objects.requireNonNull(dsPrsId);
-        this.mmeAuthToken = Objects.requireNonNull(mmeAuthToken);
+        logger.trace(">> from > {}", auth);
+        return auth;
     }
 
-    public final String dsPrsID() {
-        return dsPrsID;
+    public static Auth from(HttpClient client, String id, String password) throws BadDataException, IOException {
+        logger.trace("<< from() < id: {} password: {}", id, password);
+
+        SimplePropertyList propertyList = authClient.get(client, id, password);
+
+        String dsPrsID = propertyList.value("appleAccountInfo", "dsPrsID");
+        logger.debug("-- from() >  dsPrsID: {}", dsPrsID);
+
+        String mmeAuthToken = propertyList.value("tokens", "mmeAuthToken");
+        logger.debug("-- from() >   mmeAuthToken: {}", mmeAuthToken);
+
+        Auth auth = new Auth(dsPrsID, mmeAuthToken);
+
+        logger.trace(">> from > {}", auth);
+        return auth;
     }
 
-    public final String mmeAuthToken() {
-        return mmeAuthToken;
-    }
+    private static final Logger logger = LoggerFactory.getLogger(Auth.class);
+    private static final AuthClient authClient = AuthClient.create();
 
-    @Override
-    public String toString() {
-        return "Auth{" + "dsPrsID=" + dsPrsID + ", mmeAuthToken=" + mmeAuthToken + '}';
-    }
 }

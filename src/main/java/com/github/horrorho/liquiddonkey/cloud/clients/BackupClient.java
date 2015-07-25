@@ -23,24 +23,17 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.clients;
 
-import com.github.horrorho.liquiddonkey.cloud.data.Backup;
-import com.github.horrorho.liquiddonkey.cloud.data.Settings;
 import static com.github.horrorho.liquiddonkey.cloud.clients.Util.path;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
-import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
+import com.github.horrorho.liquiddonkey.http.ResponseHandlerFactory;
 import com.github.horrorho.liquiddonkey.settings.Markers;
-import com.github.horrorho.liquiddonkey.util.Bytes;
-import com.google.protobuf.ByteString;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
@@ -55,85 +48,68 @@ import org.slf4j.MarkerFactory;
 @ThreadSafe
 public final class BackupClient {
 
-    public static BackupClient create(ICloud.MBSAccount account)
-            throws IOException {
-
-        return new BackupClient(
-                defaultMbsaBackupResponseHandler,
-                defaultMbsaKeySetResponseHandler,
-                account);
+    public static BackupClient create() {
+        return instance;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(BackupClient.class);
-    private static final Marker client = MarkerFactory.getMarker(Markers.CLIENT);
+    private static final Marker marker = MarkerFactory.getMarker(Markers.CLIENT);
 
-    private static final ResponseHandler<ICloud.MBSBackup> defaultMbsaBackupResponseHandler
-            = ResponseHandlerFactory.of(ICloud.MBSBackup.PARSER::parseFrom);
-    private static final ResponseHandler<ICloud.MBSKeySet> defaultMbsaKeySetResponseHandler
-            = ResponseHandlerFactory.of(ICloud.MBSKeySet.PARSER::parseFrom);
+    private static final BackupClient instance = new BackupClient(
+            ResponseHandlerFactory.of(ICloud.MBSBackup.PARSER::parseFrom),
+            ResponseHandlerFactory.of(ICloud.MBSKeySet.PARSER::parseFrom),
+            Headers.create());
 
     private final ResponseHandler<ICloud.MBSBackup> mbsaBackupResponseHandler;
     private final ResponseHandler<ICloud.MBSKeySet> mbsaKeySetResponseHandler;
-    private final ICloud.MBSAccount account;
+    private final Headers headers;
 
-    public BackupClient(
+    BackupClient(
             ResponseHandler<ICloud.MBSBackup> mbsaBackupResponseHandler,
             ResponseHandler<ICloud.MBSKeySet> mbsaKeySetResponseHandler,
-            ICloud.MBSAccount account) {
+            Headers headers) {
 
         this.mbsaBackupResponseHandler = Objects.requireNonNull(mbsaBackupResponseHandler);
         this.mbsaKeySetResponseHandler = Objects.requireNonNull(mbsaKeySetResponseHandler);
-        this.account = Objects.requireNonNull(account);
+        this.headers = Objects.requireNonNull(headers);
     }
 
-    public List<Backup> get(Http http, Core core)
-            throws AuthenticationException, BadDataException, InterruptedException, IOException {
+    public ICloud.MBSBackup mbsBackup(
+            HttpClient client,
+            String dsPrsID,
+            String mmeAuthToken,
+            String mobileBackupUrl,
+            String udid
+    ) throws IOException {
 
-        List<Backup> list = new ArrayList<>();
+        logger.trace("<< mbsBackup() < dsPrsID: {} udid: {}", dsPrsID, udid);
 
-        for (ByteString udid : account.getBackupUDIDList()) {
-            list.add(get(http, core, udid));
-        }
+        String get = path(mobileBackupUrl, "mbs", dsPrsID, udid);
+        HttpGet getMBSBackup = new HttpGet(get);
+        headers.mobileBackupHeaders(dsPrsID, mmeAuthToken).stream().forEach(getMBSBackup::addHeader);
+        ICloud.MBSBackup mbsBackup = client.execute(getMBSBackup, mbsaBackupResponseHandler);
 
-        return list;
+        logger.trace(">> mbsaBackup() > {}", mbsBackup);
+        return mbsBackup;
     }
 
-    /**
-     * Queries the server and returns ICloud.MBSAccount.
-     *
-     * @param http, not null
-     * @param core, not null
-     * @param backupUdid, not null
-     * @return ICloud.MBSAccount, not null
-     * @throws AuthenticationException
-     * @throws BadDataException
-     * @throws IOException
-     * @throws InterruptedException
-     */
-    public Backup get(Http http, Core core, ByteString backupUdid)
-            throws AuthenticationException, BadDataException, InterruptedException, IOException {
+    public ICloud.MBSKeySet mbsKeySet(
+            HttpClient client,
+            String dsPrsID,
+            String mmeAuthToken,
+            String mobileBackupUrl,
+            String udid
+    ) throws IOException {
 
-        logger.trace("<< backup()");
-// TODO no such get
+        logger.trace("<< mbsKeySet() < dsPrsID: {} udid: {}", dsPrsID, udid);
 
-        ICloud.MBSBackup mbsBackup = core.process(http, account.getAccountID(), (auth, settings) -> {
+        String get = path(mobileBackupUrl, "mbs", dsPrsID, udid, "getKeys");
+        HttpGet getMBSBackup = new HttpGet(get);
+        headers.mobileBackupHeaders(dsPrsID, mmeAuthToken).stream().forEach(getMBSBackup::addHeader);
+        ICloud.MBSKeySet mbsKeySet = client.execute(getMBSBackup, mbsaKeySetResponseHandler);
 
-            String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsID(), Bytes.hex(backupUdid));
-            return http.executor(uri, mbsaBackupResponseHandler)
-                    .headers(auth.mobileBackupHeaders())
-                    .get();
-        });
-
-        ICloud.MBSKeySet mbsKeySet = core.process(http, account.getAccountID(), (auth, settings) -> {
-
-            String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsID(), Bytes.hex(backupUdid), "getKeys");
-            return http.executor(uri, mbsaKeySetResponseHandler)
-                    .headers(auth.mobileBackupHeaders())
-                    .get();
-        });
-
-        Backup instance = Backup.from(account, mbsBackup, mbsKeySet);
-        logger.trace(">> backup() > {}", instance);
-        return instance;
+        logger.debug(marker, ">> mbsKeySet() > mbsKeySet: {}", mbsKeySet);
+        logger.trace(">> mbsKeySet() > count: {}", mbsKeySet.getKeyCount());
+        return mbsKeySet;
     }
 }

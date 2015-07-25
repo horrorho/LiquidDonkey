@@ -24,8 +24,7 @@
 package com.github.horrorho.liquiddonkey.cloud.donkey;
 
 import com.github.horrorho.liquiddonkey.cloud.clients.ChunksClient;
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import com.github.horrorho.liquiddonkey.http.Http;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer; 
 import com.github.horrorho.liquiddonkey.util.pool.Release;
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -34,6 +33,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 import net.jcip.annotations.NotThreadSafe;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,12 +48,12 @@ public final class FetchDonkey extends Donkey {
 
     private static final Logger log = LoggerFactory.getLogger(FetchDonkey.class);
 
-    private final Http http;
+    private final HttpClient client;
     private final ChunksClient chunks;
     private final BiFunction<FetchDonkey, byte[], WriterDonkey> writerDonkeys;
 
     FetchDonkey(
-            Http http,
+            HttpClient client,
             ChunksClient chunks,
             BiFunction<FetchDonkey, byte[], WriterDonkey> writerDonkeys,
             ChunkServer.StorageHostChunkList chunkList,
@@ -63,7 +63,7 @@ public final class FetchDonkey extends Donkey {
 
         super(chunkList, exceptions, retryCount, fatal);
 
-        this.http = Objects.requireNonNull(http);
+        this.client = Objects.requireNonNull(client);
         this.chunks = Objects.requireNonNull(chunks);
         this.writerDonkeys = Objects.requireNonNull(writerDonkeys);
     }
@@ -74,7 +74,7 @@ public final class FetchDonkey extends Donkey {
 
         Release<Track, Donkey> toDo;
         try {
-            byte[] data = chunks.get(http, chunkList);
+            byte[] data = chunks.get(client, chunkList);
             toDo = Release.requeue(Track.DECODE_WRITE, writerDonkeys.apply(this, data));
         } catch (UnknownHostException ex) {
             log.warn("-- toProcess() > exception: ", ex);

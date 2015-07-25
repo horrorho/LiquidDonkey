@@ -23,17 +23,12 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.clients;
 
-import com.github.horrorho.liquiddonkey.cloud.data.Headers;
-import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
-import com.github.horrorho.liquiddonkey.cloud.data.Settings;
 import static com.github.horrorho.liquiddonkey.cloud.clients.Util.path;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ProtoBufArray;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
+import com.github.horrorho.liquiddonkey.http.ResponseHandlerFactory;
 import com.github.horrorho.liquiddonkey.settings.Markers;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
@@ -45,9 +40,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.Header;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.methods.RequestBuilder;
+import org.apache.http.entity.ByteArrayEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
@@ -58,15 +59,15 @@ import org.slf4j.MarkerFactory;
  *
  * @author Ahseya
  */
+@Immutable
 @ThreadSafe
 public final class FileGroupsClient {
 
-    public static FileGroupsClient create(Snapshot snapshot) {
+    public static FileGroupsClient create() {
 
         return new FileGroupsClient(
                 defaultFilesGroupsHandler,
                 defaultMbsFileAuthTokenListHandler,
-                snapshot,
                 Headers.create());
     }
 
@@ -76,125 +77,144 @@ public final class FileGroupsClient {
             = ResponseHandlerFactory.of(inputStream -> ProtoBufArray.decode(inputStream, ICloud.MBSFileAuthToken.PARSER));
 
     private static final Logger logger = LoggerFactory.getLogger(FileGroupsClient.class);
-    private static final Marker client = MarkerFactory.getMarker(Markers.CLIENT);
+    private static final Marker marker = MarkerFactory.getMarker(Markers.CLIENT);
 
     private final ResponseHandler<ChunkServer.FileGroups> filesGroupsHandler;
     private final ResponseHandler<List<ICloud.MBSFileAuthToken>> mbsFileAuthTokenListHandler;
-    private final Snapshot snapshot;
     private final Headers headers;
 
-    private FileGroupsClient(
+    ;
+
+    FileGroupsClient(
             ResponseHandler<ChunkServer.FileGroups> filesGroupsHandler,
             ResponseHandler<List<ICloud.MBSFileAuthToken>> mbsFileAuthTokenListHandler,
-            Snapshot snapshot,
             Headers headers) {
 
         this.filesGroupsHandler = Objects.requireNonNull(filesGroupsHandler);
         this.mbsFileAuthTokenListHandler = Objects.requireNonNull(mbsFileAuthTokenListHandler);
-        this.snapshot = Objects.requireNonNull(snapshot);
         this.headers = Objects.requireNonNull(headers);
     }
 
     /**
      * Queries the server and returns ChunkServer.FileGroupsClient.
      *
-     * @param http, not null
-     * @param snapshotId
+     * @param client, not null
+     * @param dsPrsID, not null
+     * @param mmeAuthToken, not null
+     * @param contentUrl, not null
+     * @param mobileBackupUrl, not null
+     * @param udid, not null
+     * @param snapshot, not null
      * @param files, not null
-     * @return ChunkServer.FileGroupsClient, not null
-     * @throws AuthenticationException
+     * @return ChunkServer.FileGroupsClient, may be null
      * @throws BadDataException
      * @throws IOException
-     * @throws InterruptedException
      */
-    public ChunkServer.FileGroups get(Http http, Core core, Snapshot snapshot)
-            throws AuthenticationException, BadDataException, InterruptedException, IOException {
+    public ChunkServer.FileGroups get(
+            HttpClient client,
+            String dsPrsID,
+            String mmeAuthToken,
+            String contentUrl,
+            String mobileBackupUrl,
+            String udid,
+            int snapshot,
+            Collection<ICloud.MBSFile> files
+    ) throws BadDataException, IOException {
 
-        //  logger.trace("<< get() < backupUdid: {} snapshot: {} files: {}", backupUdid, snapshotId, files.size());
-        // logger.debug(client, "-- get() < files: {}", files);
+        logger.trace("<< get() < dsPrsID: {} udid: {} snapshot: {} files: {}", dsPrsID, udid, snapshot, files.size());
+        logger.debug(marker, "-- get() < files: {}", files);
+
         // Rationalize signatures. Collisions ignored. Null signatures are empty files/ non-downloadables.
-        Collection<ICloud.MBSFile> unique = snapshot.files().stream()
+        // TODO clean up somehow
+        Collection<ICloud.MBSFile> unique = files.stream()
                 .filter(ICloud.MBSFile::hasSignature)
                 .collect(Collectors.toMap(ICloud.MBSFile::getSignature, Function.identity(), (a, b) -> a))
                 .values();
 
-        logger.debug("-- fileGroups() > rationalized count: {}", unique.size());
+        logger.debug("-- get() > rationalized count: {}", unique.size());
 
         List<ICloud.MBSFileAuthToken> authTokens = unique.isEmpty()
                 ? new ArrayList<>()
-                : getFiles(http, snapshot.id(), unique, core);
+                : getFiles(client, dsPrsID, mmeAuthToken, mobileBackupUrl, udid, Integer.toString(snapshot), unique);
+
+        ICloud.MBSFileAuthTokens tokens = fileIdToSignatureAuthTokens(unique, authTokens);
 
         ChunkServer.FileGroups fileGroups = authTokens.isEmpty()
                 ? ChunkServer.FileGroups.getDefaultInstance()
-                : authorizeGet(http, unique, authTokens, core);
+                : authorizeGet(client, dsPrsID, mmeAuthToken, contentUrl, tokens);
 
-        logger.debug(client, "-- fileGroups() > fileGroups: {}", fileGroups);
-        logger.trace(">> fileGroups() > count: {}", fileGroups.getFileGroupsCount());
+        logger.debug(marker, "-- get() > fileGroups: {}", fileGroups);
+        logger.trace(">> get() > {}", fileGroups.getFileGroupsCount());
         return fileGroups;
     }
 
-    List<ICloud.MBSFileAuthToken>
-            getFiles(Http http, int snapshotId, Collection<ICloud.MBSFile> files, Core core)
-            throws AuthenticationException, BadDataException, InterruptedException, IOException {
+    List<ICloud.MBSFileAuthToken> getFiles(
+            HttpClient client,
+            String dsPrsID,
+            String mmeAuthToken,
+            String mobileBackupUrl,
+            String udid,
+            String snapshot,
+            Collection<ICloud.MBSFile> files
+    ) throws BadDataException, IOException {
 
-        //logger.trace("<< getFiles() < backupUdid: {} snapshot: {} files: {}", backupUdid, snapshotId, files.size());
-        logger.debug(client, "-- getFiles() < files: {}", files);
+        logger.trace("<< getFiles() < dsPrsID: {} udid: {} snapshot: {} files: {}",
+                dsPrsID, udid, snapshot, files.size());
+        logger.debug(marker, "-- getFiles() < files: {}", files);
 
-        List<ICloud.MBSFile> post = files.stream()
+        List<ICloud.MBSFile> postData = files.stream()
                 .map(file -> ICloud.MBSFile.newBuilder().setFileID(file.getFileID()).build())
                 .collect(Collectors.toList());
 
         byte[] encoded;
         try {
-            encoded = ProtoBufArray.encode(post);
+            encoded = ProtoBufArray.encode(postData);
         } catch (IOException ex) {
             throw new BadDataException(ex);
         }
 
-        List<ICloud.MBSFileAuthToken> tokens = core.process(http, snapshot.dsPrsID(), (auth, settings) -> {
-            String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsID(), Bytes.hex(snapshot.udid()), Integer.toString(snapshotId), "getFiles");
-            return http.executor(uri, mbsFileAuthTokenListHandler)
-                    .headers(auth.mobileBackupHeaders())
-                    .post(encoded);
-        });
+        String uri = path(mobileBackupUrl, "mbs", snapshot, udid, snapshot, "getFiles");
 
-        logger.debug(client, "-- getFiles() > tokens: {}", tokens);
-        logger.trace(">> getFiles() > count: {}", tokens.size());
+        HttpPost post = new HttpPost(uri);
+        headers.mobileBackupHeaders(dsPrsID, mmeAuthToken).stream().forEach(post::addHeader);
+        post.setEntity(new ByteArrayEntity(encoded));
+        List<ICloud.MBSFileAuthToken> tokens = client.execute(post, mbsFileAuthTokenListHandler);
+
+        logger.debug(marker, "-- getFiles() > tokens: {}", tokens);
+        logger.trace(">> getFiles() > {}", tokens.size());
         return tokens;
     }
 
     ChunkServer.FileGroups authorizeGet(
-            Http http,
-            Collection<ICloud.MBSFile> files,
-            Collection<ICloud.MBSFileAuthToken> fileIdAuthTokens,
-            Core core
-    ) throws AuthenticationException, BadDataException, InterruptedException, IOException {
+            HttpClient client,
+            String dsPrsID,
+            String mmeAuthToken,
+            String contentUrl,
+            ICloud.MBSFileAuthTokens authTokens
+    ) throws IOException {
 
-        logger.trace("<< authorizeGet() < tokens: {} files: {}", fileIdAuthTokens.size(), files.size());
+        logger.trace("<< authorizeGet() < dsPrsID: {} tokens size: {}}", dsPrsID, authTokens.getTokensCount());
 
-        ICloud.MBSFileAuthTokens tokens = fileIdToSignatureAuthTokens(files, fileIdAuthTokens);
-
-        ChunkServer.FileGroups groups;
-        if (tokens.getTokensCount() == 0) {
-            groups = ChunkServer.FileGroups.getDefaultInstance();
+        final ChunkServer.FileGroups fileGroups;
+        if (authTokens.getTokensCount() == 0) {
+            fileGroups = ChunkServer.FileGroups.getDefaultInstance();
 
         } else {
-            Header mmcsAuth = headers.mmcsAuth(Bytes.hex(tokens.getTokens(0).getFileID())
-                    + " " + tokens.getTokens(0).getAuthToken());
+            Header mmcsAuth = headers.mmcsAuth(Bytes.hex(authTokens.getTokens(0).getFileID())
+                    + " " + authTokens.getTokens(0).getAuthToken());
 
-            groups = core.process(http, snapshot.dsPrsID(), (auth, settings) -> {
-                String uri = path(settings.contentUrl(), auth.dsPrsID(), "authorizeGet");
-                return http.executor(uri, filesGroupsHandler)
-                        .headers(mmcsAuth).headers(auth.contentHeaders())
-                        .post(tokens.toByteArray());
-            });
+            String uri = path(contentUrl, dsPrsID, "authorizeGet");
+            RequestBuilder builder = RequestBuilder.get(uri).addHeader(mmcsAuth);
+            headers.mobileBackupHeaders(dsPrsID, mmeAuthToken).stream().forEach(builder::addHeader);
+            HttpUriRequest post = builder.setEntity(new ByteArrayEntity(authTokens.toByteArray())).build();
+            fileGroups = client.execute(post, filesGroupsHandler);
         }
 
-        logger.debug(client, "-- authorizeGet() > fileError: {}", groups.getFileErrorList());
-        logger.debug(client, "-- authorizeGet() > fileChunkError: {}", groups.getFileChunkErrorList());
-        logger.debug(client, "-- authorizeGet() > {}", groups);
-        logger.trace(">> authorizeGet() > count: {}", groups.getFileGroupsCount());
-        return groups;
+        logger.debug(marker, "-- authorizeGet() > fileError: {}", fileGroups.getFileErrorList());
+        logger.debug(marker, "-- authorizeGet() > fileChunkError: {}", fileGroups.getFileChunkErrorList());
+        logger.debug(marker, "-- authorizeGet() > fileGroups: {}", fileGroups);
+        logger.trace(">> authorizeGet() > {}", fileGroups.getFileGroupsCount());
+        return fileGroups;
     }
 
     ICloud.MBSFileAuthTokens fileIdToSignatureAuthTokens(

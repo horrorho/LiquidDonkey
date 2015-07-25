@@ -23,8 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.clients.Core;
 import com.github.horrorho.liquiddonkey.cloud.clients.FileGroupsClient;
+import com.github.horrorho.liquiddonkey.cloud.data.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.donkey.Donkey;
 import com.github.horrorho.liquiddonkey.cloud.donkey.DonkeyFactory;
@@ -33,8 +33,8 @@ import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.printer.Printer;
+import static com.github.horrorho.liquiddonkey.settings.Markers.http;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.github.horrorho.liquiddonkey.util.pool.WorkPools;
 import java.io.IOException;
@@ -46,6 +46,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,16 +72,15 @@ public class SnapshotDownloader {
         this.printer = printer;
     }
 
-    void download(Http http, Core core, Snapshot snapshot) throws BadDataException, IOException, InterruptedException {
+    void download(HttpClient client, Snapshot snapshot) throws BadDataException, IOException, InterruptedException {
         // TODO empty list
 
-        FileGroupsClient client = FileGroupsClient.create(snapshot);
-
-        ChunkServer.FileGroups fileGroups = client.get(http, core, snapshot); // TODO retry?
+        ChunkServer.FileGroups fileGroups = FileGroups.from(client, snapshot);
+ 
 
         SignatureWriter writer = SignatureWriter.from(snapshot, fileConfig);
         StoreManager manager = StoreManager.from(fileGroups);
-        DonkeyFactory factory = DonkeyFactory.from(http, printer, writer, manager, retryCount);
+        DonkeyFactory factory = DonkeyFactory.from(client, printer, writer, manager, retryCount);
 
         Map<Track, List<Donkey>> donkies = manager.chunkListList().stream().map(factory::fetchDonkey)
                 .collect(Collectors.groupingBy(list -> Track.FETCH));
@@ -114,7 +114,7 @@ public class SnapshotDownloader {
         logger.trace(">> download()");
     }
 
-//    ChunkServer.FileGroups fetchFileGroups(Http http, Authenticator authenticator, Snapshot snapshot)
+//    ChunkServer.FileGroups fetchFileGroups(HttpEx http, Authenticator authenticator, Snapshot snapshot)
 //            throws AuthenticationException, BadDataException, InterruptedException, IOException {
 //
 //        logger.trace("<< fetchFileGroups() < snapshot: {}", snapshot.id());

@@ -49,10 +49,10 @@ import net.jcip.annotations.ThreadSafe;
 public final class BackupFormatter implements Function<ICloud.MBSBackup, String> {
 
     public static BackupFormatter create() {
-        return create("\t", "N/A", DateTimeFormatter.RFC_1123_DATE_TIME);
+        return create("\t", DateTimeFormatter.RFC_1123_DATE_TIME);
     }
 
-    public static BackupFormatter create(String indent, String na, DateTimeFormatter dateTimeFormatter) {
+    public static BackupFormatter create(String indent, DateTimeFormatter dateTimeFormatter) {
 
         if (dateTimeFormatter.getLocale() == null) {
             dateTimeFormatter = dateTimeFormatter.withLocale(Locale.getDefault());
@@ -62,75 +62,49 @@ public final class BackupFormatter implements Function<ICloud.MBSBackup, String>
             dateTimeFormatter = dateTimeFormatter.withZone(ZoneId.systemDefault());
         }
 
-        return new BackupFormatter(indent, na, dateTimeFormatter);
+        return new BackupFormatter(indent, dateTimeFormatter);
     }
 
     private final String indent;
-    private final String na;
     private final DateTimeFormatter dateTimeFormatter;
 
-    BackupFormatter(String indent, String na, DateTimeFormatter dateTimeFormatter) {
+    BackupFormatter(String indent, DateTimeFormatter dateTimeFormatter) {
         this.indent = indent;
-        this.na = na;
         this.dateTimeFormatter = dateTimeFormatter;
     }
 
     @Override
     public String apply(ICloud.MBSBackup backup) {
 
-        String hardwareModel;
-        String marketingName;
-        String serialNumber;
-
-        if (backup.hasAttributes()) {
-            ICloud.MBSBackupAttributes attributes = backup.getAttributes();
-            hardwareModel = attributes.getHardwareModel();
-            marketingName = attributes.getMarketingName();
-            serialNumber = attributes.getSerialNumber();
-        } else {
-            hardwareModel = na;
-            marketingName = na;
-            serialNumber = na;
-        }
-
-        List<ICloud.MBSSnapshot> snapshots = backup.getSnapshotList();
-
-        long lastModified = 0;
-
-        ICloud.MBSSnapshot latest = snapshots.isEmpty()
-                ? null
-                : snapshots.get(snapshots.size() - 1);
-
-        String deviceName;
-        String productVerson;
-        if (latest == null) {
-            deviceName = na;
-            productVerson = na;
-        } else {
-            deviceName = latest.getAttributes().getDeviceName();
-            productVerson = latest.getAttributes().getProductVersion();
-        }
-
-        String snapshotsString = snapshots.isEmpty()
-                ? "none or incomplete"
-                : snapshots.stream().map(ICloud.MBSSnapshot::getSnapshotID).map(Object::toString)
-                .collect(Collectors.joining(" "));
-
-        String size = Bytes.humanize(backup.getQuotaUsed());
-
         StringWriter stringWriter = new StringWriter();
-        PrintWriter print = new PrintWriter(stringWriter);
+        PrintWriter writer = new PrintWriter(stringWriter);
 
-        String lastModifiedStr = dateTimeFormatter.format(Instant.ofEpochSecond(lastModified));
+        ICloud.MBSBackupAttributes attributes = backup.getAttributes();
 
-        print.println(indent + "Name:\t" + deviceName);
-        print.println(indent + "Device:\t" + marketingName + " " + hardwareModel);
-        print.println(indent + "SN:\t" + serialNumber);
-        print.println(indent + "UDID:\t" + Bytes.hex(backup.getBackupUDID()));
-        print.println(indent + "iOS:\t" + productVerson);
-        print.println(indent + "Size:\t" + size + " (Snapshot/s: " + snapshotsString + ")");
-        print.println(indent + "Last:\t" + lastModifiedStr);
+        writer.println(indent + "Device:\t" + attributes.getMarketingName() + " " + attributes.getHardwareModel()
+                + " (" + attributes.getProductType() + ")");
+        writer.println(indent + "SN:\t" + attributes.getSerialNumber());
+        writer.println(indent + "UDID:\t" + Bytes.hex(backup.getBackupUDID()));
+        writer.println(indent + "Size:\t" + Bytes.humanize(backup.getQuotaUsed()));
 
+        backup.getSnapshotList().stream().forEach(snapshot -> {
+            ICloud.MBSSnapshotAttributes attr = snapshot.getAttributes();
+
+            String incomplete = snapshot.getCommitted() == 0 ? "  "
+                    + "Incomplete" : "";
+
+            String lastModifiedStr = dateTimeFormatter.format(Instant.ofEpochSecond(snapshot.getLastModified()));
+
+            String size = Bytes.humanize(snapshot.getQuotaReserved());
+
+            writer.println(
+                    indent
+                    + String.format("%4s", snapshot.getSnapshotID()) + ":\t"
+                    + attr.getDeviceName() + " " + attr.getProductVersion() + "  "
+                    + String.format("%8s", size) + "  "
+                    + lastModifiedStr
+                    + incomplete);
+        });
         return stringWriter.toString();
     }
 }

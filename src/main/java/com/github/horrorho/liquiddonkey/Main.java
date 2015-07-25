@@ -30,7 +30,7 @@ import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.commandline.CommandLineConfig;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import com.github.horrorho.liquiddonkey.util.DumpStackTraceHook;
-import com.github.horrorho.liquiddonkey.util.MemLogger;
+import com.github.horrorho.liquiddonkey.util.MemMonitor;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,14 +81,6 @@ public class Main {
 
         if (config.printer().toPrintStackTrace()) {
             DumpStackTraceHook.add();
-        }
-
-        if (logger.isDebugEnabled()) {
-            // Memory leakage a real concern. Lightweight reporting on all debugged runs.
-            MemLogger memLogger = MemLogger.from(5000);
-            Thread thread = new Thread(memLogger);
-            thread.setDaemon(true);
-            thread.start();
         }
 
         Printer printer = Printer.instanceOf(config.printer());

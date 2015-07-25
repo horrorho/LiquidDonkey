@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 package com.github.horrorho.liquiddonkey.cloud.file;
- 
+
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
@@ -38,6 +38,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,11 +62,12 @@ public final class SignatureWriter {
      * @param fileConfig not null
      * @return a new instance, not null
      */
-    public static SignatureWriter from(Snapshot  snapshot, FileConfig fileConfig) {
+    public static SignatureWriter from(Snapshot snapshot, FileConfig fileConfig) {
         logger.trace("<< from() < snapshot: {} fileConfig: {}", snapshot, fileConfig);
 
         CloudFileWriter cloudWriter = CloudFileWriter.from(snapshot, fileConfig);
-        Map<ByteString, Set<ICloud.MBSFile>> signatures = snapshot.signatures();
+        Map<ByteString, Set<ICloud.MBSFile>> signatures = snapshot.files().stream()
+                .collect(Collectors.groupingByConcurrent(ICloud.MBSFile::getSignature, Collectors.toSet()));
 
         long totalBytes = signatures.values().stream()
                 .flatMap(Set::stream)

@@ -39,8 +39,8 @@ import org.slf4j.LoggerFactory;
 /**
  * SnapshotIdReferences.
  * <p>
- * Snapshot id references from 1 inclusive are treated as absolute. Zero id references refers to the first available
- * snapshot. Negative id references refer to relative index offsets from the latest snapshot.
+ * Snapshot id from 1 inclusive are treated as absolute. Zero id refers to the first available snapshot. Negative id
+ * refers to relative index offsets from the latest snapshot.
  * <p>
  * Incomplete snapshots are not considered.
  * <p>

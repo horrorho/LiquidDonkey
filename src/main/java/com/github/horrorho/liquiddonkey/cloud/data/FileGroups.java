@@ -23,43 +23,28 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.data;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import net.jcip.annotations.Immutable;
-import net.jcip.annotations.ThreadSafe;
+import com.github.horrorho.liquiddonkey.cloud.clients.FileGroupsClient;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import java.io.IOException;
+import org.apache.http.client.HttpClient;
 
 /**
- * Tokens factory.
  *
  * @author Ahseya
  */
-@Immutable
-@ThreadSafe
-public class Tokens {
+public class FileGroups {
 
-    private static final Tokens instance = new Tokens();
-
-    /**
-     * Returns an instance.
-     *
-     * @return instance, not null
-     */
-    public static Tokens create() {
-        return instance;
+    public static ChunkServer.FileGroups from(HttpClient client, Snapshot snapshot) throws IOException, BadDataException {
+        return FileGroupsClient.create().get(
+                client,
+                snapshot.dsPrsID(),
+                snapshot.mmeAuthToken(),
+                snapshot.contentUrl(),
+                snapshot.mobileBackupUrl(),
+                snapshot.backupUDID(),
+                snapshot.snapshotID(),
+                snapshot.files());
     }
 
-    Tokens() {
-    }
-
-    public String basic(String left, String right) {
-        return token("Basic", left, right);
-    }
-
-    public String mobilemeAuthToken(String left, String right) {
-        return token("X-MobileMe-AuthToken", left, right);
-    }
-
-    public String token(String type, String left, String right) {
-        return type + " " + Base64.getEncoder().encodeToString((left + ":" + right).getBytes(StandardCharsets.UTF_8));
-    }
 }

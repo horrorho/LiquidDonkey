@@ -27,11 +27,11 @@ import com.github.horrorho.liquiddonkey.cloud.clients.ChunksClient;
 import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
-import com.github.horrorho.liquiddonkey.http.Http;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.http.client.HttpClient;
 
 /**
  * DonkeyFactory.
@@ -42,14 +42,14 @@ public class DonkeyFactory {
 
     // TODO tie in config?
     public static DonkeyFactory from(
-            Http http,
+            HttpClient client,
             Printer printer,
             SignatureWriter signatureWriter,
             StoreManager storeManager,
             int retryCount) {
 
         return new DonkeyFactory(
-                http,
+                client,
                 printer,
                 signatureWriter,
                 storeManager,
@@ -57,7 +57,7 @@ public class DonkeyFactory {
                 new AtomicReference<>(null));
     }
 
-    private final Http http;
+    private final HttpClient client;
     private final Printer printer;
     private final SignatureWriter signatureWriter;
     private final StoreManager storeManager;
@@ -65,14 +65,14 @@ public class DonkeyFactory {
     private final AtomicReference<Exception> fatal;
 
     DonkeyFactory(
-            Http http,
+            HttpClient client,
             Printer printer,
             SignatureWriter signatureWriter,
             StoreManager storeManager,
             int retryCount,
             AtomicReference<Exception> fatal) {
 
-        this.http = Objects.requireNonNull(http);
+        this.client = Objects.requireNonNull(client);
         this.printer = Objects.requireNonNull(printer);
         this.signatureWriter = Objects.requireNonNull(signatureWriter);
         this.storeManager = storeManager;
@@ -82,7 +82,7 @@ public class DonkeyFactory {
 
     public FetchDonkey fetchDonkey(ChunkServer.StorageHostChunkList chunkList) {
         return new FetchDonkey(
-                http,
+                client,
                 ChunksClient.create(),
                 this::writerDonkey,
                 chunkList,
@@ -93,7 +93,7 @@ public class DonkeyFactory {
 
     FetchDonkey fetchDonkey(WriterDonkey donkey) {
         return new FetchDonkey(
-                http,
+                client,
                 ChunksClient.create(),
                 this::writerDonkey,
                 donkey.chunkList(),

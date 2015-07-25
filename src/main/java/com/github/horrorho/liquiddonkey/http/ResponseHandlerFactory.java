@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.http.responsehandler;
+package com.github.horrorho.liquiddonkey.http;
 
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import java.io.IOException;

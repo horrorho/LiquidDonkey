@@ -23,81 +23,70 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.data;
 
-import com.github.horrorho.liquiddonkey.data.SimplePropertyList;
-import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import net.jcip.annotations.Immutable;
+import java.util.Objects;
 import net.jcip.annotations.ThreadSafe;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Settings.
+ * Core.
  *
  * @author Ahseya
  */
-@Immutable
 @ThreadSafe
-public final class Settings {
+public class Core extends Auth {
 
-    public static Settings from(SimplePropertyList settings) throws BadDataException {
-        logger.trace("<< from() < settings: {}", settings);
-
-        String dsPrsID = settings.value("appleAccountInfo", "dsPrsID");
-        String fullName = settings.valueOr("Unknown", "appleAccountInfo", "fullName");
-        String appleId = settings.valueOr("Unknown", "appleAccountInfo", "appleId");
-        String mobileBackupUrl = settings.value("com.apple.mobileme", "com.apple.Dataclass.Backup", "url");
-        String contentUrl = settings.value("com.apple.mobileme", "com.apple.Dataclass.Content", "url");
-
-        Settings instance = new Settings(dsPrsID, contentUrl, mobileBackupUrl, appleId, fullName);
-
-        logger.trace(">> from() > {}", instance);
-        return instance;
-    }
-
-    private static final Logger logger = LoggerFactory.getLogger(Settings.class);
-
-    private final String dsPrsID;
     private final String contentUrl;
     private final String mobileBackupUrl;
     private final String appleId;
     private final String fullName;
 
-    Settings(String dsPrsID, String contentUrl, String mobileBackupUrl, String appleId, String fullName) {
-        this.dsPrsID = dsPrsID;
-        this.contentUrl = contentUrl;
-        this.mobileBackupUrl = mobileBackupUrl;
-        this.appleId = appleId;
-        this.fullName = fullName;
+    Core(
+            String dsPrsID,
+            String mmeAuthToken,
+            String contentUrl,
+            String mobileBackupUrl,
+            String appleId,
+            String fullName) {
+        super(dsPrsID, mmeAuthToken);
+
+        this.contentUrl = Objects.requireNonNull(contentUrl);
+        this.mobileBackupUrl = Objects.requireNonNull(mobileBackupUrl);
+        this.appleId = Objects.requireNonNull(appleId);
+        this.fullName = Objects.requireNonNull(fullName);
     }
 
-    public String dsPrsID() {
-        return dsPrsID;
+    Core(Core settings) {
+        this(
+                settings.dsPrsID(),
+                settings.mmeAuthToken(),
+                settings.contentUrl(),
+                settings.mobileBackupUrl(),
+                settings.appleId(),
+                settings.fullName());
     }
 
-    public String contentUrl() {
+    public final String contentUrl() {
         return contentUrl;
     }
 
-    public String mobileBackupUrl() {
+    public final String mobileBackupUrl() {
         return mobileBackupUrl;
     }
 
-    public String appleId() {
+    public final String appleId() {
         return appleId;
     }
 
-    public String fullName() {
+    public final String fullName() {
         return fullName;
     }
 
     @Override
     public String toString() {
         return "Settings{"
-                + "dsPrsID=" + dsPrsID
-                + ",contentUrl=" + contentUrl
+                + "contentUrl=" + contentUrl
                 + ", mobileBackupUrl=" + mobileBackupUrl
                 + ", appleId=" + appleId
                 + ", fullName=" + fullName
-                + '}';
+                + "}," + super.toString();
     }
 }

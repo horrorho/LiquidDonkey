@@ -21,10 +21,12 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.cloud.data;
+package com.github.horrorho.liquiddonkey.cloud.clients;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
@@ -89,7 +91,9 @@ public final class Headers {
                     HttpHeaders.USER_AGENT,
                     "ubd (unknown version) CFNetwork/548.1.4 Darwin/11.0.0");
 
-    public List<Header> mobileBackupHeaders(String authMme) {
+    public List<Header> mobileBackupHeaders(String dsPrsID, String mmeAuthToken) {
+        String authMme = mobilemeAuthToken(dsPrsID, mmeAuthToken);
+        
         return Arrays.asList(
                 authorization(authMme),
                 mmeClientInfo,
@@ -134,5 +138,17 @@ public final class Headers {
         return headers.stream()
                 .map(header -> new BasicHeader(header.getName(), header.getValue()))
                 .collect(Collectors.toList());
+    }
+
+    public String basicToken(String left, String right) {
+        return token("Basic", left, right);
+    }
+
+    public String mobilemeAuthToken(String left, String right) {
+        return token("X-MobileMe-AuthToken", left, right);
+    }
+
+    public String token(String type, String left, String right) {
+        return type + " " + Base64.getEncoder().encodeToString((left + ":" + right).getBytes(StandardCharsets.UTF_8));
     }
 }

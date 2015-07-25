@@ -23,44 +23,38 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.data;
 
-import com.github.horrorho.liquiddonkey.cloud.clients.AuthClient;
-import com.github.horrorho.liquiddonkey.data.SimplePropertyList;
+import com.github.horrorho.liquiddonkey.cloud.clients.AccountClient;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import java.io.IOException;
-import java.util.Objects;
-import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Auth.
  *
  * @author Ahseya
  */
-@ThreadSafe
-public class Auth {
+public class Accounts {
 
+    public static Account from(HttpClient client, Core core) throws BadDataException, IOException {
+        logger.trace("<< from() < dsPrsID: {}", core.dsPrsID());
 
+        ICloud.MBSAccount mbsaAccount
+                = accountClient.get(client, core.dsPrsID(), core.mmeAuthToken(), core.mobileBackupUrl());
 
-    private final String dsPrsID;
-    private final String mmeAuthToken;
+        if (!mbsaAccount.getAccountID().equals(core.dsPrsID())) {
+            logger.error("-- from() > dsPrsID mismatch, settings: {}, mbsaAccount: {}",
+                    core.dsPrsID(), mbsaAccount.getAccountID());
+        }
 
-    Auth(String dsPrsId, String mmeAuthToken) {
-        this.dsPrsID = Objects.requireNonNull(dsPrsId);
-        this.mmeAuthToken = Objects.requireNonNull(mmeAuthToken);
+        Account account = new Account(core, mbsaAccount);
+
+        logger.trace(">> from() > {}", account);
+        return account;
     }
+    
+    private static final Logger logger = LoggerFactory.getLogger(Account.class);
 
-    public final String dsPrsID() {
-        return dsPrsID;
-    }
-
-    public final String mmeAuthToken() {
-        return mmeAuthToken;
-    }
-
-    @Override
-    public String toString() {
-        return "Auth{" + "dsPrsID=" + dsPrsID + ", mmeAuthToken=" + mmeAuthToken + '}';
-    }
+    private static final AccountClient accountClient = AccountClient.create();
 }

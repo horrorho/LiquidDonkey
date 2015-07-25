@@ -23,38 +23,44 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.clients.AccountClient;
+import com.github.horrorho.liquiddonkey.cloud.clients.Headers;
 import com.github.horrorho.liquiddonkey.cloud.data.Backup;
 import com.github.horrorho.liquiddonkey.cloud.data.Account;
-import com.github.horrorho.liquiddonkey.cloud.clients.Authenticator;
-import com.github.horrorho.liquiddonkey.cloud.clients.BackupClient;
-import com.github.horrorho.liquiddonkey.cloud.clients.Core;
-import com.github.horrorho.liquiddonkey.cloud.data.Settings;
-import com.github.horrorho.liquiddonkey.cloud.clients.SettingsClient;
-import com.github.horrorho.liquiddonkey.cloud.clients.SnapshotClient;
-import com.github.horrorho.liquiddonkey.cloud.data.Settings;
+import com.github.horrorho.liquiddonkey.cloud.data.Accounts;
+import com.github.horrorho.liquiddonkey.cloud.data.Auth;
+import com.github.horrorho.liquiddonkey.cloud.data.Auths;
+import com.github.horrorho.liquiddonkey.cloud.data.Backups;
+import com.github.horrorho.liquiddonkey.cloud.data.Core;
+import com.github.horrorho.liquiddonkey.cloud.data.Cores;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
+import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
+import com.github.horrorho.liquiddonkey.data.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.http.HttpFactory;
+import com.github.horrorho.liquiddonkey.http.HttpClientFactory;
+import com.github.horrorho.liquiddonkey.http.ResponseHandlerFactory;
 import com.github.horrorho.liquiddonkey.iofunction.IOPredicate;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
+import com.github.horrorho.liquiddonkey.util.MemMonitor;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,7 +77,7 @@ public class Looter implements Closeable {
 
         Looter looter = new Looter(
                 config,
-                HttpFactory.of(config.http()).newInstance(printer),
+                HttpClientFactory.from(config.http()).client(printer),
                 printer,
                 FileFilter.from(config.fileFilter()));
 
@@ -79,41 +85,66 @@ public class Looter implements Closeable {
         return looter;
     }
 
-    Looter(
-            Config config,
-            Http http,
-            Printer printer,
-            FileFilter filter) {
+    private static final Logger logger = LoggerFactory.getLogger(Looter.class);
+
+    private final Config config;
+    private final CloseableHttpClient client;
+    private final Printer printer;
+    private final FileFilter filter;
+
+    Looter(Config config, CloseableHttpClient client, Printer printer, FileFilter filter) {
         this.config = config;
-        this.http = http;
+        this.client = client;
         this.printer = printer;
         this.filter = filter;
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(Looter.class);
-
-    private final Config config;
-    private final Http http;
-    private final Printer printer;
-    private final FileFilter filter;
-
-    public void loot() throws AuthenticationException, BadDataException, IOException, InterruptedException {
+    public void loot() throws BadDataException, IOException, InterruptedException {
         logger.trace("<< loot()");
 
         printer.println(Level.VV, "Authenticating.");
         // TODO reauthentication
 
-        Authenticator authenticator = Authenticator.from(config.authentication());
+        // TODO token based
+        Auth auth = Auths.from(client, config.authentication().appleId(), config.authentication().password());
 
         if (config.engine().toDumpToken()) {
-            printer.println(Level.V, "Authorization token: " + authenticator.token(http));
+            printer.println(Level.V, "Authorization token: " + auth.dsPrsID() + ":" + auth.mmeAuthToken());
             return;
         }
 
-        Core core = Core.from(http, authenticator);
-        ICloud.MBSAccount account = AccountClient.create().get(http, core);
+        Core core = Cores.from(client, auth);
 
-        List<Backup> backups = BackupClient.create(account).get(http, core);
+//        String s = bbb;
+//
+//        Headers headers = Headers.create();
+//
+//        String authToken = headers.basicToken(
+//                auth.dsPrsID(),
+//                auth.mmeAuthToken());
+//
+//        HttpGet get = new HttpGet(s);
+//
+//        get.addHeader(headers.mmeClientInfo());
+//        get.addHeader(headers.authorization(authToken));
+//
+//        byte[] x = client.execute(get, ResponseHandlerFactory.toByteArray());
+//
+//        System.out.println("test");
+//        try {
+//            SimplePropertyList xx = SimplePropertyList.from(x);
+//            System.out.println(xx);
+//        } catch (BadDataException ex) {
+//            ex.printStackTrace();
+//        } catch (IOException ex) {
+//            ex.printStackTrace();
+//        }
+//
+//        System.out.println(x);
+//        System.exit(0);
+
+        Account account = Accounts.from(client, core);
+        List<Backup> backups = Backups.from(client, account);
 
         UnaryOperator<List<ICloud.MBSBackup>> backupSelector
                 = BackupSelector.from(config.selection().udids(), BackupFormatter.create(), printer);
@@ -124,32 +155,57 @@ public class Looter implements Closeable {
 
         List<ICloud.MBSBackup> filtered = backupSelector.apply(backups.stream().map(Backup::backup).collect(Collectors.toList()));
 
-        for (ICloud.MBSBackup b : filtered) {
-            Backup bb = udidToBackup.get(b);
+        MemMonitor memMonitor = null;
+        try {
+            if (logger.isDebugEnabled()) {
+                // Memory leakage a real concern. Lightweight reporting on all debugged runs.
+                memMonitor = MemMonitor.from(5000);
+                Thread thread = new Thread(memMonitor);
+                thread.setDaemon(true);
+                thread.start();
+            }
 
-            backup(http, core, bb);
+            for (ICloud.MBSBackup b : filtered) {
+                Backup bb = udidToBackup.get(b);
+
+                backup(client, bb);
+            }
+        } finally {
+            if (memMonitor != null) {
+                memMonitor.stop();
+                logger.debug("-- loot() > max sampled memory used (MB): {}", memMonitor.max() / 1048510);
+            }
         }
 
         logger.trace(">> loot()");
     }
 
-    void backup(Http http, Core core, Backup backup) throws AuthenticationException, BadDataException, IOException, InterruptedException {
+    void backup(HttpClient client, Backup backup) throws BadDataException, IOException, InterruptedException {
 
-        logger.info("-- backup() > snapshots: {}", backup.snapshots());
-        for (int id : config.selection().snapshots()) {
+        //  logger.info("-- backup() > snapshots: {}", backup.snapshots());
+        SnapshotIdReferences references = SnapshotIdReferences.from(backup.backup());
+        logger.debug("-- backup() > ids: {}", config.selection().snapshots());
+        Set<Integer> resolved = new LinkedHashSet<>();
+
+        config.selection().snapshots().stream()
+                .map(references::applyAsInt).filter(id -> id != -1)
+                .forEach(resolved::add);
+        logger.debug("-- backup() > resolved ids: {}", resolved);
+
+        for (int id : resolved) {
 
             // TODO resolve ids
             // TODO use set, important, don't duplicate downloads. preserve order
             logger.info("-- backup() > id");
 
-            Snapshot snapshot = SnapshotClient.create(backup, config.client().listLimit()).get(http, core, id);
+            Snapshot snapshot = Snapshots.from(client, backup, config.client().listLimit(), id);
 
             if (snapshot == null) {
                 logger.warn("-- backup() > snapshot not found: {}", id);
                 continue;
             }
 
-            Snapshot filtered = Snapshot.from(snapshot, filter);
+            Snapshot filtered = Snapshots.from(snapshot, filter);
 
             IOPredicate<ICloud.MBSFile> localFilter = LocalFileFilter.from(snapshot, config.file());
             Predicate<ICloud.MBSFile> localFilterUnchecked = file -> {
@@ -163,15 +219,15 @@ public class Looter implements Closeable {
 
             long a = System.currentTimeMillis();
             // TODO force overwrite flag
-            Snapshot filteredLocal = Snapshot.from(filtered, localFilterUnchecked);
+            Snapshot filteredLocal = Snapshots.from(filtered, localFilterUnchecked);
             long b = System.currentTimeMillis();
             logger.info("-- backup() > delay: {}", (b - a));
             System.out.println("delay " + (b - a));
 
             Predicate<ICloud.MBSFile> decryptableFilter
-                    = file -> !file.getAttributes().hasEncryptionKey() || backup.keybagManager().fileKey(file) != null;
+                    = file -> !file.getAttributes().hasEncryptionKey() || backup.keyBagManager().fileKey(file) != null;
 
-            Snapshot decryptable = Snapshot.from(filteredLocal, decryptableFilter);
+            Snapshot decryptable = Snapshots.from(filteredLocal, decryptableFilter);
 
 //            filteredLocal.signatures().values().stream().forEach(System.out::print);
 //            filteredLocal.signatures().values().stream().flatMap(Set::stream)
@@ -184,14 +240,14 @@ public class Looter implements Closeable {
             //            SnapshotDownloader sd = new SnapshotDownloader(
             //                    http,
             //                    client,
-            //                    ChunkDataFetcher.newInstance(http, client),
+            //                    ChunkDataFetcher.from(http, client),
             //                    SignatureWriter.get(snapshot, config.file()),
             //                    printer);
             try {
 
                 SnapshotDownloader downloader = new SnapshotDownloader(config.file(), printer);
 
-                downloader.download(http, core, decryptable);
+                downloader.download(client, decryptable);
 
 //            try {
 //                ChunkServer.FileGroups fetchFileGroups = client.fetchFileGroups(http, backup.udidString(), id, filtered.files());
@@ -228,6 +284,6 @@ public class Looter implements Closeable {
 //    }
     @Override
     public void close() throws IOException {
-        http.close();
+        client.close();
     }
 }

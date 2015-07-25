@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.data;
 
-import com.github.horrorho.liquiddonkey.cloud.clients.*;
+import com.github.horrorho.liquiddonkey.cloud.clients.BackupClient;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
@@ -32,54 +32,54 @@ import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import org.apache.http.client.HttpClient;
 
 /**
- * Backup.
+ * Backups.
  *
  * @author Ahseya
  */
-public class Backup extends Account {
+public class Backups {
 
-    
-
-    private final ICloud.MBSBackup backup;
-    private final ICloud.MBSKeySet keySet;
-    private final KeyBagManager keyBagManager;
-    private final Account account;
-
-    Backup(Account account, ICloud.MBSBackup backup, ICloud.MBSKeySet keySet, KeyBagManager keyBagManager) {
-        super(account);
-
-        this.backup = Objects.requireNonNull(backup);
-        this.account = Objects.requireNonNull(account);
-        this.keySet = Objects.requireNonNull(keySet);
-        this.keyBagManager = keyBagManager;
+    public static List<Backup> from(HttpClient client, Account account) throws IOException, BadDataException {
+        List<Backup> list = new ArrayList<>();
+        for (ByteString udid : account.mbsAccount().getBackupUDIDList()) {
+            list.add(backup(client, account, udid));
+        }
+        return list;
     }
 
-    Backup(Backup backup) {
-        this(backup.account, backup.backup(), backup.keySet(), backup.keyBagManager());
-    }
-
-    public final String backupUDID() {
-        return Bytes.hex(backup.getBackupUDID());
-    }
-
-    public final ICloud.MBSBackup backup() {
+    public static Backup from(HttpClient client, Account account, ByteString udid) throws IOException, BadDataException {
+        final Backup backup;
+        if (account.mbsAccount().getBackupUDIDList().contains(udid)) {
+            backup = backup(client, account, udid);
+        } else {
+            backup = null;
+        }
         return backup;
     }
 
-    public final ICloud.MBSKeySet keySet() {
-        return keySet;
+    static Backup backup(HttpClient client, Account account, ByteString udid) throws IOException, BadDataException {
+        String udidString = Bytes.hex(udid);
+
+        ICloud.MBSBackup mbsBackup = backupClient.mbsBackup(
+                client,
+                account.dsPrsID(),
+                account.mmeAuthToken(),
+                account.mobileBackupUrl(),
+                udidString);
+
+        ICloud.MBSKeySet mbsKeySet = backupClient.mbsKeySet(
+                client,
+                account.dsPrsID(),
+                account.mmeAuthToken(),
+                account.mobileBackupUrl(),
+                udidString);
+
+        KeyBagManager keyBagManager = KeyBagManager.from(mbsKeySet);
+
+        return new Backup(account, mbsBackup, mbsKeySet, keyBagManager);
     }
 
-    public final KeyBagManager keyBagManager() {
-        return keyBagManager;
-    }
-
-    @Override
-    public String toString() {
-        return "Backup{" + "backup=" + backup + ", account=" + account + '}';
-    }
+    private static final BackupClient backupClient = BackupClient.create();
 }

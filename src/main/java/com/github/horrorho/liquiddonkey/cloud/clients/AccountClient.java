@@ -23,16 +23,17 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.clients;
 
-import com.github.horrorho.liquiddonkey.cloud.data.Settings;
 import static com.github.horrorho.liquiddonkey.cloud.clients.Util.path;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
-import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.http.Http;
-import com.github.horrorho.liquiddonkey.http.responsehandler.ResponseHandlerFactory;
+import com.github.horrorho.liquiddonkey.http.ResponseHandlerFactory;
 import java.io.IOException;
+import java.util.Objects;
+import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpGet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,49 +42,51 @@ import org.slf4j.LoggerFactory;
  *
  * @author Ahseya
  */
+@Immutable
 @ThreadSafe
 public final class AccountClient {
 
     public static AccountClient create() {
-        return new AccountClient(                defaultMbsaAccountResponseHandler);
+        return instance;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(AccountClient.class);
 
-    private static final ResponseHandler<ICloud.MBSAccount> defaultMbsaAccountResponseHandler
-            = ResponseHandlerFactory.of(ICloud.MBSAccount.PARSER::parseFrom);
+    private static final AccountClient instance
+            = new AccountClient(
+                    ResponseHandlerFactory.of(ICloud.MBSAccount.PARSER::parseFrom),
+                    Headers.create());
 
-    private final ResponseHandler<ICloud.MBSAccount> mbsaAccountResponseHandler;
+    private final ResponseHandler<ICloud.MBSAccount> mbsAccountResponseHandler;
+    private final Headers headers;
 
-    public AccountClient(            ResponseHandler<ICloud.MBSAccount> mbsaAccountResponseHandler) {
-
-        this.mbsaAccountResponseHandler = mbsaAccountResponseHandler;
+    AccountClient(ResponseHandler<ICloud.MBSAccount> mbsaAccountResponseHandler, Headers headers) {
+        this.mbsAccountResponseHandler = Objects.requireNonNull(mbsaAccountResponseHandler);
+        this.headers = Objects.requireNonNull(headers);
     }
 
     /**
      * Queries the server and returns ICloud.MBSAccount.
      *
-     * @param http, not null
-     * @param core, not null
+     * @param client, not null
+     * @param dsPrsID, not null
+     * @param mmeAuthToken, not null
+     * @param mobileBackupUrl, not null
      * @return ICloud.MBSAccount, not null
      * @throws IOException
-     * @throws BadDataException
      * @throws AuthenticationException
-     * @throws InterruptedException
      */
-    public ICloud.MBSAccount get(Http http, Core core)
-            throws AuthenticationException, BadDataException, InterruptedException, IOException {
-        logger.trace("<< from()");
+    public ICloud.MBSAccount get(HttpClient client, String dsPrsID, String mmeAuthToken, String mobileBackupUrl)
+            throws IOException {
 
-        ICloud.MBSAccount instance = core.process(http, core.dsPrsID(), (auth, settings) -> {
+        logger.trace("<< get() < dsPrsID: {} mmeAuthToken: {} mobileBackupUrl: {}",
+                dsPrsID, mmeAuthToken, mobileBackupUrl);
 
-            String uri = path(settings.mobileBackupUrl(), "mbs", auth.dsPrsID());
-            return http.executor(uri, mbsaAccountResponseHandler)
-                    .headers(auth.mobileBackupHeaders())
-                    .get();
-        });
+        HttpGet get = new HttpGet(path(mobileBackupUrl, "mbs", dsPrsID));
+        headers.mobileBackupHeaders(dsPrsID, mmeAuthToken).stream().forEach(get::addHeader);
+        ICloud.MBSAccount mbsAccount = client.execute(get, mbsAccountResponseHandler);
 
-        logger.trace(">> from() > {}", instance);
-        return instance;
+        logger.trace(">> get() > {}", mbsAccount);
+        return mbsAccount;
     }
 }
