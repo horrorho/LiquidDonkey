@@ -198,7 +198,7 @@ public class Looter implements Closeable {
             // TODO use set, important, don't duplicate downloads. preserve order
             logger.info("-- backup() > id");
 
-            Snapshot snapshot = Snapshots.from(client, backup, config.client().listLimit(), id);
+            Snapshot snapshot = Snapshots.from(client, backup, id, config.client().listLimit());
 
             if (snapshot == null) {
                 logger.warn("-- backup() > snapshot not found: {}", id);
