@@ -26,6 +26,8 @@ package com.github.horrorho.liquiddonkey.settings;
 import com.github.horrorho.liquiddonkey.iofunction.IOSupplier;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Comparator;
+import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
@@ -67,20 +69,28 @@ public final class PropertiesFactory {
         return fromInputStream(new Properties(), supplier);
     }
 
-    public Properties fromInputStream(Properties properties, IOSupplier<InputStream> supplier) throws IOException {
+    public Properties fromInputStream(Properties defaults, IOSupplier<InputStream> supplier) throws IOException {
+        Properties properties = new Properties(defaults);
         try (InputStream inputStream = supplier.get()) {
             if (inputStream != null) {
                 properties.load(inputStream);
 
-                properties.forEach((k, v) -> {
-                    try {
-                        Property property = Property.valueOf(k.toString());
-                        logger.trace("-- fromInputStream() > property: {} key: {}", property, v);
+                // Only tests the newly loaded properties for key validity, not the defaults.
+                properties.entrySet().stream()
+                        .sorted(Comparator.comparing(e -> e.getKey().toString()))
+                        .forEach(entry -> {
+                            String key = entry.getKey().toString();
+                            String value = entry.getValue().toString();
+                            
+                            try {
+                                Property property = Property.valueOf(key);
+                                logger.trace("-- fromInputStream() > property: {} key: {}", property, value);
 
-                    } catch (IllegalArgumentException ex) {
-                        logger.warn("-- fromInputStream() > unknown property key: {}", k);
-                    }
-                });
+                            } catch (IllegalArgumentException ex) {
+                                System.out.println("WARN: Invalid properties file key: " + key);
+                                logger.warn("-- fromInputStream() > unknown property key: {}", key);
+                            }
+                        });
             } else {
                 throw new IOException("Null input stream");
             }
