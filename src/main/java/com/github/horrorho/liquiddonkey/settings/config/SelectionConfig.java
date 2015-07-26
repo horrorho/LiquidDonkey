@@ -51,7 +51,7 @@ public final class SelectionConfig {
         List<String> udid = props.containsProperty(Property.SELECTION_UDID)
                 ? props.getProperty(Property.SELECTION_UDID).isEmpty()
                         ? Arrays.asList("")
-                        : props.getProperty(Property.SELECTION_UDID, prop -> props.asList(prop, props::asHex))
+                        : props.getProperty(Property.SELECTION_UDID, prop -> props.asList(prop, props::isHex))
                 : new ArrayList<>();
 
         return newInstance(new HashSet<>(udid),

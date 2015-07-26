@@ -171,12 +171,6 @@ public final class CommandLineOptions {
     static String itemTypes(Properties properties) {
         Props<Property> props = Props.from(properties);
         
-        System.out.println(">> contains " + props.containsProperty(CONFIG_PREFIX_ITEM_TYPE));
-        
-        System.out.println(">> props " + props);
-        
-        
-
         String prefix = props.getProperty(CONFIG_PREFIX_ITEM_TYPE);
         if (prefix == null) {
             logger.warn("-- itemTypes() > no item type prefix: {}", CONFIG_PREFIX_ITEM_TYPE);

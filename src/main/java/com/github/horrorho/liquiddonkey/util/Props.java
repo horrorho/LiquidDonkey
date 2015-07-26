@@ -30,6 +30,7 @@ import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -60,6 +61,10 @@ public final class Props<E extends Enum<E>> {
     }
 
     public static Properties flatCopy(Properties properties) {
+        if (properties == null) {
+            return null;
+        }
+
         Enumeration<?> propertyNames = properties.propertyNames();
         Properties copy = new Properties();
 
@@ -78,8 +83,8 @@ public final class Props<E extends Enum<E>> {
     private final DateTimeFormatter dateTimeFormatter;
 
     Props(Properties properties, DateTimeFormatter dateTimeFormatter) {
-        this.properties = flatCopy(properties);
-        this.dateTimeFormatter = dateTimeFormatter;
+        this.properties = Objects.requireNonNull(flatCopy(properties));
+        this.dateTimeFormatter = Objects.requireNonNull(dateTimeFormatter);
     }
 
     Properties properties() {
@@ -87,7 +92,9 @@ public final class Props<E extends Enum<E>> {
     }
 
     public boolean containsProperty(E property) {
-        return properties.containsKey(property.name());
+        return property == null
+                ? false
+                : properties.containsKey(property.name());
     }
 
     public String getProperty(E property) {
@@ -97,18 +104,20 @@ public final class Props<E extends Enum<E>> {
     }
 
     public <T> T getProperty(E property, Function<String, T> function) {
-        String value = getProperty(property);
-        return value == null
-                ? null
-                : function.apply(value);
+        return function.apply(getProperty(property));
     }
 
     public List<String> asList(String val) {
-        return Arrays.asList(val.split("\\s"));
+        return val == null
+                ? null
+                : Arrays.asList(val.split("\\s"));
     }
 
     public <T> List<T> asList(String val, Function<String, T> function) {
-        return Props.this.asList(val).stream()
+        List<String> vals = asList(val);
+        return vals == null
+                ? null
+                : vals.stream()
                 .map(function::apply)
                 .collect(Collectors.toList());
     }
@@ -117,10 +126,12 @@ public final class Props<E extends Enum<E>> {
         return Boolean.parseBoolean(val);
     }
 
-    public String asHex(String val) {
-        return val.matches("^[0-9a-fA-F]+$")
-                ? val
-                : illegalArgumentException("bad hex: " + val);
+    public String isHex(String val) {
+        return val == null
+                ? null
+                : val.matches("^[0-9a-fA-F]+$")
+                        ? val
+                        : illegalArgumentException("bad hex: " + val);
     }
 
     public Double asDouble(String val) {
@@ -155,8 +166,10 @@ public final class Props<E extends Enum<E>> {
             parse(String value, Function<String, T> parser, Class<E> exceptionType, Supplier<T> exception) {
 
         try {
-            return parser.apply(value);
-        } catch (Exception ex) {
+            return value == null
+                    ? null
+                    : parser.apply(value);
+        } catch (RuntimeException ex) {
             if (!(exceptionType.isAssignableFrom(ex.getClass()))) {
                 throw ex;
             }
