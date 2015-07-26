@@ -141,7 +141,7 @@ public final class FileGroupsClient {
 
         ChunkServer.FileGroups fileGroups = authTokens.isEmpty()
                 ? ChunkServer.FileGroups.getDefaultInstance()
-                : authorizeGet(client, dsPrsID, mmeAuthToken, contentUrl, tokens);
+                : authorizeGet(client, dsPrsID, contentUrl, tokens);
 
         logger.debug(marker, "-- get() > fileGroups: {}", fileGroups);
         logger.trace(">> get() > {}", fileGroups.getFileGroupsCount());
@@ -187,8 +187,7 @@ public final class FileGroupsClient {
 
     ChunkServer.FileGroups authorizeGet(
             HttpClient client,
-            String dsPrsID,
-            String mmeAuthToken,
+            String dsPrsID, 
             String contentUrl,
             ICloud.MBSFileAuthTokens authTokens
     ) throws IOException {
@@ -205,7 +204,7 @@ public final class FileGroupsClient {
 
             String uri = path(contentUrl, dsPrsID, "authorizeGet");
             RequestBuilder builder = RequestBuilder.get(uri).addHeader(mmcsAuth);
-            headers.mobileBackupHeaders(dsPrsID, mmeAuthToken).stream().forEach(builder::addHeader);
+            headers.contentHeaders(dsPrsID).stream().forEach(builder::addHeader);
             HttpUriRequest post = builder.setEntity(new ByteArrayEntity(authTokens.toByteArray())).build();
             fileGroups = client.execute(post, filesGroupsHandler);
         }
