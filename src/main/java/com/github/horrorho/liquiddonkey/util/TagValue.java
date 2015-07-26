@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.data;
+package com.github.horrorho.liquiddonkey.util;
 
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import static com.github.horrorho.liquiddonkey.util.Bytes.hex;

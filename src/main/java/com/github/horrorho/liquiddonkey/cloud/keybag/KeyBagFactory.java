@@ -26,7 +26,7 @@ package com.github.horrorho.liquiddonkey.cloud.keybag;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.crypto.AESWrap;
 import com.github.horrorho.liquiddonkey.crypto.PBKDF2;
-import com.github.horrorho.liquiddonkey.data.TagValue;
+import com.github.horrorho.liquiddonkey.util.TagValue;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;

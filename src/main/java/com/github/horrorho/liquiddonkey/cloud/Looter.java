@@ -37,7 +37,7 @@ import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.data.SimplePropertyList;
+import com.github.horrorho.liquiddonkey.util.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.HttpClientFactory;
 import com.github.horrorho.liquiddonkey.http.ResponseHandlerFactory;

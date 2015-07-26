@@ -71,6 +71,11 @@ public class SnapshotDownloader {
         this.fileConfig = fileConfig;
         this.printer = printer;
     }
+    
+    
+    
+    
+    
 
     void download(HttpClient client, Snapshot snapshot) throws BadDataException, IOException, InterruptedException {
         // TODO empty list
@@ -113,42 +118,6 @@ public class SnapshotDownloader {
 
         logger.trace(">> download()");
     }
-
-//    ChunkServer.FileGroups fetchFileGroups(HttpEx http, Authenticator authenticator, Snapshot snapshot)
-//            throws AuthenticationException, BadDataException, InterruptedException, IOException {
-//
-//        logger.trace("<< fetchFileGroups() < snapshot: {}", snapshot.id());
-//
-//        int count = retryCount;
-//        while (true) {
-//            try {
-//                Backup backup = snapshot.backup();
-//                FileGroupsClient client = FileGroupsClient.create(
-//                        backup.account().authenticator(),
-//                        backup.udidString(),
-//                        backup.account().settings().mobileBackupUrl(),
-//                        backup.account().settings().contentUrl());
-//
-//                ChunkServer.FileGroups fileGroups = client.get(http, snapshot.id(), snapshot.files());
-//
-//                logger.info("-- fetchFileGroups() > fileChunkErrorList: {}", fileGroups.getFileChunkErrorList());
-//                logger.info("-- fetchFileGroups() > fileErrorList: {}", fileGroups.getFileErrorList());
-//                logger.trace(">> fetchFileGroups()");
-//                return fileGroups;
-//
-//            } catch (HttpResponseException ex) {
-//                if (ex.getStatusCode() == 401 || count-- <= 0) {
-//                    throw ex;
-//                }
-//                logger.warn("-- fetchFileGroups() > exception: {}", ex);
-//            } catch (BadDataException ex) {
-//                if (count-- <= 0) {
-//                    throw ex;
-//                }
-//                logger.warn("-- fetchFileGroups() > exception: {}", ex);
-//            }
-//        }
-//    }
 }
 
 // TODO error count before fail?
