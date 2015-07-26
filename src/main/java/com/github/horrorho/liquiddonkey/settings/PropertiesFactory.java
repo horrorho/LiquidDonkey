@@ -27,7 +27,6 @@ import com.github.horrorho.liquiddonkey.iofunction.IOSupplier;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Comparator;
-import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
