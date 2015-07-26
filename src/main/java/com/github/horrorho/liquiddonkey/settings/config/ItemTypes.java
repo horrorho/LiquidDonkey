@@ -3,10 +3,10 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * Permission is hereby granted, free of charge, to any person obtaining a flatCopy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * to use, flatCopy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
@@ -24,10 +24,14 @@
 package com.github.horrorho.liquiddonkey.settings.config;
 
 import com.github.horrorho.liquiddonkey.settings.Property;
+import java.util.Arrays;
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
@@ -41,20 +45,28 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class ItemTypes {
 
-    public static ItemTypes newInstance(Props<Property> props) {
-        return new ItemTypes(itemTypeToPaths(props));
+    public static ItemTypes newInstance(Properties properties) {
+        return new ItemTypes(itemTypeToPaths(properties));
     }
 
-    static Map<String, Set<String>> itemTypeToPaths(Props<Property> props) {
-        String itemTypePrefix = props.get(Property.CONFIG_PREFIX_ITEM_TYPE);
-        int prefixLength = itemTypePrefix.length();
+    private static final Locale locale = Locale.US;
 
-        return props.properties().keySet().stream()
-                .map(Object::toString)
-                .collect(
-                        Collectors.toMap(
-                                property -> property.substring(prefixLength).toLowerCase(Locale.US),
-                                property -> new HashSet<>(props.asList(property))));
+    static Map<String, Set<String>> itemTypeToPaths(Properties properties) {
+        String prefix = properties.getProperty(Property.CONFIG_PREFIX_ITEM_TYPE.name());
+        int prefixLength = prefix.length();
+
+        Map<String, Set<String>> map = new HashMap<>();
+        Enumeration<?> propertyNames = properties.propertyNames();
+        while (propertyNames.hasMoreElements()) {
+            String propertyName = propertyNames.nextElement().toString();
+            if (propertyName.startsWith(prefix)) {
+                String itemType = propertyName.substring(prefixLength).toLowerCase(locale);
+                Set<String> paths = new HashSet<>(Arrays.asList(properties.getProperty(propertyName).split("\\s")));
+                map.put(itemType, paths);
+            }
+        }
+
+        return map;
     }
 
     private final Map<String, Set<String>> itemTypeToPaths;
@@ -68,7 +80,7 @@ public final class ItemTypes {
             return new HashSet<>();
         }
 
-        Set<String> paths = itemTypeToPaths.get(itemType.toLowerCase(Locale.US));
+        Set<String> paths = itemTypeToPaths.get(itemType.toLowerCase(locale));
         if (paths == null) {
             throw new IllegalArgumentException("unknown item type: " + itemType);
         }

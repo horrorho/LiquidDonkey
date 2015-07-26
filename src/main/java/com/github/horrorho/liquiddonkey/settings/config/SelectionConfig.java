@@ -3,10 +3,10 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * Permission is hereby granted, free of charge, to any person obtaining a flatCopy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * to use, flatCopy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
@@ -47,14 +47,14 @@ public final class SelectionConfig {
     public static SelectionConfig newInstance(Properties properties) {
         Props<Property> props = Props.from(properties);
         
-        List<String> udid = props.contains(Property.SELECTION_UDID)
-                ? props.get(Property.SELECTION_UDID).isEmpty()
+        List<String> udid = props.containsProperty(Property.SELECTION_UDID)
+                ? props.getProperty(Property.SELECTION_UDID).isEmpty()
                         ? Arrays.asList("")
-                        : props.get(Property.SELECTION_UDID, prop -> props.asList(prop, props::asHex))
+                        : props.getProperty(Property.SELECTION_UDID, prop -> props.asList(prop, props::asHex))
                 : new ArrayList<>();
 
         return newInstance(new HashSet<>(udid),
-                new LinkedHashSet<>(props.get(Property.SELECTION_SNAPSHOT, prop -> props.asList(prop, props::asInteger))));
+                new LinkedHashSet<>(props.getProperty(Property.SELECTION_SNAPSHOT, prop -> props.asList(prop, props::asInteger))));
     }
 
     public static SelectionConfig newInstance(Set<String> backups, Set<Integer> snapshots) {

@@ -3,10 +3,10 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * Permission is hereby granted, free of charge, to any person obtaining a flatCopy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * to use, flatCopy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
@@ -43,10 +43,10 @@ public final class FileConfig {
         Props<Property> props = Props.from(properties);
         
         return newInstance(
-                Paths.get(props.get(Property.FILE_OUTPUT_DIRECTORY)).toAbsolutePath(),
-                props.get(Property.FILE_COMBINED, props::asBoolean),
-                props.get(Property.FILE_FLAT, props::asBoolean),
-                props.get(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, props::asBoolean));
+                Paths.get(props.getProperty(Property.FILE_OUTPUT_DIRECTORY)).toAbsolutePath(),
+                props.getProperty(Property.FILE_COMBINED, props::asBoolean),
+                props.getProperty(Property.FILE_FLAT, props::asBoolean),
+                props.getProperty(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, props::asBoolean));
     }
 
     public static FileConfig newInstance(

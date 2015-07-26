@@ -3,10 +3,10 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * Permission is hereby granted, free of charge, to any person obtaining a flatCopy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * to use, flatCopy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
+import com.github.horrorho.liquiddonkey.settings.Property;
 import java.util.Properties; 
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -36,7 +37,9 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class Config {
 
-    public static Config newInstance(Properties properties) {
+    public static Config newInstance(Properties properties) {  
+        Props<Property> props = Props.from(properties); 
+        
         return newInstance(
                 AuthenticationConfig.from(properties),
                 ClientConfig.newInstance(properties),

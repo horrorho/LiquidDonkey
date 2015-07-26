@@ -3,10 +3,10 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * Permission is hereby granted, free of charge, to any person obtaining a flatCopy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * to use, flatCopy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
@@ -37,9 +37,9 @@ public class AuthenticationConfig {
     public static AuthenticationConfig from(Properties properties) {
         Props<Property> props = Props.from(properties);
         
-        String appleId = props.get(Property.AUTHENTICATION_APPLEID);
-        String password = props.get(Property.AUTHENTICATION_PASSWORD);
-        String token = props.get(Property.AUTHENTICATION_TOKEN);
+        String appleId = props.getProperty(Property.AUTHENTICATION_APPLEID);
+        String password = props.getProperty(Property.AUTHENTICATION_PASSWORD);
+        String token = props.getProperty(Property.AUTHENTICATION_TOKEN);
 
         if (appleId != null && password != null && token != null) {
             throw new IllegalStateException("Expected authorization token or appleid/ password only.");

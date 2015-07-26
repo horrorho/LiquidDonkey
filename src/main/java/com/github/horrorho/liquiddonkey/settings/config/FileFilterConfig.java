@@ -3,10 +3,10 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * Permission is hereby granted, free of charge, to any person obtaining a flatCopy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * to use, flatCopy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
@@ -42,13 +42,13 @@ import net.jcip.annotations.ThreadSafe;
 public final class FileFilterConfig {
 
     public static FileFilterConfig newInstance(Properties properties) {
-        Props<Property> props = Props.from(properties);
+        Props<Property> props = Props.from(properties, Property.commandLineInputDateTimeFormatter());
         
         Collection<String> domains = new HashSet<>();
-        ItemTypes itemTypes = ItemTypes.newInstance(props);
+        ItemTypes itemTypes = ItemTypes.newInstance(properties);
 
-        if (props.contains(Property.FILTER_DOMAIN)) {
-            domains.addAll(props.get(Property.FILTER_DOMAIN, props::asList));
+        if (props.containsProperty(Property.FILTER_DOMAIN)) {
+            domains.addAll(props.getProperty(Property.FILTER_DOMAIN, props::asList));
         }
 
         if (domains.isEmpty()) {
@@ -57,12 +57,12 @@ public final class FileFilterConfig {
 
         Collection<String> relativePath = new HashSet<>();
 
-        if (props.contains(Property.FILTER_RELATIVE_PATH)) {
-            relativePath.addAll(props.get(Property.FILTER_RELATIVE_PATH, props::asList));
+        if (props.containsProperty(Property.FILTER_RELATIVE_PATH)) {
+            relativePath.addAll(props.getProperty(Property.FILTER_RELATIVE_PATH, props::asList));
         }
 
-        if (props.contains(Property.FILTER_ITEM_TYPES)) {
-            relativePath.addAll(itemTypes.paths(props.get(Property.FILTER_ITEM_TYPES, props::asList)));
+        if (props.containsProperty(Property.FILTER_ITEM_TYPES)) {
+            relativePath.addAll(itemTypes.paths(props.getProperty(Property.FILTER_ITEM_TYPES, props::asList)));
         }
 
         if (relativePath.isEmpty()) {
@@ -71,8 +71,8 @@ public final class FileFilterConfig {
 
         Collection<String> extensions = new HashSet<>();
 
-        if (props.contains(Property.FILTER_EXTENSION)) {
-            extensions.addAll(props.get(Property.FILTER_EXTENSION, props::asList).stream()
+        if (props.containsProperty(Property.FILTER_EXTENSION)) {
+            extensions.addAll(props.getProperty(Property.FILTER_EXTENSION, props::asList).stream()
                     .map(ext -> ext.startsWith(".") || ext.isEmpty() ? ext : "." + ext)
                     .collect(Collectors.toSet()));
         }
@@ -84,11 +84,11 @@ public final class FileFilterConfig {
         return newInstance(domains,
                 relativePath,
                 extensions,
-                props.get(Property.FILTER_DATE_MAX, props::asTimestamp),
-                props.get(Property.FILTER_DATE_MIN, props::asTimestamp),
+                props.getProperty(Property.FILTER_DATE_MAX, props::asTimestamp),
+                props.getProperty(Property.FILTER_DATE_MIN, props::asTimestamp),
                 // * 1024 as kilobytes to bytes
-                props.get(Property.FILTER_SIZE_MAX, props::asLong) * 1024,
-                props.get(Property.FILTER_SIZE_MIN, props::asLong) * 1024);
+                props.getProperty(Property.FILTER_SIZE_MAX, props::asLong) * 1024,
+                props.getProperty(Property.FILTER_SIZE_MIN, props::asLong) * 1024);
     }
 
     public static FileFilterConfig newInstance(

@@ -3,10 +3,10 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * Permission is hereby granted, free of charge, to any person obtaining a flatCopy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * to use, flatCopy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
@@ -40,24 +40,24 @@ public final class HttpConfig {
     public static HttpConfig newInstance(Properties properties) { 
         Props<Property> props = Props.from(properties);
         
-        boolean isPersistent = props.get(Property.ENGINE_PERSISTENT, props::asBoolean);
-        boolean isRelaxedSSL = props.get(Property.HTTP_RELAX_SSL, props::asBoolean);
+        boolean isPersistent = props.getProperty(Property.ENGINE_PERSISTENT, props::asBoolean);
+        boolean isRelaxedSSL = props.getProperty(Property.HTTP_RELAX_SSL, props::asBoolean);
 
         return newInstance(isPersistent,
                 isRelaxedSSL,
-                props.get(Property.HTTP_MAX_CONNECTIONS, props::asInteger),
+                props.getProperty(Property.HTTP_MAX_CONNECTIONS, props::asInteger),
                 isPersistent
-                        ? props.get(Property.HTTP_RETRY_COUNT_PERSISTENT, props::asInteger)
-                        : props.get(Property.HTTP_RETRY_COUNT, props::asInteger),
+                        ? props.getProperty(Property.HTTP_RETRY_COUNT_PERSISTENT, props::asInteger)
+                        : props.getProperty(Property.HTTP_RETRY_COUNT, props::asInteger),
                 isPersistent
-                        ? props.get(Property.HTTP_RETRY_DELAY_MS_PERSISTENT, props::asInteger)
-                        : props.get(Property.HTTP_RETRY_DELAY_MS, props::asInteger),
+                        ? props.getProperty(Property.HTTP_RETRY_DELAY_MS_PERSISTENT, props::asInteger)
+                        : props.getProperty(Property.HTTP_RETRY_DELAY_MS, props::asInteger),
                 isPersistent
-                        ? props.get(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT_PERSISTENT, props::asInteger)
-                        : props.get(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT, props::asInteger),
-                props.get(Property.HTTP_TIMEOUT_MS, props::asInteger),
-                props.get(Property.HTTP_VALID_AFTER_INACTIVITY_MS, props::asInteger),
-                props.get(Property.HTTP_DEFAULT_USER_AGENT));
+                        ? props.getProperty(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT_PERSISTENT, props::asInteger)
+                        : props.getProperty(Property.HTTP_SOCKET_TIMEOUT_RETRY_COUNT, props::asInteger),
+                props.getProperty(Property.HTTP_TIMEOUT_MS, props::asInteger),
+                props.getProperty(Property.HTTP_VALID_AFTER_INACTIVITY_MS, props::asInteger),
+                props.getProperty(Property.HTTP_DEFAULT_USER_AGENT));
     }
 
     public static HttpConfig newInstance(
