@@ -204,7 +204,7 @@ public final class CommandLineOptions {
     private final LinkedHashMap<Property, Option> propertyToOption;
     private final Map<String, Property> optToProperty;
 
-    public CommandLineOptions(
+    CommandLineOptions(
             LinkedHashMap<Property, Option> propertyToOption,
             Map<String, Property> optToProperty) {
         // No defensive copies

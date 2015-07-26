@@ -23,20 +23,11 @@
  */
 package com.github.horrorho.liquiddonkey.settings.commandline;
 
-import com.github.horrorho.liquiddonkey.iofunction.IOSupplier;
 import com.github.horrorho.liquiddonkey.settings.Property;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import static java.nio.file.StandardOpenOption.READ;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.cli.CommandLine;
@@ -56,8 +47,6 @@ import org.slf4j.LoggerFactory;
 @Immutable
 @ThreadSafe
 public final class CommandLinePropertiesFactory {
-
-    private static final Logger logger = LoggerFactory.getLogger(CommandLinePropertiesFactory.class);
 
     private static final CommandLinePropertiesFactory instance = new CommandLinePropertiesFactory();
 
