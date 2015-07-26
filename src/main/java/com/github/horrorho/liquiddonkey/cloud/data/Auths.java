@@ -63,7 +63,7 @@ public class Auths {
         return auth;
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(Auth.class);
+    private static final Logger logger = LoggerFactory.getLogger(Auths.class);
     private static final AuthClient authClient = AuthClient.create();
 
 }

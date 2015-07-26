@@ -54,7 +54,7 @@ public class Accounts {
         return account;
     }
     
-    private static final Logger logger = LoggerFactory.getLogger(Account.class);
+    private static final Logger logger = LoggerFactory.getLogger(Accounts.class);
 
     private static final AccountClient accountClient = AccountClient.create();
 }

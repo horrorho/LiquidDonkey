@@ -109,7 +109,7 @@ public class Snapshots {
         return snapshots;
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(Snapshot.class);
+    private static final Logger logger = LoggerFactory.getLogger(Snapshots.class);
     private static final Marker marker = MarkerFactory.getMarker(Markers.CLIENT);
 
     private static final SnapshotClient snapshotClient = SnapshotClient.create();

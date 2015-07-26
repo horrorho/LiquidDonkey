@@ -69,7 +69,7 @@ public class Cores {
         return instance;
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(Core.class);
+    private static final Logger logger = LoggerFactory.getLogger(Cores.class);
 
     private static final SettingsClient settingsClient = SettingsClient.create();
 }
