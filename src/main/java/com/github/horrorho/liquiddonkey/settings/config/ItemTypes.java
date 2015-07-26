@@ -23,9 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import com.github.horrorho.liquiddonkey.settings.props.Parsers;
 import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.props.Props;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -51,12 +49,12 @@ public final class ItemTypes {
         String itemTypePrefix = props.get(Property.CONFIG_PREFIX_ITEM_TYPE);
         int prefixLength = itemTypePrefix.length();
 
-        return props.keySet().stream()
-                .filter(property -> property.name().startsWith(itemTypePrefix))
+        return props.properties().keySet().stream()
+                .map(Object::toString)
                 .collect(
                         Collectors.toMap(
-                                property -> property.name().substring(prefixLength).toLowerCase(Locale.US),
-                                property -> new HashSet<>(props.getList(property))));
+                                property -> property.substring(prefixLength).toLowerCase(Locale.US),
+                                property -> new HashSet<>(props.asList(property))));
     }
 
     private final Map<String, Set<String>> itemTypeToPaths;

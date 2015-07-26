@@ -22,12 +22,11 @@
  * THE SOFTWARE.
  */
 package com.github.horrorho.liquiddonkey.settings.config;
-
-import com.github.horrorho.liquiddonkey.settings.props.Parsers;
-import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.props.Props;
+ 
+import com.github.horrorho.liquiddonkey.settings.Property; 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Properties;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
@@ -40,14 +39,14 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class FileConfig {
 
-    public static FileConfig newInstance(Props<Property> props) {
-        Parsers parsers = Property.parsers();
-
+    public static FileConfig newInstance(Properties properties) { 
+        Props<Property> props = Props.from(properties);
+        
         return newInstance(
                 Paths.get(props.get(Property.FILE_OUTPUT_DIRECTORY)).toAbsolutePath(),
-                props.get(Property.FILE_COMBINED, parsers::asBoolean),
-                props.get(Property.FILE_FLAT, parsers::asBoolean),
-                props.get(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, parsers::asBoolean));
+                props.get(Property.FILE_COMBINED, props::asBoolean),
+                props.get(Property.FILE_FLAT, props::asBoolean),
+                props.get(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, props::asBoolean));
     }
 
     public static FileConfig newInstance(

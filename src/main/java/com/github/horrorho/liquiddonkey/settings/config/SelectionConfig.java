@@ -23,15 +23,14 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import com.github.horrorho.liquiddonkey.settings.props.Parsers;
 import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.props.Props;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -45,17 +44,17 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class SelectionConfig {
 
-    public static SelectionConfig newInstance(Props<Property> props) {
-        Parsers parsers = Property.parsers();
-
+    public static SelectionConfig newInstance(Properties properties) {
+        Props<Property> props = Props.from(properties);
+        
         List<String> udid = props.contains(Property.SELECTION_UDID)
                 ? props.get(Property.SELECTION_UDID).isEmpty()
                         ? Arrays.asList("")
-                        : props.getList(Property.SELECTION_UDID, parsers::asHex)
+                        : props.get(Property.SELECTION_UDID, prop -> props.asList(prop, props::asHex))
                 : new ArrayList<>();
 
         return newInstance(new HashSet<>(udid),
-                new LinkedHashSet<>(props.getList(Property.SELECTION_SNAPSHOT, parsers::asInteger)));
+                new LinkedHashSet<>(props.get(Property.SELECTION_SNAPSHOT, prop -> props.asList(prop, props::asInteger))));
     }
 
     public static SelectionConfig newInstance(Set<String> backups, Set<Integer> snapshots) {

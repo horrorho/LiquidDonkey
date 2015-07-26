@@ -51,28 +51,40 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Props<E extends Enum<E>> {
 
-    public static <E extends Enum<E>> Props<E> from(
-            Properties properties,
-            DateTimeFormatter dateTimeFormatter) {
+    public static <E extends Enum<E>> Props<E> from(Properties properties) {
+        return new Props<>(properties, defaultDateTimeFormatter);
+    }
 
+    public static <E extends Enum<E>> Props<E> from(Properties properties, DateTimeFormatter dateTimeFormatter) {
         return new Props<>(properties, dateTimeFormatter);
     }
 
+    public static Properties copy(Properties properties) {
+        Enumeration<?> propertyNames = properties.propertyNames();
+        Properties copy = new Properties();
+
+        while (propertyNames.hasMoreElements()) {
+            Object propertyName = propertyNames.nextElement();
+            copy.put(propertyName, properties.get(propertyName));
+        }
+
+        return copy;
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(Props.class);
+
+    private static final DateTimeFormatter defaultDateTimeFormatter = DateTimeFormatter.BASIC_ISO_DATE;
 
     private final Properties properties;
     private final DateTimeFormatter dateTimeFormatter;
 
     Props(Properties properties, DateTimeFormatter dateTimeFormatter) {
-        this.properties = new Properties();
+        this.properties = copy(properties);
         this.dateTimeFormatter = dateTimeFormatter;
-        
-        Enumeration<?> propertyNames = properties.propertyNames();
-       
-        while (propertyNames.hasMoreElements()) {
-            Object propertyName = propertyNames.nextElement();
-            this.properties.put(propertyName, properties.get(propertyName));
-        } 
+    }
+
+    Properties properties() {
+        return copy(properties);
     }
 
     public boolean contains(E property) {
@@ -89,12 +101,12 @@ public final class Props<E extends Enum<E>> {
         return function.apply(get(property));
     }
 
-    public List<String> getList(E property) {
-        return Arrays.asList(get(property).split("\\s"));
+    public List<String> asList(String val) {
+        return Arrays.asList(val.split("\\s"));
     }
 
-    public <T> List<T> getList(E property, Function<String, T> function) {
-        return getList(property).stream()
+    public <T> List<T> asList(String val, Function<String, T> function) {
+        return Props.this.asList(val).stream()
                 .map(function::apply)
                 .collect(Collectors.toList());
     }

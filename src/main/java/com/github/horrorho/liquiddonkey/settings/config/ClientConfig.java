@@ -22,10 +22,9 @@
  * THE SOFTWARE.
  */
 package com.github.horrorho.liquiddonkey.settings.config;
-
-import com.github.horrorho.liquiddonkey.settings.props.Parsers;
-import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.props.Props;
+ 
+import com.github.horrorho.liquiddonkey.settings.Property; 
+import java.util.Properties;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
@@ -38,9 +37,10 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public class ClientConfig {
 
-    public static ClientConfig newInstance(Props<Property> props) {
-        Parsers parsers = Property.parsers();
-        return newInstance(props.get(Property.CLIENT_LIST_LIMIT, parsers::asInteger));
+    public static ClientConfig newInstance(Properties properties) { 
+        Props<Property> props = Props.from(properties);
+        
+        return newInstance(props.get(Property.CLIENT_LIST_LIMIT, props::asInteger));
     }
 
     public static ClientConfig newInstance(int listLimit) {

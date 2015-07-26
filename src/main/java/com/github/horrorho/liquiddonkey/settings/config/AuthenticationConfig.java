@@ -23,8 +23,9 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.props.Props;
+import com.github.horrorho.liquiddonkey.settings.PropertiesFactory;
+import com.github.horrorho.liquiddonkey.settings.Property; 
+import java.util.Properties;
 
 /**
  * Authentication configuration.
@@ -33,7 +34,9 @@ import com.github.horrorho.liquiddonkey.settings.props.Props;
  */
 public class AuthenticationConfig {
 
-    public static AuthenticationConfig from(Props<Property> props) {
+    public static AuthenticationConfig from(Properties properties) {
+        Props<Property> props = Props.from(properties);
+        
         String appleId = props.get(Property.AUTHENTICATION_APPLEID);
         String password = props.get(Property.AUTHENTICATION_PASSWORD);
         String token = props.get(Property.AUTHENTICATION_TOKEN);

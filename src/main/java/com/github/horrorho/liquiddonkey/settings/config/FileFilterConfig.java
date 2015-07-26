@@ -23,11 +23,10 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import com.github.horrorho.liquiddonkey.settings.props.Parsers;
 import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.props.Props;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
@@ -42,14 +41,14 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class FileFilterConfig {
 
-    public static FileFilterConfig newInstance(Props<Property> props) {
-        Parsers parsers = Property.parsers();
+    public static FileFilterConfig newInstance(Properties properties) {
+        Props<Property> props = Props.from(properties);
+        
+        Collection<String> domains = new HashSet<>();
         ItemTypes itemTypes = ItemTypes.newInstance(props);
 
-        Collection<String> domains = new HashSet<>();
-
         if (props.contains(Property.FILTER_DOMAIN)) {
-            domains.addAll(props.getList(Property.FILTER_DOMAIN));
+            domains.addAll(props.get(Property.FILTER_DOMAIN, props::asList));
         }
 
         if (domains.isEmpty()) {
@@ -59,11 +58,11 @@ public final class FileFilterConfig {
         Collection<String> relativePath = new HashSet<>();
 
         if (props.contains(Property.FILTER_RELATIVE_PATH)) {
-            relativePath.addAll(props.getList(Property.FILTER_RELATIVE_PATH));
+            relativePath.addAll(props.get(Property.FILTER_RELATIVE_PATH, props::asList));
         }
 
         if (props.contains(Property.FILTER_ITEM_TYPES)) {
-            relativePath.addAll(itemTypes.paths(props.getList(Property.FILTER_ITEM_TYPES)));
+            relativePath.addAll(itemTypes.paths(props.get(Property.FILTER_ITEM_TYPES, props::asList)));
         }
 
         if (relativePath.isEmpty()) {
@@ -73,7 +72,7 @@ public final class FileFilterConfig {
         Collection<String> extensions = new HashSet<>();
 
         if (props.contains(Property.FILTER_EXTENSION)) {
-            extensions.addAll(props.getList(Property.FILTER_EXTENSION).stream()
+            extensions.addAll(props.get(Property.FILTER_EXTENSION, props::asList).stream()
                     .map(ext -> ext.startsWith(".") || ext.isEmpty() ? ext : "." + ext)
                     .collect(Collectors.toSet()));
         }
@@ -85,11 +84,11 @@ public final class FileFilterConfig {
         return newInstance(domains,
                 relativePath,
                 extensions,
-                props.get(Property.FILTER_DATE_MAX, parsers::asTimestamp),
-                props.get(Property.FILTER_DATE_MIN, parsers::asTimestamp),
+                props.get(Property.FILTER_DATE_MAX, props::asTimestamp),
+                props.get(Property.FILTER_DATE_MIN, props::asTimestamp),
                 // * 1024 as kilobytes to bytes
-                props.get(Property.FILTER_SIZE_MAX, parsers::asLong) * 1024,
-                props.get(Property.FILTER_SIZE_MIN, parsers::asLong) * 1024);
+                props.get(Property.FILTER_SIZE_MAX, props::asLong) * 1024,
+                props.get(Property.FILTER_SIZE_MIN, props::asLong) * 1024);
     }
 
     public static FileFilterConfig newInstance(

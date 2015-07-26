@@ -22,10 +22,9 @@
  * THE SOFTWARE.
  */
 package com.github.horrorho.liquiddonkey.settings.config;
-
-import com.github.horrorho.liquiddonkey.settings.props.Parsers;
-import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.props.Props;
+ 
+import com.github.horrorho.liquiddonkey.settings.Property; 
+import java.util.Properties;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
@@ -38,22 +37,23 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class EngineConfig {
 
-    public static EngineConfig newInstance(Props<Property> props) {
-        Parsers parsers = Property.parsers();
-        boolean isAggressive = props.get(Property.ENGINE_AGGRESSIVE, parsers::asBoolean);
+    public static EngineConfig newInstance(Properties properties) { 
+        Props<Property> props = Props.from(properties);
+        
+        boolean isAggressive = props.get(Property.ENGINE_AGGRESSIVE, props::asBoolean);
 
         return EngineConfig.newInstance(
                 isAggressive,
-                props.get(Property.ENGINE_BATCH_SIZE_MINIMUM_BYTES, parsers::asLong),
-                isAggressive ? props.get(Property.ENGINE_RETRY_AGGRESSIVE, parsers::asInteger)
-                        : props.get(Property.ENGINE_DOWNLOAD_RETRY, parsers::asInteger),
-                props.get(Property.ENGINE_PERSISTENT, parsers::asBoolean),
-                props.get(Property.ENGINE_RETRY_DELAY_MS, parsers::asInteger),
-                props.get(Property.ENGINE_THREAD_STAGGER_DELAY, parsers::asInteger),
-                props.get(Property.ENGINE_THREAD_COUNT, parsers::asInteger),
-                props.get(Property.ENGINE_FORCE_OVERWRITE, parsers::asBoolean),
-                props.get(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, parsers::asBoolean),
-                props.get(Property.ENGINE_DUMP_TOKEN, parsers::asBoolean));
+                props.get(Property.ENGINE_BATCH_SIZE_MINIMUM_BYTES, props::asLong),
+                isAggressive ? props.get(Property.ENGINE_RETRY_AGGRESSIVE, props::asInteger)
+                        : props.get(Property.ENGINE_DOWNLOAD_RETRY, props::asInteger),
+                props.get(Property.ENGINE_PERSISTENT, props::asBoolean),
+                props.get(Property.ENGINE_RETRY_DELAY_MS, props::asInteger),
+                props.get(Property.ENGINE_THREAD_STAGGER_DELAY, props::asInteger),
+                props.get(Property.ENGINE_THREAD_COUNT, props::asInteger),
+                props.get(Property.ENGINE_FORCE_OVERWRITE, props::asBoolean),
+                props.get(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, props::asBoolean),
+                props.get(Property.ENGINE_DUMP_TOKEN, props::asBoolean));
     }
 
     static EngineConfig newInstance(
