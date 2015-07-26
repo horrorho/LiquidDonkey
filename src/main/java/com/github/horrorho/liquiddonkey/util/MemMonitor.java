@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory;
 
 /**
  * MemMonitor.
+ * <p>
+ * Simple memory monitor,
  *
  * @author Ahseya
  */

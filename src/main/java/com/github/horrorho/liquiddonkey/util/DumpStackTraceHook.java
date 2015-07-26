@@ -30,6 +30,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * DumpStackTraceHook.
+ * <p>
  * Shutdown hook stack dump.
  *
  * @author Ahseya
