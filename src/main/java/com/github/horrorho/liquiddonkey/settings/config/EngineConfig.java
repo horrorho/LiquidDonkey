@@ -57,7 +57,7 @@ public final class EngineConfig {
                 props.getProperty(Property.ENGINE_DUMP_TOKEN, props::asBoolean));
     }
 
-    static EngineConfig from(
+    public static EngineConfig from(
             boolean isAggressive,
             long batchSizeMinimumBytes,
             int retryCount,
