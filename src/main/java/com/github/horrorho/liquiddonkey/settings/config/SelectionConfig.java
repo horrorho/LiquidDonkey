@@ -65,8 +65,8 @@ public final class SelectionConfig {
     private final Set<Integer> snapshots;
 
     SelectionConfig(Set<String> backups, Set<Integer> snapshots) {
-        this.backups = new HashSet<>(backups);
-        this.snapshots = new HashSet<>(snapshots);
+        this.backups = new LinkedHashSet<>(backups);
+        this.snapshots = new LinkedHashSet<>(snapshots);
     }
 
     public Set<String> udids() {
