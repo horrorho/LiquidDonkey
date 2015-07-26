@@ -59,15 +59,14 @@ public final class Props<E extends Enum<E>> {
         return new Props<>(properties, dateTimeFormatter);
     }
 
-    public static Properties copy(Properties properties) {
+    public static Properties flatCopy(Properties properties) {
         Enumeration<?> propertyNames = properties.propertyNames();
         Properties copy = new Properties();
 
         while (propertyNames.hasMoreElements()) {
             Object propertyName = propertyNames.nextElement();
-            copy.put(propertyName, properties.get(propertyName));
+            copy.setProperty(propertyName.toString(), properties.getProperty(propertyName.toString()));
         }
-
         return copy;
     }
 
@@ -79,26 +78,29 @@ public final class Props<E extends Enum<E>> {
     private final DateTimeFormatter dateTimeFormatter;
 
     Props(Properties properties, DateTimeFormatter dateTimeFormatter) {
-        this.properties = copy(properties);
+        this.properties = flatCopy(properties);
         this.dateTimeFormatter = dateTimeFormatter;
     }
 
     Properties properties() {
-        return copy(properties);
+        return flatCopy(properties);
     }
 
-    public boolean contains(E property) {
-        return properties.contains(property.name());
+    public boolean containsProperty(E property) {
+        return properties.containsKey(property.name());
     }
 
-    public String get(E property) {
-        return contains(property)
+    public String getProperty(E property) {
+        return containsProperty(property)
                 ? properties.getProperty(property.name())
                 : null;
     }
 
-    public <T> T get(E property, Function<String, T> function) {
-        return function.apply(get(property));
+    public <T> T getProperty(E property, Function<String, T> function) {
+        String value = getProperty(property);
+        return value == null
+                ? null
+                : function.apply(value);
     }
 
     public List<String> asList(String val) {
@@ -165,5 +167,10 @@ public final class Props<E extends Enum<E>> {
 
     private <T> T illegalArgumentException(String message) {
         throw new IllegalArgumentException(message);
+    }
+
+    @Override
+    public String toString() {
+        return properties.toString();
     }
 }

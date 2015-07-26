@@ -25,7 +25,7 @@ package com.github.horrorho.liquiddonkey.settings.commandline;
 
 import com.github.horrorho.liquiddonkey.settings.Property;
 import static com.github.horrorho.liquiddonkey.settings.Property.*;
-import com.github.horrorho.liquiddonkey.settings.config.Props;
+import com.github.horrorho.liquiddonkey.util.Props;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
 import java.util.LinkedHashMap;

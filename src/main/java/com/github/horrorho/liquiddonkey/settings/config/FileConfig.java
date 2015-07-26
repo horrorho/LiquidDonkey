@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
  
+import com.github.horrorho.liquiddonkey.util.Props;
 import com.github.horrorho.liquiddonkey.settings.Property; 
 import java.nio.file.Path;
 import java.nio.file.Paths;
