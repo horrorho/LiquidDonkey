@@ -38,12 +38,12 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class EngineConfig {
 
-    public static EngineConfig newInstance(Properties properties) { 
+    public static EngineConfig from(Properties properties) { 
         Props<Property> props = Props.from(properties);
         
         boolean isAggressive = props.getProperty(Property.ENGINE_AGGRESSIVE, props::asBoolean);
 
-        return EngineConfig.newInstance(
+        return EngineConfig.from(
                 isAggressive,
                 props.getProperty(Property.ENGINE_BATCH_SIZE_MINIMUM_BYTES, props::asLong),
                 isAggressive ? props.getProperty(Property.ENGINE_RETRY_AGGRESSIVE, props::asInteger)
@@ -57,7 +57,7 @@ public final class EngineConfig {
                 props.getProperty(Property.ENGINE_DUMP_TOKEN, props::asBoolean));
     }
 
-    static EngineConfig newInstance(
+    static EngineConfig from(
             boolean isAggressive,
             long batchSizeMinimumBytes,
             int retryCount,

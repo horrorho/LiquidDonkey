@@ -38,13 +38,13 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class HttpConfig {
 
-    public static HttpConfig newInstance(Properties properties) { 
+    public static HttpConfig from(Properties properties) { 
         Props<Property> props = Props.from(properties);
         
         boolean isPersistent = props.getProperty(Property.ENGINE_PERSISTENT, props::asBoolean);
         boolean isRelaxedSSL = props.getProperty(Property.HTTP_RELAX_SSL, props::asBoolean);
 
-        return newInstance(isPersistent,
+        return from(isPersistent,
                 isRelaxedSSL,
                 props.getProperty(Property.HTTP_MAX_CONNECTIONS, props::asInteger),
                 isPersistent
@@ -61,7 +61,7 @@ public final class HttpConfig {
                 props.getProperty(Property.HTTP_DEFAULT_USER_AGENT));
     }
 
-    public static HttpConfig newInstance(
+    public static HttpConfig from(
             boolean isPersistent,
             boolean isRelaxedSSL,
             int maxConnections,

@@ -42,11 +42,11 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class FileFilterConfig {
 
-    public static FileFilterConfig newInstance(Properties properties) {
+    public static FileFilterConfig from(Properties properties) {
         Props<Property> props = Props.from(properties, Property.commandLineInputDateTimeFormatter());
         
         Collection<String> domains = new HashSet<>();
-        ItemTypes itemTypes = ItemTypes.newInstance(properties);
+        ItemTypes itemTypes = ItemTypes.from(properties);
 
         if (props.containsProperty(Property.FILTER_DOMAIN)) {
             domains.addAll(props.getProperty(Property.FILTER_DOMAIN, props::asList));
@@ -82,7 +82,7 @@ public final class FileFilterConfig {
             extensions.add("");
         }
 
-        return newInstance(domains,
+        return from(domains,
                 relativePath,
                 extensions,
                 props.getProperty(Property.FILTER_DATE_MAX, props::asTimestamp),
@@ -92,7 +92,7 @@ public final class FileFilterConfig {
                 props.getProperty(Property.FILTER_SIZE_MIN, props::asLong) * 1024);
     }
 
-    public static FileFilterConfig newInstance(
+    public static FileFilterConfig from(
             Collection<String> domainContains,
             Collection<String> relativePathContains,
             Collection<String> extensions,

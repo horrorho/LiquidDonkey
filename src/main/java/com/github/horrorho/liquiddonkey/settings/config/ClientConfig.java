@@ -38,13 +38,13 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public class ClientConfig {
 
-    public static ClientConfig newInstance(Properties properties) { 
+    public static ClientConfig from(Properties properties) { 
         Props<Property> props = Props.from(properties);
         
-        return newInstance(props.getProperty(Property.CLIENT_LIST_LIMIT, props::asInteger));
+        return from(props.getProperty(Property.CLIENT_LIST_LIMIT, props::asInteger));
     }
 
-    public static ClientConfig newInstance(int listLimit) {
+    public static ClientConfig from(int listLimit) {
         return new ClientConfig(listLimit);
     }
 

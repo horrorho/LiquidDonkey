@@ -45,20 +45,20 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class SelectionConfig {
 
-    public static SelectionConfig newInstance(Properties properties) {
+    public static SelectionConfig from(Properties properties) {
         Props<Property> props = Props.from(properties);
-        
+
         List<String> udid = props.containsProperty(Property.SELECTION_UDID)
                 ? props.getProperty(Property.SELECTION_UDID).isEmpty()
                         ? Arrays.asList("")
                         : props.getProperty(Property.SELECTION_UDID, prop -> props.asList(prop, props::isHex))
                 : new ArrayList<>();
 
-        return newInstance(new HashSet<>(udid),
+        return from(new HashSet<>(udid),
                 new LinkedHashSet<>(props.getProperty(Property.SELECTION_SNAPSHOT, prop -> props.asList(prop, props::asInteger))));
     }
 
-    public static SelectionConfig newInstance(Set<String> backups, Set<Integer> snapshots) {
+    public static SelectionConfig from(Set<String> backups, Set<Integer> snapshots) {
         return new SelectionConfig(backups, snapshots);
     }
 
@@ -66,8 +66,8 @@ public final class SelectionConfig {
     private final Set<Integer> snapshots;
 
     SelectionConfig(Set<String> backups, Set<Integer> snapshots) {
-        this.backups = Objects.requireNonNull(backups);
-        this.snapshots = Objects.requireNonNull(snapshots);
+        this.backups = new HashSet<>(backups);
+        this.snapshots = new HashSet<>(snapshots);
     }
 
     public Set<String> udids() {

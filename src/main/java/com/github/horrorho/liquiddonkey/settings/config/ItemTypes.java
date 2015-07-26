@@ -38,14 +38,15 @@ import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
 /**
+ * ItemTypes.
  *
  * @author Ahseya
  */
 @Immutable
 @ThreadSafe
-public final class ItemTypes {
+final class ItemTypes {
 
-    public static ItemTypes newInstance(Properties properties) {
+    static ItemTypes from(Properties properties) {
         return new ItemTypes(itemTypeToPaths(properties));
     }
 
@@ -75,7 +76,7 @@ public final class ItemTypes {
         this.itemTypeToPaths = itemTypeToRelativePaths;
     }
 
-    public Set<String> paths(String itemType) {
+    Set<String> paths(String itemType) {
         if (itemType == null || itemType.isEmpty()) {
             return new HashSet<>();
         }
@@ -87,7 +88,7 @@ public final class ItemTypes {
         return paths;
     }
 
-    public Set<String> paths(List<String> itemTypes) {
+    Set<String> paths(List<String> itemTypes) {
         return itemTypes.stream().map(this::paths).flatMap(Set::stream).collect(Collectors.toSet());
     }
 }

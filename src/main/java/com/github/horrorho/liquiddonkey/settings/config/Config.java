@@ -23,8 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import com.github.horrorho.liquiddonkey.util.Props;
-import com.github.horrorho.liquiddonkey.settings.Property;
 import java.util.Properties; 
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -38,21 +36,19 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class Config {
 
-    public static Config newInstance(Properties properties) {  
-        Props<Property> props = Props.from(properties); 
-        
-        return newInstance(
+    public static Config from(Properties properties) {  
+        return from(
                 AuthenticationConfig.from(properties),
-                ClientConfig.newInstance(properties),
-                EngineConfig.newInstance(properties),
-                FileConfig.newInstance(properties),
-                FileFilterConfig.newInstance(properties),
-                HttpConfig.newInstance(properties),
-                PrintConfig.newInstance(properties),
-                SelectionConfig.newInstance(properties));
+                ClientConfig.from(properties),
+                EngineConfig.from(properties),
+                FileConfig.from(properties),
+                FileFilterConfig.from(properties),
+                HttpConfig.from(properties),
+                PrintConfig.from(properties),
+                SelectionConfig.from(properties));
     }
 
-    public static Config newInstance(
+    public static Config from(
             AuthenticationConfig authentication,
             ClientConfig client,
             EngineConfig engine,

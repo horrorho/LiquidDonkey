@@ -40,17 +40,17 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class FileConfig {
 
-    public static FileConfig newInstance(Properties properties) { 
+    public static FileConfig from(Properties properties) { 
         Props<Property> props = Props.from(properties);
         
-        return newInstance(
+        return from(
                 Paths.get(props.getProperty(Property.FILE_OUTPUT_DIRECTORY)).toAbsolutePath(),
                 props.getProperty(Property.FILE_COMBINED, props::asBoolean),
                 props.getProperty(Property.FILE_FLAT, props::asBoolean),
                 props.getProperty(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, props::asBoolean));
     }
 
-    public static FileConfig newInstance(
+    public static FileConfig from(
             Path base,
             boolean isCombined,
             boolean isFlat,

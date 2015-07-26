@@ -38,13 +38,13 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public class PrintConfig {
 
-    public static PrintConfig newInstance(Properties properties) {
+    public static PrintConfig from(Properties properties) {
         Props<Property> props = Props.from(properties);
-        
-        return newInstance(props.getProperty(Property.PRINTER_STACK_TRACE, props::asBoolean));
+
+        return from(props.getProperty(Property.PRINTER_STACK_TRACE, props::asBoolean));
     }
 
-    public static PrintConfig newInstance(boolean toPrintStackTrace) {
+    public static PrintConfig from(boolean toPrintStackTrace) {
         return new PrintConfig(toPrintStackTrace);
     }
 
