@@ -23,9 +23,14 @@
  */
 package com.github.horrorho.liquiddonkey.settings.commandline;
 
+import com.github.horrorho.liquiddonkey.iofunction.IOSupplier;
+import static com.github.horrorho.liquiddonkey.settings.Markers.props;
+import com.github.horrorho.liquiddonkey.settings.PropertiesFactory;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
-import com.github.horrorho.liquiddonkey.settings.props.Props;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.cli.HelpFormatter;
@@ -34,51 +39,61 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * CommandLineConfig.
+ * CommandLineConfigFactory.
  *
  * @author ahseya
  */
 @Immutable
 @ThreadSafe
-public final class CommandLineConfig {
+public final class CommandLineConfigFactory {
 
-    public static CommandLineConfig getInstance() {
+    public static CommandLineConfigFactory getInstance() {
         return instance;
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(CommandLineConfig.class);
-    private static final CommandLineConfig instance = new CommandLineConfig();
+    private static final Logger logger = LoggerFactory.getLogger(CommandLineConfigFactory.class);
+    private static final CommandLineConfigFactory instance = new CommandLineConfigFactory();
 
-    CommandLineConfig() {
+    CommandLineConfigFactory() {
     }
 
     public Config fromArgs(String[] args) {
-        return fromArgs(args, Property.props());
-    }
-
-    public Config fromArgs(String[] args, Props<Property> props) {
         logger.trace("<< fromArgs() < {}", (Object) args);
         try {
-            // Add command line args
-            CommandLineOptions commandLineOptions = CommandLineOptions.newInstance(props);
 
-            props = CommandLinePropsFactory.getInstance().fromCommandLine(props, commandLineOptions, args);
+            PropertiesFactory factory = PropertiesFactory.create();
 
-            if (props.contains(Property.COMMAND_LINE_HELP)) {
+            // Fallback defaults
+            Properties properties = factory.fromDefaults();
+
+            // Jar defaults
+            try {
+                String resource = properties.get(Property.PROPERTIES_JAR.name()).toString();
+                IOSupplier<InputStream> supplier = () -> this.getClass().getResourceAsStream(resource);
+                properties = factory.fromInputStream(properties, supplier);
+            } catch (IOException ex) {
+                logger.warn("-- fromArgs() > exception: ", ex);
+            }
+
+            // Command line args
+            CommandLineOptions commandLineOptions = CommandLineOptions.from(properties);
+            properties = CommandLinePropertiesFactory.create().from(properties, commandLineOptions, args);
+
+            if (properties.contains(Property.COMMAND_LINE_HELP.name())) {
                 HelpFormatter helpFormatter = new HelpFormatter();
                 helpFormatter.setOptionComparator(null);
-                helpFormatter.printHelp(props.get(Property.APP_NAME) + " [OPTION]... (<token> | <appleid> <password>) ",
-                        commandLineOptions.options());
+                helpFormatter.printHelp(properties.getProperty(Property.APP_NAME.name())
+                        + " [OPTION]... (<token> | <appleid> <password>) ", commandLineOptions.options());
                 return null;
             }
 
-            if (props.contains(Property.COMMAND_LINE_VERSION)) {
-                System.out.println(props.get(Property.PROJECT_VERSION));
+            if (props.contains(Property.COMMAND_LINE_VERSION.name())) {
+                System.out.println(properties.getProperty(Property.PROJECT_VERSION.name()));
                 return null;
             }
 
             // Build config
-            Config config = Config.newInstance(props);
+            Config config = Config.newInstance(properties);
 
             logger.trace(">> fromArgs() > {}", config);
             return config;
@@ -91,3 +106,4 @@ public final class CommandLineConfig {
         }
     }
 }
+// TODO use printer?

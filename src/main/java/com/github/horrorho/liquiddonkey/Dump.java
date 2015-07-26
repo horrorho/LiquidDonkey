@@ -23,8 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey;
 
-import com.github.horrorho.liquiddonkey.settings.Property; 
-import com.github.horrorho.liquiddonkey.settings.props.Props;
+import com.github.horrorho.liquiddonkey.settings.PropertiesFactory;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -56,21 +55,21 @@ public class Dump {
     public static void main(String[] args) {
         logger.trace("<< main() < args: {}", Arrays.asList(args));
 
-        Props<Property> props = Property.defaultProps();
+        Properties properties = PropertiesFactory.create().fromDefaults();
 
         Path path = Paths.get("liquiddonkey.properties");
         try (OutputStream outputStream = Files.newOutputStream(path, CREATE, WRITE, TRUNCATE_EXISTING)) {
 
             // Ordered store
-            Properties properties = new Properties() {
+            Properties ordered = new Properties() {
                 @Override
                 public synchronized Enumeration<Object> keys() {
                     return Collections.enumeration(new TreeSet<Object>(super.keySet()));
                 }
             };
 
-            properties.putAll(props.distinct().properties());
-            properties.store(outputStream, "liquiddonkey");
+            ordered.putAll(properties);
+            ordered.store(outputStream, "liquiddonkey");
 
             logger.info("-- main() > properties written to: {}", path.toAbsolutePath());
         } catch (IOException ex) {

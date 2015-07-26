@@ -27,7 +27,7 @@ import com.github.horrorho.liquiddonkey.cloud.Looter;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
-import com.github.horrorho.liquiddonkey.settings.commandline.CommandLineConfig;
+import com.github.horrorho.liquiddonkey.settings.commandline.CommandLineConfigFactory;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import com.github.horrorho.liquiddonkey.util.DumpStackTraceHook;
 import com.github.horrorho.liquiddonkey.util.MemMonitor;
@@ -68,7 +68,7 @@ public class Main {
     public static void main(String[] args) {
         logger.trace("<< main()");
 
-        Config config = CommandLineConfig.getInstance().fromArgs(args);
+        Config config = CommandLineConfigFactory.getInstance().fromArgs(args);
 
         if (config == null) {
             return;

@@ -3,10 +3,10 @@
  *
  * Copyright 2015 Ahseya.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * Permission is hereby granted, free of charge, to any person obtaining a flatCopy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * to use, flatCopy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
  *
@@ -170,10 +170,16 @@ public final class CommandLineOptions {
 
     static String itemTypes(Properties properties) {
         Props<Property> props = Props.from(properties);
+        
+        System.out.println(">> contains " + props.containsProperty(CONFIG_PREFIX_ITEM_TYPE));
+        
+        System.out.println(">> props " + props);
+        
+        
 
-        String prefix = props.get(CONFIG_PREFIX_ITEM_TYPE);
+        String prefix = props.getProperty(CONFIG_PREFIX_ITEM_TYPE);
         if (prefix == null) {
-            logger.warn("-- itemTypes() > no item type prefix");
+            logger.warn("-- itemTypes() > no item type prefix: {}", CONFIG_PREFIX_ITEM_TYPE);
             return "";
         }
 
@@ -181,10 +187,10 @@ public final class CommandLineOptions {
 
         return Stream.of(Property.values())
                 .filter(property -> property.name().startsWith(prefix))
-                .filter(property -> !props.get(property, props::asList).isEmpty())
+                .filter(property -> !props.getProperty(property, props::asList).isEmpty())
                 .map(property -> {
                     String type = property.name().substring(substring);
-                    String paths = props.get(property, props::asList).stream().collect(Collectors.joining(" "));
+                    String paths = props.getProperty(property, props::asList).stream().collect(Collectors.joining(" "));
                     return type + "(" + paths + ")";
                 }).collect(Collectors.joining(" "));
     }

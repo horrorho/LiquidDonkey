@@ -23,12 +23,20 @@
  */
 package com.github.horrorho.liquiddonkey.settings.commandline;
 
+import com.github.horrorho.liquiddonkey.iofunction.IOSupplier;
 import com.github.horrorho.liquiddonkey.settings.Property;
-import com.github.horrorho.liquiddonkey.settings.props.Props;
-import com.github.horrorho.liquiddonkey.settings.props.PropsBuilder;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import static java.nio.file.StandardOpenOption.READ;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.Properties;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.cli.CommandLine;
@@ -37,32 +45,33 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * CommandLinePropsFactory.
+ * CommandLinePropertiesFactory.
  *
  * @author Ahseya
  */
 @Immutable
 @ThreadSafe
-public final class CommandLinePropsFactory {
+public final class CommandLinePropertiesFactory {
 
-    private static final CommandLinePropsFactory instance = new CommandLinePropsFactory();
+    private static final Logger logger = LoggerFactory.getLogger(CommandLinePropertiesFactory.class);
 
-    public static CommandLinePropsFactory getInstance() {
+    private static final CommandLinePropertiesFactory instance = new CommandLinePropertiesFactory();
+
+    public static CommandLinePropertiesFactory create() {
         return instance;
     }
 
-    CommandLinePropsFactory() {
+    CommandLinePropertiesFactory() {
     }
 
-    public Props<Property> fromCommandLine(
-            Props<Property> parent,
-            CommandLineOptions commandLineOptions,
-            String[] args)
-            throws ParseException {
-
-        Props<Property> props = PropsBuilder.from(Property.class).parent(parent).build();
+    public Properties from(Properties parent, CommandLineOptions commandLineOptions, String[] args)
+            throws ParseException { 
+        
+        Properties properties = new Properties(parent); 
         CommandLineParser parser = new DefaultParser();
         Options options = commandLineOptions.options();
         CommandLine cmd = parser.parse(options, args);
@@ -73,12 +82,12 @@ public final class CommandLinePropsFactory {
                 break;
             case 1:
                 // Authentication token
-                props.put(Property.AUTHENTICATION_TOKEN, cmd.getArgList().get(0));
+                properties.put(Property.AUTHENTICATION_TOKEN.name(), cmd.getArgList().get(0));
                 break;
             case 2:
                 // AppleId/ password pair
-                props.put(Property.AUTHENTICATION_APPLEID, cmd.getArgList().get(0));
-                props.put(Property.AUTHENTICATION_PASSWORD, cmd.getArgList().get(1));
+                properties.put(Property.AUTHENTICATION_APPLEID.name(), cmd.getArgList().get(0));
+                properties.put(Property.AUTHENTICATION_PASSWORD.name(), cmd.getArgList().get(1));
                 break;
             default:
                 throw new ParseException(
@@ -90,26 +99,20 @@ public final class CommandLinePropsFactory {
         while (it.hasNext()) {
             Option option = it.next();
             String opt = commandLineOptions.opt(option);
-            Property property = commandLineOptions.property(option);
+            String property = commandLineOptions.property(option).name();
 
             if (option.hasArgs()) {
                 // String array
-                props.put(
-                        property,
-                        joined(cmd.getOptionValues(opt)));
+                properties.put(property, joined(cmd.getOptionValues(opt)));
             } else if (option.hasArg()) {
                 // String value
-                props.put(
-                        property,
-                        cmd.getOptionValue(opt));
+                properties.put(property, cmd.getOptionValue(opt));
             } else {
                 // String boolean
-                props.put(
-                        property,
-                        Boolean.toString(cmd.hasOption(opt)));
+                properties.put(property, Boolean.toString(cmd.hasOption(opt)));
             }
         }
-        return props;
+        return properties;
     }
 
     String joined(String... list) {
