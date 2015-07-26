@@ -93,7 +93,7 @@ public final class CommandLineConfigFactory {
             }
 
             // Build config
-            Config config = Config.newInstance(properties);
+            Config config = Config.from(properties);
 
             logger.trace(">> fromArgs() > {}", config);
             return config;
