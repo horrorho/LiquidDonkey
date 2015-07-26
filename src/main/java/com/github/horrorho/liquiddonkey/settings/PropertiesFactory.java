@@ -26,13 +26,7 @@ package com.github.horrorho.liquiddonkey.settings;
 import com.github.horrorho.liquiddonkey.iofunction.IOSupplier;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.Path;
-import static java.nio.file.StandardOpenOption.READ;
-import java.util.Arrays;
 import java.util.Properties;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -69,13 +63,6 @@ public final class PropertiesFactory {
         return properties;
     }
 
-//    public Properties fromResource(String resource) {
-//        return fromInputStream(() -> this.getClass().getResourceAsStream(resource));
-//    }
-//
-//    public Properties fromFile(Path path) {
-//        return fromInputStream(() -> Files.newInputStream(path, READ));
-//    }
     public Properties fromInputStream(IOSupplier<InputStream> supplier) throws IOException {
         return fromInputStream(new Properties(), supplier);
     }
@@ -99,5 +86,5 @@ public final class PropertiesFactory {
             }
         }
         return properties;
-    } 
+    }
 }

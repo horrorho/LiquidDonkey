@@ -101,20 +101,6 @@ public enum Property {
         return DateTimeFormatter.RFC_1123_DATE_TIME;
     }
 
-//    public static Props<Property> props() {
-//        Props defaultProps = defaultProps();
-//        return PropsBuilder.from(Property.class)
-//                .parent(defaultProps)
-//                .load(defaultProps.get(PROPERTIES_JAR))
-//                .build();
-//    }
-//
-//    public static Props<Property> defaultProps() {
-//        return PropsBuilder.from(Property.class)
-//                .computeAbsent(key -> key.getDefaultValue())
-//                .build();
-//    }
-
     private final String defaultValue;
 
     private Property(String defaultValue) {
