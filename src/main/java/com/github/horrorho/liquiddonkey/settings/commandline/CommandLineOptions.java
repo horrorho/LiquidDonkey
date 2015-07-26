@@ -25,19 +25,22 @@ package com.github.horrorho.liquiddonkey.settings.commandline;
 
 import com.github.horrorho.liquiddonkey.settings.Property;
 import static com.github.horrorho.liquiddonkey.settings.Property.*;
-import com.github.horrorho.liquiddonkey.settings.props.Props;
+import com.github.horrorho.liquiddonkey.settings.config.Props;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * CommandLineOptions.
@@ -48,8 +51,8 @@ import org.apache.commons.cli.Options;
 @ThreadSafe
 public final class CommandLineOptions {
 
-    public static CommandLineOptions newInstance(Props<Property> props) {
-        LinkedHashMap<Property, Option> propertyToOption = propertyToOption(itemTypes(props));
+    public static CommandLineOptions from(Properties properties) {
+        LinkedHashMap<Property, Option> propertyToOption = propertyToOption(itemTypes(properties));
 
         return new CommandLineOptions(
                 propertyToOption,
@@ -165,9 +168,12 @@ public final class CommandLineOptions {
         return options;
     }
 
-    static String itemTypes(Props<Property> props) {
+    static String itemTypes(Properties properties) {
+        Props<Property> props = Props.from(properties);
+
         String prefix = props.get(CONFIG_PREFIX_ITEM_TYPE);
         if (prefix == null) {
+            logger.warn("-- itemTypes() > no item type prefix");
             return "";
         }
 
@@ -175,10 +181,10 @@ public final class CommandLineOptions {
 
         return Stream.of(Property.values())
                 .filter(property -> property.name().startsWith(prefix))
-                .filter(property -> !props.getList(property).isEmpty())
+                .filter(property -> !props.get(property, props::asList).isEmpty())
                 .map(property -> {
                     String type = property.name().substring(substring);
-                    String paths = props.getList(property).stream().collect(Collectors.joining(" "));
+                    String paths = props.get(property, props::asList).stream().collect(Collectors.joining(" "));
                     return type + "(" + paths + ")";
                 }).collect(Collectors.joining(" "));
     }
@@ -192,6 +198,8 @@ public final class CommandLineOptions {
                 .filter(set -> set.getKey() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
+
+    private static final Logger logger = LoggerFactory.getLogger(CommandLineOptions.class);
 
     private final LinkedHashMap<Property, Option> propertyToOption;
     private final Map<String, Property> optToProperty;
