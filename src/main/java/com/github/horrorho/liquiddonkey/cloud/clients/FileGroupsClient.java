@@ -173,7 +173,7 @@ public final class FileGroupsClient {
             throw new BadDataException(ex);
         }
 
-        String uri = path(mobileBackupUrl, "mbs", snapshot, udid, snapshot, "getFiles");
+        String uri = path(mobileBackupUrl, "mbs",  dsPrsID, udid, snapshot, "getFiles");
 
         HttpPost post = new HttpPost(uri);
         headers.mobileBackupHeaders(dsPrsID, mmeAuthToken).stream().forEach(post::addHeader);
