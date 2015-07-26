@@ -73,20 +73,20 @@ public class Snapshots {
             snapshot = new Snapshot(backup, mbsSnapshot, files);
         }
 
-        logger.debug(marker, "-- get() > snapshots: {}", snapshot);
+        logger.debug(marker, "-- from() > snapshots: {}", snapshot);
         logger.trace(">> from()", snapshot == null ? null : snapshot.files().size());
         return snapshot;
     }
 
     public static List<Snapshot> from(HttpClient client, Backup backup, int listLimit) throws IOException {
-        logger.trace("<< get() < dsPrsID: {} udid: {}", backup.dsPrsID(), backup.backupUDID());
+        logger.trace("<< from() < dsPrsID: {} udid: {}", backup.dsPrsID(), backup.backupUDID());
         List<Snapshot> snapshots = new ArrayList<>();
 
         for (ICloud.MBSSnapshot mbsSnapshot : backup.backup().getSnapshotList()) {
             final List<ICloud.MBSFile> files;
 
             if (mbsSnapshot.getCommitted() == 0) {
-                logger.debug("-- get() > incomplete: {}", mbsSnapshot);
+                logger.debug("-- from() > incomplete: {}", mbsSnapshot);
                 files = new ArrayList<>();
 
             } else {
@@ -104,8 +104,8 @@ public class Snapshots {
             snapshots.add(snapshot);
         }
 
-        logger.debug(marker, "-- get() > snapshots: {}", snapshots);
-        logger.trace(">> get() > snapshot count {}", snapshots.size());
+        logger.debug(marker, "-- from() > snapshots: {}", snapshots);
+        logger.trace(">> from() > snapshot count {}", snapshots.size());
         return snapshots;
     }
 
