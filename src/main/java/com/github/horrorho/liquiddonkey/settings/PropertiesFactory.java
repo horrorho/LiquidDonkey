@@ -86,7 +86,7 @@ public final class PropertiesFactory {
                                 logger.trace("-- fromInputStream() > property: {} key: {}", property, value);
 
                             } catch (IllegalArgumentException ex) {
-                                System.out.println("WARN: Invalid properties file key: " + key);
+                                System.err.println("WARN: Invalid properties file key: " + key);
                                 logger.warn("-- fromInputStream() > unknown property key: {}", key);
                             }
                         });
