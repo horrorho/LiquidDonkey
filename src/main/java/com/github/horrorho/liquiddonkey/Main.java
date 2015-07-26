@@ -30,7 +30,6 @@ import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.commandline.CommandLineConfigFactory;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import com.github.horrorho.liquiddonkey.util.DumpStackTraceHook;
-import com.github.horrorho.liquiddonkey.util.MemMonitor;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -97,7 +97,10 @@ public final class Props<E extends Enum<E>> {
     }
 
     public <T> T getProperty(E property, Function<String, T> function) {
-        return function.apply(Props.this.getProperty(property));
+        String value = getProperty(property);
+        return value == null
+                ? null
+                : function.apply(value);
     }
 
     public List<String> asList(String val) {
@@ -167,7 +170,7 @@ public final class Props<E extends Enum<E>> {
     }
 
     @Override
-    public String toString() { 
+    public String toString() {
         return properties.toString();
     }
 }
