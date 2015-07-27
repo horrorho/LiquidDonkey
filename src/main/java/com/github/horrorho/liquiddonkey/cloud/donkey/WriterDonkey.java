@@ -23,20 +23,20 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.donkey;
 
-import com.github.horrorho.liquiddonkey.cloud.file.WriterResult;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
-import com.github.horrorho.liquiddonkey.cloud.store.StoreWriter;
+import com.github.horrorho.liquiddonkey.cloud.store.DataWriter;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.util.pool.Release;
+import com.github.horrorho.liquiddonkey.iofunction.IOConsumer;
+import com.github.horrorho.liquiddonkey.util.pool.ToDo;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
@@ -52,47 +52,40 @@ public final class WriterDonkey extends Donkey {
 
     private static final Logger log = LoggerFactory.getLogger(WriterDonkey.class);
 
-    private final StoreManager manager;
-    private final BiConsumer<ICloud.MBSFile, WriterResult> results;
     private final Function<WriterDonkey, FetchDonkey> fetchDonkeys;
-    private final Function<Map<ByteString, StoreWriter>, DonkeyWriter> donkeyWriters;
+    private final IOConsumer<Map<ByteString, DataWriter>> signaturesWriter;
     private byte[] data;
 
-    WriterDonkey(
-            StoreManager manager,
-            BiConsumer<ICloud.MBSFile, WriterResult> results,
+    public WriterDonkey(
             Function<WriterDonkey, FetchDonkey> fetchDonkeys,
-            Function<Map<ByteString, StoreWriter>, DonkeyWriter> donkeyWriters,
-            byte[] data,
+            IOConsumer<Map<ByteString, DataWriter>> signaturesWriter,
+            StoreManager manager,
             ChunkServer.StorageHostChunkList chunkList,
             List<Exception> exceptions,
             int retryCount,
-            AtomicReference<Exception> fatal) {
+            AtomicReference<Exception> fatal,
+            Consumer<Set<ByteString>> failures) {
 
-        super(chunkList, exceptions, retryCount, fatal);
+        super(manager, chunkList, exceptions, retryCount, fatal, failures);
 
-        this.manager = Objects.requireNonNull(manager);
-        this.results = Objects.requireNonNull(results);
         this.fetchDonkeys = Objects.requireNonNull(fetchDonkeys);
-        this.donkeyWriters = Objects.requireNonNull(donkeyWriters);
-        this.data = Objects.requireNonNull(data);
+        this.signaturesWriter = Objects.requireNonNull(signaturesWriter);
     }
 
     @Override
-    protected Release<Track, Donkey> toProcess() throws IOException, InterruptedException {
+    protected ToDo<Track, Donkey> toProcess() throws IOException, InterruptedException {
         log.trace("<< toProcess()");
 
-        Release<Track, Donkey> toDo;
+        ToDo<Track, Donkey> toDo;
+        try {
+            Map<ByteString, DataWriter> signaturesToData = manager().put(chunkList(), data);
+            signaturesWriter.accept(signaturesToData);
+            toDo = complete();
 
-        try (DonkeyWriter writer = donkeyWriters.apply(manager.put(chunkList, data))) {
-            writer.write().entrySet().stream().forEach(entry -> results.accept(entry.getKey(), entry.getValue()));
-            toDo = Release.dispose();
-            
         } catch (BadDataException ex) {
             log.warn("-- toProcess() > exception: ", ex);
-            toDo = isExceptionLimit(ex)
-                    ? Release.dispose()
-                    : Release.requeue(fetchDonkeys.apply(this));
+            toDo = retry(ex, Track.FETCH, fetchDonkeys.apply(this));
+
         } finally {
             data = null;
         }
@@ -100,4 +93,26 @@ public final class WriterDonkey extends Donkey {
         log.trace(">> toProcess() > release: {}", toDo);
         return toDo;
     }
+
+//    @Override
+//    protected ToDo<Track, Donkey> toProcess() throws IOException, InterruptedException {
+//        log.trace("<< toProcess()");
+//
+//        ToDo<Track, Donkey> toDo;
+//
+//        try (DonkeyWriter writer = donkeyWriters.apply(manager.put(chunkList(), data))) {
+//            writer.write().entrySet().stream().forEach(entry -> results.accept(entry.getKey(), entry.getValue()));
+//            toDo = complete();
+//
+//        } catch (BadDataException ex) {
+//            log.warn("-- toProcess() > exception: ", ex);
+//            toDo = retry(ex, Track.FETCH, fetchDonkeys.apply(this));
+//            
+//        } finally {
+//            data = null;
+//        }
+//
+//        log.trace(">> toProcess() > release: {}", toDo);
+//        return toDo;
+//    }
 }

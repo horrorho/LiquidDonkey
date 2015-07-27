@@ -24,14 +24,18 @@
 package com.github.horrorho.liquiddonkey.cloud.donkey;
 
 import com.github.horrorho.liquiddonkey.cloud.clients.ChunksClient;
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer; 
-import com.github.horrorho.liquiddonkey.util.pool.Release;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
+import com.github.horrorho.liquiddonkey.util.pool.ToDo;
+import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
@@ -52,16 +56,18 @@ public final class FetchDonkey extends Donkey {
     private final ChunksClient chunks;
     private final BiFunction<FetchDonkey, byte[], WriterDonkey> writerDonkeys;
 
-    FetchDonkey(
+    public FetchDonkey(
             HttpClient client,
             ChunksClient chunks,
             BiFunction<FetchDonkey, byte[], WriterDonkey> writerDonkeys,
+            StoreManager manager,
             ChunkServer.StorageHostChunkList chunkList,
             List<Exception> exceptions,
             int retryCount,
-            AtomicReference<Exception> fatal) {
+            AtomicReference<Exception> fatal,
+            Consumer<Set<ByteString>> failures) {
 
-        super(chunkList, exceptions, retryCount, fatal);
+        super(manager, chunkList, exceptions, retryCount, fatal, failures);
 
         this.client = Objects.requireNonNull(client);
         this.chunks = Objects.requireNonNull(chunks);
@@ -69,25 +75,24 @@ public final class FetchDonkey extends Donkey {
     }
 
     @Override
-    protected Release<Track, Donkey> toProcess() throws IOException {
+    protected ToDo<Track, Donkey> toProcess() throws IOException {
         log.trace("<< toProcess()");
 
-        Release<Track, Donkey> toDo;
+        ToDo<Track, Donkey> toDo;
         try {
-            byte[] data = chunks.get(client, chunkList);
-            toDo = Release.requeue(Track.DECODE_WRITE, writerDonkeys.apply(this, data));
+            byte[] data = chunks.get(client, chunkList());
+            toDo = requeue(Track.DECODE_WRITE, writerDonkeys.apply(this, data));
+
         } catch (UnknownHostException ex) {
             log.warn("-- toProcess() > exception: ", ex);
+            toDo = retry(ex);
 
-            toDo = isExceptionLimit(ex)
-                    ? Release.dispose()
-                    : Release.requeue(this);
         } catch (HttpResponseException ex) {
             log.warn("-- toProcess() > exception: ", ex);
+            toDo = ex.getStatusCode() == 401
+                    ? abort(ex)
+                    : retry(ex);
 
-            toDo = isExceptionLimit(ex) || ex.getStatusCode() == 401
-                    ? Release.dispose()
-                    : Release.requeue(this);
         } catch (IOException | RuntimeException ex) {
             throw ex;
         }

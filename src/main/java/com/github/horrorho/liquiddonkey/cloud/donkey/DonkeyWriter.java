@@ -26,7 +26,7 @@ package com.github.horrorho.liquiddonkey.cloud.donkey;
 import com.github.horrorho.liquiddonkey.cloud.file.WriterResult;
 import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.cloud.store.StoreWriter;
+import com.github.horrorho.liquiddonkey.cloud.store.DataWriter;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.io.Closeable;
@@ -49,9 +49,9 @@ public class DonkeyWriter implements Closeable {
     private static final Logger logger = LoggerFactory.getLogger(DonkeyWriter.class);
 
     private final SignatureWriter signatureWriter;
-    private Map<ByteString, StoreWriter> writers;
+    private Map<ByteString, DataWriter> writers;
 
-    DonkeyWriter(SignatureWriter writer, Map<ByteString, StoreWriter> writers) {
+    DonkeyWriter(SignatureWriter writer, Map<ByteString, DataWriter> writers) {
         this.signatureWriter = Objects.requireNonNull(writer);
         this.writers = new HashMap<>(writers);
     }
@@ -91,3 +91,4 @@ public class DonkeyWriter implements Closeable {
         writers = null;
     }
 }
+// TODO simplify, close on close, not during writing.

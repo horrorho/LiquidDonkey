@@ -24,15 +24,17 @@
 package com.github.horrorho.liquiddonkey.cloud.donkey;
 
 import com.github.horrorho.liquiddonkey.cloud.clients.ChunksClient;
-import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
-import com.github.horrorho.liquiddonkey.cloud.file.WriterResult;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.cloud.store.DataWriter;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
+import com.github.horrorho.liquiddonkey.iofunction.IOConsumer;
+import com.google.protobuf.ByteString;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.apache.http.client.HttpClient;
 
 /**
@@ -41,78 +43,86 @@ import org.apache.http.client.HttpClient;
  * @author Ahseya
  */
 public class DonkeyFactory {
- 
+
     public static DonkeyFactory from(
             HttpClient client,
-            BiConsumer<ICloud.MBSFile, WriterResult> results,
-            SignatureWriter signatureWriter,
             StoreManager storeManager,
-            int retryCount) {
+            int retryCount,
+            AtomicReference<Exception> fatal,
+            Consumer<Set<ByteString>> failures,
+            IOConsumer<Map<ByteString, DataWriter>> signaturesWriter) {
 
         return new DonkeyFactory(
                 client,
-                results,
-                signatureWriter,
+                ChunksClient.create(),
                 storeManager,
                 retryCount,
-                new AtomicReference<>(null));
+                fatal,
+                failures,
+                signaturesWriter);
     }
 
     private final HttpClient client;
-    private final BiConsumer<ICloud.MBSFile, WriterResult> results;
-    private final SignatureWriter signatureWriter;
+    private final ChunksClient chunksClients;
     private final StoreManager storeManager;
     private final int retryCount;
     private final AtomicReference<Exception> fatal;
+    private final Consumer<Set<ByteString>> failures;
+    private final IOConsumer<Map<ByteString, DataWriter>> signaturesWriter;
 
     DonkeyFactory(
             HttpClient client,
-            BiConsumer<ICloud.MBSFile, WriterResult> out,
-            SignatureWriter signatureWriter,
+            ChunksClient chunksClients,
             StoreManager storeManager,
             int retryCount,
-            AtomicReference<Exception> fatal) {
+            AtomicReference<Exception> fatal,
+            Consumer<Set<ByteString>> failures,
+            IOConsumer<Map<ByteString, DataWriter>> signaturesWriter) {
 
         this.client = Objects.requireNonNull(client);
-        this.results = Objects.requireNonNull(out);
-        this.signatureWriter = Objects.requireNonNull(signatureWriter);
-        this.storeManager = storeManager;
+        this.chunksClients = Objects.requireNonNull(chunksClients);
+        this.storeManager = Objects.requireNonNull(storeManager);
         this.retryCount = retryCount;
         this.fatal = Objects.requireNonNull(fatal);
+        this.failures = Objects.requireNonNull(failures);
+        this.signaturesWriter = Objects.requireNonNull(signaturesWriter);
     }
 
     public FetchDonkey fetchDonkey(ChunkServer.StorageHostChunkList chunkList) {
         return new FetchDonkey(
                 client,
-                ChunksClient.create(),
+                chunksClients,
                 this::writerDonkey,
+                storeManager,
                 chunkList,
                 new ArrayList<>(),
                 retryCount,
-                fatal);
+                fatal,
+                failures);
     }
 
     FetchDonkey fetchDonkey(WriterDonkey donkey) {
         return new FetchDonkey(
                 client,
-                ChunksClient.create(),
+                chunksClients,
                 this::writerDonkey,
+                storeManager,
                 donkey.chunkList(),
                 donkey.exceptions(),
-                donkey.retryCount(),
-                fatal);
+                retryCount,
+                fatal,
+                failures);
     }
 
     WriterDonkey writerDonkey(FetchDonkey donkey, byte[] data) {
         return new WriterDonkey(
-                storeManager,
-                results,
                 this::fetchDonkey,
-                writers -> new DonkeyWriter(signatureWriter, writers),
-                data,
+                signaturesWriter,
+                storeManager,
                 donkey.chunkList(),
                 donkey.exceptions(),
-                donkey.retryCount(),
-                fatal);
+                retryCount,
+                fatal,
+                failures);
     }
 }
