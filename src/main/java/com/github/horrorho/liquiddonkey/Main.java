@@ -78,7 +78,7 @@ public class Main {
             return;
         }
 
-        if (config.printer().toPrintStackTrace()) {
+        if (config.debug().toPrintStackTrace()) {
             DumpStackTraceHook.add();
         }
 
@@ -94,7 +94,7 @@ public class Main {
             System.err.println("FATAL: " + stringWriter.toString());
         }
 
-        if (config.printer().toPrintStackTrace()) {
+        if (config.debug().toPrintStackTrace()) {
             DumpStackTraceHook.remove();
         }
 

@@ -150,7 +150,7 @@ public final class CommandLineOptions {
         options.put(HTTP_RELAX_SSL,
                 new Option(null, "relax-ssl", false, "Relaxed SSL verification, for SSL validation errors."));
 
-        options.put(PRINTER_STACK_TRACE,
+        options.put(DEBUG_PRINT_STACK_TRACE,
                 new Option("x", "stack-trace", false, "Prints stack trace on errors, useful for debugging."));
 
         options.put(ENGINE_DUMP_TOKEN,

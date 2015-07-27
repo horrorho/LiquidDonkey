@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.settings.config;
 
-import java.util.Properties; 
+import java.util.Properties;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
@@ -36,7 +36,7 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class Config {
 
-    public static Config from(Properties properties) {  
+    public static Config from(Properties properties) {
         return from(
                 AuthenticationConfig.from(properties),
                 ClientConfig.from(properties),
@@ -44,7 +44,7 @@ public final class Config {
                 FileConfig.from(properties),
                 FileFilterConfig.from(properties),
                 HttpConfig.from(properties),
-                PrintConfig.from(properties),
+                DebugConfig.from(properties),
                 SelectionConfig.from(properties));
     }
 
@@ -55,7 +55,7 @@ public final class Config {
             FileConfig file,
             FileFilterConfig fileFilter,
             HttpConfig http,
-            PrintConfig printer,
+            DebugConfig printer,
             SelectionConfig selection) {
 
         return new Config(authentication,
@@ -70,11 +70,11 @@ public final class Config {
 
     private final AuthenticationConfig authentication;
     private final ClientConfig client;
+    private final DebugConfig debug;
     private final EngineConfig engine;
     private final FileConfig file;
     private final FileFilterConfig fileFilter;
     private final HttpConfig http;
-    private final PrintConfig printer;
     private final SelectionConfig selection;
 
     Config(
@@ -84,7 +84,7 @@ public final class Config {
             FileConfig file,
             FileFilterConfig fileFilter,
             HttpConfig http,
-            PrintConfig printer,
+            DebugConfig debug,
             SelectionConfig selection) {
 
         this.authentication = authentication;
@@ -93,7 +93,7 @@ public final class Config {
         this.file = file;
         this.fileFilter = fileFilter;
         this.http = http;
-        this.printer = printer;
+        this.debug = debug;
         this.selection = selection;
     }
 
@@ -121,8 +121,8 @@ public final class Config {
         return http;
     }
 
-    public PrintConfig printer() {
-        return printer;
+    public DebugConfig debug() {
+        return debug;
     }
 
     public SelectionConfig selection() {
@@ -138,7 +138,7 @@ public final class Config {
                 + ", directory=" + file
                 + ", fileFilter=" + fileFilter
                 + ", http=" + http
-                + ", printer=" + printer
+                + ", printer=" + debug
                 + ", selection=" + selection
                 + '}';
     }

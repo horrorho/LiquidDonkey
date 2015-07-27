@@ -249,7 +249,7 @@ public class Looter implements Closeable {
             //                    client,
             //                    ChunkDataFetcher.from(http, client),
             //                    SignatureWriter.get(snapshot, config.file()),
-            //                    printer);
+            //                    debug);
             try {
 
                 SnapshotDownloader downloader = new SnapshotDownloader(config.file(), std);
@@ -271,7 +271,7 @@ public class Looter implements Closeable {
 //
 //            System.exit(0);
 //            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results
-//                    = downloader.execute(http, filtered, filtered.signatures(), printer);
+//                    = downloader.execute(http, filtered, filtered.signatures(), debug);
 //            logger.debug("--backup() > completed: {}", results.get(Boolean.TRUE).size());
 //            logger.debug("--backup() > failed: {}", results.get(Boolean.FALSE).size());
             } catch (BadDataException ex) {

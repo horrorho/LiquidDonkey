@@ -36,21 +36,21 @@ import net.jcip.annotations.ThreadSafe;
  */
 @Immutable
 @ThreadSafe
-public class PrintConfig {
+public class DebugConfig {
 
-    public static PrintConfig from(Properties properties) {
+    public static DebugConfig from(Properties properties) {
         Props<Property> props = Props.from(properties);
 
-        return from(props.getProperty(Property.PRINTER_STACK_TRACE, props::asBoolean));
+        return from(props.getProperty(Property.DEBUG_PRINT_STACK_TRACE, props::asBoolean));
     }
 
-    public static PrintConfig from(boolean toPrintStackTrace) {
-        return new PrintConfig(toPrintStackTrace);
+    public static DebugConfig from(boolean toPrintStackTrace) {
+        return new DebugConfig(toPrintStackTrace);
     }
 
     private final boolean toPrintStackTrace;
 
-    PrintConfig(boolean toPrintStackTrace) {
+    DebugConfig(boolean toPrintStackTrace) {
         this.toPrintStackTrace = toPrintStackTrace;
     }
 
