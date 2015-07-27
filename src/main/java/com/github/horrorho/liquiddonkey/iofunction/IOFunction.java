@@ -37,7 +37,7 @@ import java.util.function.Function;
 @FunctionalInterface
 public interface IOFunction<T, R> {
 
-    R apply(T t) throws InterruptedException, IOException;
+    R apply(T t) throws IOException;
 
     default <V> IOFunction<V, R> compose(Function<? super V, ? extends T> before) {
         Objects.requireNonNull(before);

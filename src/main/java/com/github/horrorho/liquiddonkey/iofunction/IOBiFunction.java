@@ -38,7 +38,7 @@ import java.util.function.Function;
 @FunctionalInterface
 public interface IOBiFunction<T, U, R> {
 
-    R apply(T t, U u) throws InterruptedException, IOException;
+    R apply(T t, U u) throws IOException;
 
     default <V> IOBiFunction<T, U, V> andThen(Function<? super R, ? extends V> after) {
         Objects.requireNonNull(after);

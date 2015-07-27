@@ -34,7 +34,7 @@ import java.util.Objects;
  */
 public interface IOPredicate<T> {
 
-    boolean test(T t) throws InterruptedException, IOException;
+    boolean test(T t) throws IOException;
 
     default IOPredicate<T> and(IOPredicate<? super T> other) {
         Objects.requireNonNull(other);
