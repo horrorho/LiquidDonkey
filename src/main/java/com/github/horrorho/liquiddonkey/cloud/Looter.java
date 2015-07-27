@@ -39,20 +39,21 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.HttpClientFactory;
 import com.github.horrorho.liquiddonkey.iofunction.IOPredicate;
-import com.github.horrorho.liquiddonkey.printer.Level;
-import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import com.github.horrorho.liquiddonkey.util.MemMonitor;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.UncheckedIOException;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
@@ -68,13 +69,19 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public class Looter implements Closeable {
 
-    public static Looter of(Config config, Printer printer) {
+    public static Looter of(Config config) {
+
+        return of(config, System.out, System.err);
+    }
+
+    public static Looter of(Config config, PrintStream std, PrintStream err) {
         logger.trace("<< of()");
 
         Looter looter = new Looter(
                 config,
-                HttpClientFactory.from(config.http()).client(printer),
-                printer,
+                HttpClientFactory.from(config.http()).client(std),
+                std,
+                err,
                 FileFilter.from(config.fileFilter()));
 
         logger.trace(">> of()");
@@ -85,27 +92,29 @@ public class Looter implements Closeable {
 
     private final Config config;
     private final CloseableHttpClient client;
-    private final Printer printer;
+    private final PrintStream std;
+    private final PrintStream err;
     private final FileFilter filter;
 
-    Looter(Config config, CloseableHttpClient client, Printer printer, FileFilter filter) {
-        this.config = config;
-        this.client = client;
-        this.printer = printer;
-        this.filter = filter;
+    Looter(Config config, CloseableHttpClient client, PrintStream std, PrintStream err, FileFilter filter) {
+        this.config = Objects.requireNonNull(config);
+        this.client = Objects.requireNonNull(client);
+        this.std = Objects.requireNonNull(std);
+        this.err = Objects.requireNonNull(err);
+        this.filter = Objects.requireNonNull(filter);
     }
 
     public void loot() throws BadDataException, IOException, InterruptedException {
         logger.trace("<< loot()");
 
-        printer.println(Level.VV, "Authenticating.");
+        std.println("Authenticating.");
         // TODO reauthentication
 
         // TODO token based
         Auth auth = Auths.from(client, config.authentication().appleId(), config.authentication().password());
 
         if (config.engine().toDumpToken()) {
-            printer.println(Level.V, "Authorization token: " + auth.dsPrsID() + ":" + auth.mmeAuthToken());
+            std.println("Authorization token: " + auth.dsPrsID() + ":" + auth.mmeAuthToken());
             return;
         }
 
@@ -142,7 +151,7 @@ public class Looter implements Closeable {
         List<Backup> backups = Backups.from(client, account);
 
         UnaryOperator<List<ICloud.MBSBackup>> backupSelector
-                = BackupSelector.from(config.selection().udids(), BackupFormatter.create(), printer);
+                = BackupSelector.from(config.selection().udids(), BackupFormatter.create(), std);
 
         // TODO rework for when udid know, also command to dump info only
         Map<ICloud.MBSBackup, Backup> udidToBackup
@@ -220,7 +229,7 @@ public class Looter implements Closeable {
             // TODO force overwrite flag
             Snapshot filteredLocal = Snapshots.from(filtered, localFilterUnchecked);
             long b = System.currentTimeMillis();
-            logger.info("-- backup() > delay (ms): {}", (b - a)); 
+            logger.info("-- backup() > delay (ms): {}", (b - a));
 
             Predicate<ICloud.MBSFile> decryptableFilter
                     = file -> !file.getAttributes().hasEncryptionKey() || backup.keyBagManager().fileKey(file) != null;
@@ -243,7 +252,7 @@ public class Looter implements Closeable {
             //                    printer);
             try {
 
-                SnapshotDownloader downloader = new SnapshotDownloader(config.file(), printer);
+                SnapshotDownloader downloader = new SnapshotDownloader(config.file(), std);
 
                 downloader.download(client, decryptable);
 

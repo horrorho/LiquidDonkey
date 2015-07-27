@@ -25,12 +25,14 @@ package com.github.horrorho.liquiddonkey.cloud.donkey;
 
 import com.github.horrorho.liquiddonkey.cloud.clients.ChunksClient;
 import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
+import com.github.horrorho.liquiddonkey.cloud.file.WriterResult;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
-import com.github.horrorho.liquiddonkey.printer.Printer;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import org.apache.http.client.HttpClient;
 
 /**
@@ -39,18 +41,17 @@ import org.apache.http.client.HttpClient;
  * @author Ahseya
  */
 public class DonkeyFactory {
-
-    // TODO tie in config?
+ 
     public static DonkeyFactory from(
             HttpClient client,
-            Printer printer,
+            BiConsumer<ICloud.MBSFile, WriterResult> results,
             SignatureWriter signatureWriter,
             StoreManager storeManager,
             int retryCount) {
 
         return new DonkeyFactory(
                 client,
-                printer,
+                results,
                 signatureWriter,
                 storeManager,
                 retryCount,
@@ -58,7 +59,7 @@ public class DonkeyFactory {
     }
 
     private final HttpClient client;
-    private final Printer printer;
+    private final BiConsumer<ICloud.MBSFile, WriterResult> results;
     private final SignatureWriter signatureWriter;
     private final StoreManager storeManager;
     private final int retryCount;
@@ -66,14 +67,14 @@ public class DonkeyFactory {
 
     DonkeyFactory(
             HttpClient client,
-            Printer printer,
+            BiConsumer<ICloud.MBSFile, WriterResult> out,
             SignatureWriter signatureWriter,
             StoreManager storeManager,
             int retryCount,
             AtomicReference<Exception> fatal) {
 
         this.client = Objects.requireNonNull(client);
-        this.printer = Objects.requireNonNull(printer);
+        this.results = Objects.requireNonNull(out);
         this.signatureWriter = Objects.requireNonNull(signatureWriter);
         this.storeManager = storeManager;
         this.retryCount = retryCount;
@@ -105,7 +106,7 @@ public class DonkeyFactory {
     WriterDonkey writerDonkey(FetchDonkey donkey, byte[] data) {
         return new WriterDonkey(
                 storeManager,
-                printer,
+                results,
                 this::fetchDonkey,
                 writers -> new DonkeyWriter(signatureWriter, writers),
                 data,

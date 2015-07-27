@@ -23,8 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.http;
 
-import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.config.HttpConfig;
+import java.io.PrintStream;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -72,7 +72,11 @@ public final class HttpClientFactory {
         this.config = Objects.requireNonNull(config);
     }
 
-    public CloseableHttpClient client(Printer printer) {
+    public CloseableHttpClient client() {
+        return client(System.err);
+    }
+
+    public CloseableHttpClient client(PrintStream err) {
         logger.trace("<< client()");
 
         PoolingHttpClientConnectionManager connectionManager = config.isRelaxedSSL()
@@ -95,7 +99,7 @@ public final class HttpClientFactory {
                         config.retryDelayMs(),
                         config.timeoutMs(),
                         true,
-                        printer)
+                        err)
                 : new DefaultHttpRequestRetryHandler(
                         config.retryCount(),
                         false);

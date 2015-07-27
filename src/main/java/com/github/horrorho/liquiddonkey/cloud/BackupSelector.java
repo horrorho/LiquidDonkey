@@ -25,9 +25,8 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.util.Bytes;
-import com.github.horrorho.liquiddonkey.printer.Level;
-import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.util.Selector;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -56,25 +55,25 @@ public abstract class BackupSelector implements UnaryOperator<List<ICloud.MBSBac
      *
      * @param commandLineUdids the command line UDID/s, not null
      * @param formatter ICloud.MBSBackup user display formatter, not null
-     * @param printer the Printer, not null
+     * @param std the std PrintStream, not null
      * @return a new instance, not null
      */
     public static UnaryOperator<List<ICloud.MBSBackup>> from(
             Collection<String> commandLineUdids,
             Function<ICloud.MBSBackup, String> formatter,
-            Printer printer) {
+            PrintStream std) {
 
         return commandLineUdids.isEmpty()
-                ? new User(printer, formatter)
-                : new Udid(printer, new ArrayList<>(commandLineUdids));
+                ? new User(std, formatter)
+                : new Udid(std, new ArrayList<>(commandLineUdids));
     }
 
     private static final Logger logger = LoggerFactory.getLogger(BackupSelector.class);
 
-    protected final Printer printer;
+    protected final PrintStream std;
 
-    BackupSelector(Printer printer) {
-        this.printer = Objects.requireNonNull(printer);
+    BackupSelector(PrintStream std) {
+        this.std = Objects.requireNonNull(std);
     }
 
     @Override
@@ -82,7 +81,7 @@ public abstract class BackupSelector implements UnaryOperator<List<ICloud.MBSBac
         logger.trace("<< apply < available: {}", udids(available));
 
         if (available.isEmpty()) {
-            printer.println(Level.WARN, "No backups available.");
+            std.println("No backups available.");
             return new ArrayList<>();
         }
 
@@ -94,7 +93,7 @@ public abstract class BackupSelector implements UnaryOperator<List<ICloud.MBSBac
                 .map(Bytes::hex)
                 .collect(Collectors.joining(" "));
 
-        printer.println(Level.V, "Selected backup/s: " + selectedStr);
+        std.println("Selected backup/s: " + selectedStr);
 
         logger.trace(">> apply > selected: {}", udids(selected));
         return selected;
@@ -112,8 +111,8 @@ public abstract class BackupSelector implements UnaryOperator<List<ICloud.MBSBac
 
         private final List<String> commandLineUdids;
 
-        Udid(Printer printer, List<String> commandLineUdids) {
-            super(printer);
+        Udid(PrintStream std, List<String> commandLineUdids) {
+            super(std);
             this.commandLineUdids = commandLineUdids.stream().map(String::toLowerCase).collect(Collectors.toList());
         }
 
@@ -132,8 +131,8 @@ public abstract class BackupSelector implements UnaryOperator<List<ICloud.MBSBac
 
         private final Function<ICloud.MBSBackup, String> formatter;
 
-        User(Printer printer, Function<ICloud.MBSBackup, String> formatter) {
-            super(printer);
+        User(PrintStream std, Function<ICloud.MBSBackup, String> formatter) {
+            super(std);
             this.formatter = formatter;
         }
 
@@ -146,8 +145,8 @@ public abstract class BackupSelector implements UnaryOperator<List<ICloud.MBSBac
                     .onLineIsEmpty(() -> availableBackups)
                     .onQuit(ArrayList::new)
                     .build()
-                    .printOptions()
-                    .selection();
+                    .printOptions(std)
+                    .selection();   // TODO inject in out
         }
     }
 }

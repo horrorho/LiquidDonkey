@@ -25,12 +25,12 @@ package com.github.horrorho.liquiddonkey;
 
 import com.github.horrorho.liquiddonkey.cloud.Looter;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.printer.Level;
-import com.github.horrorho.liquiddonkey.printer.Printer;
 import com.github.horrorho.liquiddonkey.settings.commandline.CommandLineConfigFactory;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import com.github.horrorho.liquiddonkey.util.DumpStackTraceHook;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,13 +82,16 @@ public class Main {
             DumpStackTraceHook.add();
         }
 
-        Printer printer = Printer.instanceOf(config.printer());
-
-        try (Looter looter = Looter.of(config, printer)) {
+        try (Looter looter = Looter.of(config)) {
             looter.loot();
         } catch (BadDataException | InterruptedException | IOException | RuntimeException ex) {
             logger.warn("-- main() > exception", ex);
-            printer.println(Level.ERROR, ex);
+
+            StringWriter stringWriter = new StringWriter();
+            PrintWriter printWriter = new PrintWriter(stringWriter);
+            ex.printStackTrace(printWriter);
+
+            System.err.println("FATAL: " + stringWriter.toString());
         }
 
         if (config.printer().toPrintStackTrace()) {

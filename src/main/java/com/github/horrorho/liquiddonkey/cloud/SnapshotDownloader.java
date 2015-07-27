@@ -23,21 +23,21 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.clients.FileGroupsClient;
 import com.github.horrorho.liquiddonkey.cloud.data.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.donkey.Donkey;
 import com.github.horrorho.liquiddonkey.cloud.donkey.DonkeyFactory;
 import com.github.horrorho.liquiddonkey.cloud.donkey.Track;
 import com.github.horrorho.liquiddonkey.cloud.file.SignatureWriter;
+import com.github.horrorho.liquiddonkey.cloud.file.WriterResult;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.printer.Printer;
-import static com.github.horrorho.liquiddonkey.settings.Markers.http;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.github.horrorho.liquiddonkey.util.pool.WorkPools;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -45,7 +45,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
+import jdk.internal.org.objectweb.asm.util.Printer;
 import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +61,7 @@ public class SnapshotDownloader {
     private static final Logger logger = LoggerFactory.getLogger(SnapshotDownloader.class);
 
     private final FileConfig fileConfig;
-    private final Printer printer;
+    private final PrintStream std;
 
     private final int threads = 4;
     private final int retryCount = 3;
@@ -67,25 +69,25 @@ public class SnapshotDownloader {
 
     private final long executorTimeoutSeconds = 18000; // TODO back to 1800 or 3600???
 
-    public SnapshotDownloader(FileConfig fileConfig, Printer printer) {
+    public SnapshotDownloader(FileConfig fileConfig, PrintStream std) {
         this.fileConfig = fileConfig;
-        this.printer = printer;
+        this.std = std;
     }
-    
-    
-    
-    
-    
 
     void download(HttpClient client, Snapshot snapshot) throws BadDataException, IOException, InterruptedException {
         // TODO empty list
 
         ChunkServer.FileGroups fileGroups = FileGroups.from(client, snapshot);
- 
 
         SignatureWriter writer = SignatureWriter.from(snapshot, fileConfig);
         StoreManager manager = StoreManager.from(fileGroups);
-        DonkeyFactory factory = DonkeyFactory.from(client, printer, writer, manager, retryCount);
+
+        BiConsumer<ICloud.MBSFile, WriterResult> out
+                = (file, result) -> std.println("\t" + file.getDomain()
+                        + " " + file.getRelativePath()
+                        + " " + result);
+
+        DonkeyFactory factory = DonkeyFactory.from(client, out, writer, manager, retryCount);
 
         Map<Track, List<Donkey>> donkies = manager.chunkListList().stream().map(factory::fetchDonkey)
                 .collect(Collectors.groupingBy(list -> Track.FETCH));
