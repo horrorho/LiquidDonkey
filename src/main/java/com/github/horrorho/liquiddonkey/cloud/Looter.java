@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.clients.Headers;
 import com.github.horrorho.liquiddonkey.cloud.data.Backup;
 import com.github.horrorho.liquiddonkey.cloud.data.Account;
 import com.github.horrorho.liquiddonkey.cloud.data.Accounts;
@@ -37,10 +36,8 @@ import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.util.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.HttpClientFactory;
-import com.github.horrorho.liquiddonkey.http.ResponseHandlerFactory;
 import com.github.horrorho.liquiddonkey.iofunction.IOPredicate;
 import com.github.horrorho.liquiddonkey.printer.Level;
 import com.github.horrorho.liquiddonkey.printer.Printer;
@@ -59,7 +56,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,7 +138,6 @@ public class Looter implements Closeable {
 //
 //        System.out.println(x);
 //        System.exit(0);
-
         Account account = Accounts.from(client, core);
         List<Backup> backups = Backups.from(client, account);
 
@@ -207,6 +202,8 @@ public class Looter implements Closeable {
 
             Snapshot filtered = Snapshots.from(snapshot, filter);
 
+            logger.info("-- backup() > filtered: {}", filtered.files().size());
+
             IOPredicate<ICloud.MBSFile> localFilter = LocalFileFilter.from(snapshot, config.file());
             Predicate<ICloud.MBSFile> localFilterUnchecked = file -> {
                 try {
@@ -217,12 +214,13 @@ public class Looter implements Closeable {
             };
             // TODO handle UncheckedIOException
 
+            logger.info("-- backup() > locally filtered: {}", filtered.files().size());
+
             long a = System.currentTimeMillis();
             // TODO force overwrite flag
             Snapshot filteredLocal = Snapshots.from(filtered, localFilterUnchecked);
             long b = System.currentTimeMillis();
-            logger.info("-- backup() > delay: {}", (b - a));
-            System.out.println("delay " + (b - a));
+            logger.info("-- backup() > delay (ms): {}", (b - a)); 
 
             Predicate<ICloud.MBSFile> decryptableFilter
                     = file -> !file.getAttributes().hasEncryptionKey() || backup.keyBagManager().fileKey(file) != null;
