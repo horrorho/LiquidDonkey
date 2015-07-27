@@ -50,7 +50,7 @@ public final class EngineConfig {
                         : props.getProperty(Property.ENGINE_DOWNLOAD_RETRY, props::asInteger),
                 props.getProperty(Property.ENGINE_PERSISTENT, props::asBoolean),
                 props.getProperty(Property.ENGINE_RETRY_DELAY_MS, props::asInteger),
-                props.getProperty(Property.ENGINE_THREAD_STAGGER_DELAY, props::asInteger),
+                props.getProperty(Property.ENGINE_THREAD_STAGGER_DELAY_MS, props::asInteger),
                 props.getProperty(Property.ENGINE_THREAD_COUNT, props::asInteger),
                 props.getProperty(Property.ENGINE_FORCE_OVERWRITE, props::asBoolean),
                 props.getProperty(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, props::asBoolean),
@@ -63,7 +63,7 @@ public final class EngineConfig {
             int retryCount,
             boolean isPersistent,
             int retryDelay,
-            int threadStaggerDelay,
+            int threadStaggerDelayMs,
             int threadCount,
             boolean toForceOverwrite,
             boolean toSetLastModifiedTimestamp,
@@ -74,7 +74,7 @@ public final class EngineConfig {
                 retryCount,
                 isPersistent,
                 retryDelay,
-                threadStaggerDelay,
+                threadStaggerDelayMs,
                 threadCount,
                 toForceOverwrite,
                 toSetLastModifiedTimestamp,
@@ -86,7 +86,7 @@ public final class EngineConfig {
     private final int retryCount;
     private final boolean isPersistent;
     private final int retryDelay;
-    private final int threadStaggerDelay;
+    private final int threadStaggerDelayMs;
     private final int threadCount;
     private final boolean toForceOverwrite;
     private final boolean toSetLastModifiedTimestamp;
@@ -98,7 +98,7 @@ public final class EngineConfig {
             int retryCount,
             boolean isPersistent,
             int retryDelay,
-            int threadStaggerDelay,
+            int threadStaggerDelayMs,
             int threadCount,
             boolean toForceOverwrite,
             boolean toSetLastModifiedTimestamp,
@@ -109,7 +109,7 @@ public final class EngineConfig {
         this.retryCount = retryCount;
         this.isPersistent = isPersistent;
         this.retryDelay = retryDelay;
-        this.threadStaggerDelay = threadStaggerDelay;
+        this.threadStaggerDelayMs = threadStaggerDelayMs;
         this.threadCount = threadCount;
         this.toForceOverwrite = toForceOverwrite;
         this.toSetLastModifiedTimestamp = toSetLastModifiedTimestamp;
@@ -136,8 +136,8 @@ public final class EngineConfig {
         return retryDelay;
     }
 
-    public int threadStaggerDelay() {
-        return threadStaggerDelay;
+    public int threadStaggerDelayMs() {
+        return threadStaggerDelayMs;
     }
 
     public int threadCount() {
@@ -164,7 +164,7 @@ public final class EngineConfig {
                 + ", chunkListDownloadRetry=" + retryCount
                 + ", isPersistent=" + isPersistent
                 + ", retryDelay=" + retryDelay
-                + ", threadStaggerDelay=" + threadStaggerDelay
+                + ", threadStaggerDelay=" + threadStaggerDelayMs
                 + ", threadCount=" + threadCount
                 + ", toForceOverwrite=" + toForceOverwrite
                 + ", toSetLastModifiedTimestamp=" + toSetLastModifiedTimestamp
