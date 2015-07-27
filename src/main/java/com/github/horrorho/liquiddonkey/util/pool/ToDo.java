@@ -24,32 +24,32 @@
 package com.github.horrorho.liquiddonkey.util.pool;
 
 /**
- * Release.
+ * ToDo.
  *
  * @author Ahseya
  * @param <E> enum key type
  * @param <T> item type
  */
-public final class Release<E extends Enum<E>, T> {
+public final class ToDo<E extends Enum<E>, T> {
 
-    public static <E extends Enum<E>, T> Release<E, T> dispose() {
+    public static <E extends Enum<E>, T> ToDo<E, T> dispose() {
         return toDispose;
     }
 
-    public static <E extends Enum<E>, T> Release<E, T> requeue(T item) {
-        return new Release<>(null, item);
+    public static <E extends Enum<E>, T> ToDo<E, T> requeue(T item) {
+        return new ToDo<>(null, item);
     }
 
-    public static <E extends Enum<E>, T> Release<E, T> requeue(E pool, T item) {
-        return new Release<>(pool, item);
+    public static <E extends Enum<E>, T> ToDo<E, T> requeue(E pool, T item) {
+        return new ToDo<>(pool, item);
     }
 
-    private static final Release toDispose = new Release<>(null, null);
+    private static final ToDo toDispose = new ToDo<>(null, null);
 
     private final E pool;
     private final T item;
 
-    Release(E pool, T item) {
+    ToDo(E pool, T item) {
         this.pool = pool;
         this.item = item;
     }

@@ -116,14 +116,14 @@ public final class WorkPools<E extends Enum<E>, T> {
         this.isDepleted = isDepleted;
     }
 
-    public boolean process(E pool, Function<T, Release<E, T>> function) throws InterruptedException {
+    public boolean process(E pool, Function<T, ToDo<E, T>> function) throws InterruptedException {
         T item = acquire(Objects.requireNonNull(pool));
 
         if (item == null) {
             return true;
         }
 
-        Release<E, T> action = null;
+        ToDo<E, T> action = null;
 
         try {
             action = function.apply(item);
