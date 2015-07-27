@@ -31,10 +31,10 @@ import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -121,13 +121,9 @@ public final class StoreManager {
 
         Map<ByteString, StoreWriter> writers = process(chunkList);
 
-        // Purge unreferenced data.
-        writers.keySet().stream()
-                .map(references::removeKey)
-                .flatMap(Collection::stream)
-                .forEach(store::remove);
+        writers.keySet().forEach(this::purge);
 
-        logger.debug(">> put() > signatures: {}", writers.keySet());
+        logger.trace(">> put() > signatures: {}", writers.keySet());
         return writers;
     }
 
@@ -149,7 +145,7 @@ public final class StoreManager {
             return null;
         }
 
-        // We have all the chunks, remove reference. Null if another thread beat us to it.
+        // We have all the chunks, clear reference. Null if another thread beat us to it.
         if (signatureToChunkListReferenceList.remove(signature) == null) {
             return null;
         }
@@ -160,6 +156,24 @@ public final class StoreManager {
                 .collect(Collectors.toList());
 
         return CompoundWriter.from(writers);
+    }
+
+    public Set<ByteString> fail(ChunkServer.StorageHostChunkList chunkList) {
+        logger.trace("<< fail() < uri: {}", chunkList.getHostInfo().getUri());
+
+        Set<ByteString> signatures = references.keys(chunkList);
+        signatures.forEach(this::purge);
+
+        logger.trace(">> put() > signatures: {}", signatures);
+        return signatures;
+    }
+
+    void purge(ByteString signature) {
+        Set<ChunkServer.StorageHostChunkList> list = references.removeKey(signature);
+
+        if (list != null) {
+            list.forEach(store::remove);
+        }
     }
 
     public List<ChunkServer.StorageHostChunkList> chunkListList() {
