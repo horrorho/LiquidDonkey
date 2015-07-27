@@ -36,16 +36,16 @@ import org.slf4j.LoggerFactory;
  *
  * @author Ahseya
  */
-public class CompoundWriter implements StoreWriter {
+public class CompoundWriter implements DataWriter {
     
-    public static CompoundWriter from(List<StoreWriter> writers) {
+    public static CompoundWriter from(List<DataWriter> writers) {
         return new CompoundWriter(writers);
     }
     
     private static final Logger logger = LoggerFactory.getLogger(CompoundWriter.class);
-    private List<StoreWriter> writers;
+    private List<DataWriter> writers;
     
-    CompoundWriter(List<StoreWriter> writers) {
+    CompoundWriter(List<DataWriter> writers) {
         this.writers = Objects.requireNonNull(new ArrayList<>(writers));
     }
     
@@ -55,7 +55,7 @@ public class CompoundWriter implements StoreWriter {
             throw new IllegalStateException("Closed");
         }
         long total = 0;
-        for (StoreWriter writer : writers) {
+        for (DataWriter writer : writers) {
             total += writer.apply(outputStream);
         }
         return total;

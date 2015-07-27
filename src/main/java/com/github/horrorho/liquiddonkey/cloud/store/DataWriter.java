@@ -32,5 +32,5 @@ import java.io.OutputStream;
  *
  * @author Ahseya
  */
-public interface StoreWriter extends IOFunction<OutputStream, Long>, Closeable {
+public interface DataWriter extends IOFunction<OutputStream, Long>, Closeable {
 }

@@ -112,11 +112,11 @@ public final class MemoryStore<K> implements Store<K> {
     }
 
     @Override
-    public StoreWriter writer(K key, int index) {
+    public DataWriter writer(K key, int index) {
         return new Writer(key, index);
     }
 
-    public final class Writer implements StoreWriter {
+    public final class Writer implements DataWriter {
 
         private byte[] data;
 

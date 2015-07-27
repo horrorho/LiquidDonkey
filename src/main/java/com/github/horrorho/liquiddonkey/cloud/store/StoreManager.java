@@ -105,7 +105,7 @@ public final class StoreManager {
         this.decrypters = Objects.requireNonNull(decrypters);
     }
 
-    public Map<ByteString, StoreWriter> put(ChunkServer.StorageHostChunkList chunkList, byte[] chunkData)
+    public Map<ByteString, DataWriter> put(ChunkServer.StorageHostChunkList chunkList, byte[] chunkData)
             throws BadDataException, IOException, InterruptedException {
 
         Objects.requireNonNull(chunkList);
@@ -119,7 +119,7 @@ public final class StoreManager {
             logger.warn("-- put() > overwritten store container: {}", chunkList.getHostInfo().getUri());
         }
 
-        Map<ByteString, StoreWriter> writers = process(chunkList);
+        Map<ByteString, DataWriter> writers = process(chunkList);
 
         writers.keySet().forEach(this::purge);
 
@@ -127,9 +127,9 @@ public final class StoreManager {
         return writers;
     }
 
-    Map<ByteString, StoreWriter> process(ChunkServer.StorageHostChunkList chunkList) {
+    Map<ByteString, DataWriter> process(ChunkServer.StorageHostChunkList chunkList) {
 
-        Map<ByteString, StoreWriter> writers = references.keys(chunkList).stream()
+        Map<ByteString, DataWriter> writers = references.keys(chunkList).stream()
                 .map(signature -> new SimpleEntry<>(signature, process(signature)))
                 .filter(entry -> entry.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -137,7 +137,7 @@ public final class StoreManager {
         return writers;
     }
 
-    StoreWriter process(ByteString signature) {
+    DataWriter process(ByteString signature) {
         List<ChunkListReference> list = signatureToChunkListReferenceList.get(signature);
 
         // Exit if any chunks are missing.
@@ -151,7 +151,7 @@ public final class StoreManager {
         }
 
         // Writer.
-        List<StoreWriter> writers = list.stream()
+        List<DataWriter> writers = list.stream()
                 .map(reference -> store.writer(reference.chunkList(), reference.index()))
                 .collect(Collectors.toList());
 
