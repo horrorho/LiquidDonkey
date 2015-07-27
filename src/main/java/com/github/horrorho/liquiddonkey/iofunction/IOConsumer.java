@@ -35,7 +35,7 @@ import java.util.Objects;
 @FunctionalInterface
 public interface IOConsumer<T> {
 
-    void accept(T t) throws IOException;
+    void accept(T t) throws InterruptedException, IOException;
 
     default IOConsumer<T> andThen(IOConsumer<? super T> after) {
         Objects.requireNonNull(after);

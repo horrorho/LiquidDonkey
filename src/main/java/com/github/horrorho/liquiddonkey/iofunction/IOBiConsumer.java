@@ -36,7 +36,7 @@ import java.util.Objects;
 @FunctionalInterface
 public interface IOBiConsumer<T, U> {
 
-    void accept(T t, U u) throws IOException;
+    void accept(T t, U u) throws InterruptedException, IOException;
 
     default IOBiConsumer<T, U> andThen(IOBiConsumer<? super T, ? super U> after) {
         Objects.requireNonNull(after);
