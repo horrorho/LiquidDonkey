@@ -122,7 +122,7 @@ public final class SignatureManager {
             outcomes.putAll(write(entry.getKey(), entry.getValue()));
         }
 
-        logger.trace(">> write() > {}", outcomes);
+        logger.trace(">> write()");
         return outcomes;
     }
 
@@ -159,7 +159,7 @@ public final class SignatureManager {
                 logger.debug("-- write() > out: {} failed: {} total: {}", outBytes, failedBytes, totalBytes);
             }
 
-            logger.trace(">> write() > {}", outcomes);
+            logger.trace(">> write()");
             return outcomes;
         } finally {
             lock.unlock();
@@ -172,7 +172,7 @@ public final class SignatureManager {
         Map<ICloud.MBSFile, FileOutcome> outcomes = new HashMap<>();
         signatures.stream().forEach(signature -> outcomes.putAll(fail(signature)));
 
-        logger.trace(">> fail() > {}", outcomes);
+        logger.trace(">> fail()");
         return outcomes;
     }
 
@@ -192,7 +192,7 @@ public final class SignatureManager {
             failedBytes.addAndGet(total);
         }
 
-        logger.trace(">> fail() > {}", outcomes);
+        logger.trace(">> fail()");
         return outcomes;
     }
 
