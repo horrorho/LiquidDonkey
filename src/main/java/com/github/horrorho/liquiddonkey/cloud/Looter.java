@@ -106,8 +106,11 @@ public class Looter implements Closeable {
         // TODO reauthentication
 
         // TODO token based
-        Auth auth = Auths.from(client, config.authentication().appleId(), config.authentication().password());
-
+        Auth auth = config.authentication().hasAppleIdPassword()
+                ? Auths.from(client, config.authentication().appleId(), config.authentication().password())
+                : Auths.from(config.authentication().dsPrsId(), config.authentication().mmeAuthToken());
+        
+        
         if (config.engine().toDumpToken()) {
             std.println("Authorization token: " + auth.dsPrsID() + ":" + auth.mmeAuthToken());
             return;
@@ -142,8 +145,7 @@ public class Looter implements Closeable {
 //
 //        System.out.println(x);
 //        System.exit(0);
-        Account account = Accounts.from(client, core);
-        client.close();
+        Account account = Accounts.from(client, core); 
         List<Backup> backups = Backups.from(client, account);
 
         UnaryOperator<List<ICloud.MBSBackup>> backupSelector
