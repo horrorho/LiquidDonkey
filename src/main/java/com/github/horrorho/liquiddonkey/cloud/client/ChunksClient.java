@@ -73,15 +73,28 @@ public final class ChunksClient {
     public byte[] get(HttpClient client, ChunkServer.StorageHostChunkList chunks) throws IOException {
         logger.trace("<< chunks() < chunks count: {}", chunks.getChunkInfoCount());
 
+        HttpUriRequest request = get(chunks);
+        byte[] data = client.execute(request, byteArrayResponseHandler);
+
+        logger.trace(">> chunks() >  {}", data.length);
+        return data;
+    }
+
+    public HttpUriRequest get(ChunkServer.StorageHostChunkList chunks) {
+        logger.trace("<< request() < chunks count: {}", chunks.getChunkInfoCount());
+
         ChunkServer.HostInfo hostInfo = chunks.getHostInfo();
         String uri = hostInfo.getScheme() + "://" + hostInfo.getHostname() + "/" + hostInfo.getUri();
 
         HttpUriRequest request = RequestBuilder.create(hostInfo.getMethod()).setUri(uri).build();
         headers.headers(hostInfo.getHeadersList()).stream().forEach(request::addHeader);
 
-        byte[] data = client.execute(request, byteArrayResponseHandler);
+        logger.trace(">> request()");
+        return request;
 
-        logger.trace(">> chunks() >  {}", data.length);
-        return data;
+    }
+
+    public ResponseHandler<byte[]> responseHandler() {
+        return byteArrayResponseHandler;
     }
 }
