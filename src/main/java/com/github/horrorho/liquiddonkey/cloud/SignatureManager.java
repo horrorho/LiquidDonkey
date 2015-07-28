@@ -68,7 +68,8 @@ public final class SignatureManager {
      * @return a new instance, not null
      */
     public static SignatureManager from(Snapshot snapshot, FileConfig fileConfig) {
-        logger.trace("<< from() < snapshot: {} fileConfig: {}", snapshot, fileConfig);
+        logger.trace("<< from() < dsPrsId: {} udid: {} snpshot: {} fileConfig: {}",
+                snapshot.dsPrsID(), snapshot.backupUDID(), snapshot.snapshotID(), fileConfig);
 
         CloudFileWriter cloudWriter = CloudFileWriter.from(snapshot, fileConfig);
         Map<ByteString, Set<ICloud.MBSFile>> signatures = snapshot.files().stream()
