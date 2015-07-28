@@ -81,17 +81,13 @@ public final class ChunksClient {
     }
 
     public HttpUriRequest get(ChunkServer.StorageHostChunkList chunks) {
-        logger.trace("<< request() < chunks count: {}", chunks.getChunkInfoCount());
-
         ChunkServer.HostInfo hostInfo = chunks.getHostInfo();
         String uri = hostInfo.getScheme() + "://" + hostInfo.getHostname() + "/" + hostInfo.getUri();
 
         HttpUriRequest request = RequestBuilder.create(hostInfo.getMethod()).setUri(uri).build();
         headers.headers(hostInfo.getHeadersList()).stream().forEach(request::addHeader);
 
-        logger.trace(">> request()");
         return request;
-
     }
 
     public ResponseHandler<byte[]> responseHandler() {
