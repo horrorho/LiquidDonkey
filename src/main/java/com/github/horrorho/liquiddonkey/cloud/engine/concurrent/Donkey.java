@@ -145,6 +145,14 @@ public abstract class Donkey {
 
     protected abstract ToDo<Track, Donkey> toProcess() throws IOException, InterruptedException;
 
+    void kill() {
+        logger.trace("<< kill()");
+
+        fatal.compareAndSet(null, new IllegalStateException("Killed"));
+
+        logger.trace(">> kill()");
+    }
+
     @Override
     public String toString() {
         return "Donkey{" + "chunkList=" + chunkList.getHostInfo().getUri() + '}';

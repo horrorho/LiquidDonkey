@@ -39,6 +39,8 @@ import java.util.function.Consumer;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
+import org.apache.http.client.ResponseHandler;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,12 +55,13 @@ public final class FetchDonkey extends Donkey {
     private static final Logger log = LoggerFactory.getLogger(FetchDonkey.class);
 
     private final HttpClient client;
-    private final ChunksClient chunks;
+    private final HttpUriRequest request;
+    private final ResponseHandler<byte[]> responseHandler;
     private final BiFunction<FetchDonkey, byte[], WriterDonkey> writerDonkeys;
 
     public FetchDonkey(
             HttpClient client,
-            ChunksClient chunks,
+            ChunksClient chunksClient,
             BiFunction<FetchDonkey, byte[], WriterDonkey> writerDonkeys,
             StoreManager manager,
             ChunkServer.StorageHostChunkList chunkList,
@@ -70,7 +73,8 @@ public final class FetchDonkey extends Donkey {
         super(manager, chunkList, exceptions, retryCount, fatal, failures);
 
         this.client = Objects.requireNonNull(client);
-        this.chunks = Objects.requireNonNull(chunks);
+        this.request = chunksClient.get(chunkList);
+        this.responseHandler = chunksClient.responseHandler();
         this.writerDonkeys = Objects.requireNonNull(writerDonkeys);
     }
 
@@ -80,7 +84,7 @@ public final class FetchDonkey extends Donkey {
 
         ToDo<Track, Donkey> toDo;
         try {
-            byte[] data = chunks.get(client, chunkList());
+            byte[] data = client.execute(request, responseHandler);
             toDo = requeue(Track.DECODE_WRITE, writerDonkeys.apply(this, data));
 
         } catch (UnknownHostException ex) {
@@ -99,5 +103,15 @@ public final class FetchDonkey extends Donkey {
 
         log.trace(">> toProcess() > release: {}", toDo);
         return toDo;
+    }
+
+    @Override
+    void kill() {
+        super.kill();
+        try {
+            request.abort();
+        } catch (UnsupportedOperationException ex) {
+            log.warn("-- kill() > exception: {}", ex);
+        }
     }
 }

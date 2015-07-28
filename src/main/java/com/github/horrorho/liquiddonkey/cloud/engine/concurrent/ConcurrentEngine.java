@@ -39,6 +39,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -54,7 +55,7 @@ import org.slf4j.LoggerFactory;
 @Immutable
 @ThreadSafe
 public class ConcurrentEngine {
-
+    
     public static ConcurrentEngine from(EngineConfig config) {
         return from(
                 config.threadCount(),
@@ -63,25 +64,25 @@ public class ConcurrentEngine {
                 180000 // TODO
         );
     }
-
+    
     public static ConcurrentEngine from(int threads, int staggerMs, int retryCount, long executorTimeoutMs) {
         return new ConcurrentEngine(threads, staggerMs, retryCount, executorTimeoutMs);
     }
-
+    
     private static final Logger logger = LoggerFactory.getLogger(ConcurrentEngine.class);
-
+    
     private final int threads;
     private final int staggerMs;
     private final int retryCount;
     private final long executorTimeoutMs;
-
+    
     ConcurrentEngine(int threads, int staggerMs, int retryCount, long executorTimeoutMs) {
         this.threads = threads;
         this.staggerMs = staggerMs;
         this.retryCount = retryCount;
         this.executorTimeoutMs = executorTimeoutMs;
     }
-
+    
     public boolean execute(
             HttpClient client,
             StoreManager storeManager,
@@ -98,20 +99,22 @@ public class ConcurrentEngine {
                 .map(factory::fetchDonkey)
                 .collect(Collectors.groupingBy(list -> Track.FETCH));
         WorkPools<Track, Donkey> pools = WorkPools.from(Track.class, donkies);
-
-        return execute(pools, fatal);
+        
+        return execute(pools, fatal, factory::killDonkies);
     }
-
-    boolean execute(WorkPools<Track, Donkey> pools, AtomicReference<Exception> fatal) throws InterruptedException {
+    
+    boolean execute(WorkPools<Track, Donkey> pools, AtomicReference<Exception> fatal, Supplier<Long> killAll)
+            throws InterruptedException {
+        
         logger.trace("<< execute()");
-
+        
         boolean isTimedOut;
         List<Future<?>> futuresFetch = new ArrayList<>();
         List<Future<?>> futuresDecodeWrite = new ArrayList<>();
-
+        
         ExecutorService executor = Executors.newCachedThreadPool();
         logger.debug("-- execute() > executor created");
-
+        
         try {
             for (int i = 0; i < threads; i++) {
                 futuresFetch.add(executor.submit(Runner.newInstance(pools, Track.FETCH)));
@@ -119,10 +122,10 @@ public class ConcurrentEngine {
                 logger.debug("-- execute() > thread submitted: {}", i);
                 TimeUnit.MILLISECONDS.sleep(staggerMs);
             }
-
+            
             logger.debug("-- execute() > runners running: {}", threads);
             executor.shutdown();
-
+            
             logger.debug("-- execute() > awaiting termination, timeout (ms): {}", executorTimeoutMs);
             isTimedOut = !executor.awaitTermination(executorTimeoutMs, TimeUnit.MILLISECONDS);
             
@@ -134,16 +137,20 @@ public class ConcurrentEngine {
             
             logger.trace(">> execute() > timed out: {}", isTimedOut);
             return isTimedOut;
-
-        } catch (InterruptedException ex) {
+            
+        } catch (InterruptedException | IllegalStateException ex) {
             logger.warn("-- execute() > interrupted: {}", ex);
-            fatal.compareAndSet(null, ex); 
+            fatal.compareAndSet(null, ex);
             throw (ex);
-
+            
         } finally {
             logger.debug("-- execute() > shutting down");
             executor.shutdownNow();
-
+            
+            // Kill donkies (aborting http requests in progress).
+            long killed = killAll.get();
+            
+            logger.debug("-- execute() > killed donkies: {}", killed);
             logger.debug("-- execute() > fetch futures: {}", futuresFetch);
             logger.debug("-- execute() > decodeWriter futures: {}", futuresDecodeWrite);
             logger.debug("-- execute() > has shut down");
