@@ -106,9 +106,16 @@ public final class SnapshotDownloader {
             // Files to download.
             ChunkServer.FileGroups fileGroups = FileGroups.from(client, snapshot);
 
-            // Create managers.
-            SignatureManager signatureManager = signatureManagers.apply(snapshot);
+            // Store manager
             StoreManager storeManager = StoreManager.from(fileGroups);
+
+            // Filter snapshots to reflect downloadbles.  
+            // ICloud.MBSFiles may non-downloadable, e.g. directories, empty files.
+            Set<ByteString> downloadables = storeManager.signatures();
+            snapshot = Snapshots.from(snapshot, file -> downloadables.contains(file.getSignature()));
+
+            // Signature manager.
+            SignatureManager signatureManager = signatureManagers.apply(snapshot);
 
             // Create result consumers.
             Consumer<Set<ByteString>> failures = set -> fail(signatureManager, set);
@@ -117,11 +124,15 @@ public final class SnapshotDownloader {
             // Execute.
             isTimedOut = engine.execute(client, storeManager, fatal, failures, completed);
 
-            // Filter out completed files.
+            // Mismatches are possible.
+            // DataWriters may have left the Store but termination occured before the contents were consumed.
+            logger.debug("-- download() > remaining signatures, StoreManager: {} SignatureManager: {}",
+                    storeManager.signatures().size(), signatureManager.remainingFiles().size());
+
+            // Filter out completed files. We use the SignatureManager as our reference.
             Set<ICloud.MBSFile> remaining = signatureManager.remainingFiles();
             snapshot = Snapshots.from(snapshot, file -> remaining.contains(file));
 
-            // TODO timeout option
             // TODO checksum/ salvage completed chunks from the StoreManager in the case of timeout downloads.
             logger.debug("-- download() > isTimedOut: {} fatal: {} remaining: {}",
                     isTimedOut, fatal, snapshot.files().size());
