@@ -31,6 +31,8 @@ import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -128,11 +130,18 @@ public final class StoreManager {
     }
 
     Map<ByteString, DataWriter> process(ChunkServer.StorageHostChunkList chunkList) {
+        Map<ByteString, DataWriter> writers;
 
-        Map<ByteString, DataWriter> writers = references.keys(chunkList).stream()
-                .map(signature -> new SimpleEntry<>(signature, process(signature)))
-                .filter(entry -> entry.getValue() != null)
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        Set<ByteString> signatures = references.keys(chunkList);
+
+        if (signatures == null) {
+            writers = new HashMap<>();
+        } else {
+            writers = signatures.stream()
+                    .map(signature -> new SimpleEntry<>(signature, process(signature)))
+                    .filter(entry -> entry.getValue() != null)
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        }
 
         return writers;
     }
@@ -162,7 +171,11 @@ public final class StoreManager {
         logger.trace("<< fail() < uri: {}", chunkList.getHostInfo().getUri());
 
         Set<ByteString> signatures = references.keys(chunkList);
-        signatures.forEach(this::purge);
+        if (signatures == null) {
+            signatures = new HashSet<>();
+        } else {
+            signatures.forEach(this::purge);
+        }
 
         logger.trace(">> put() > signatures: {}", signatures);
         return signatures;
@@ -180,3 +193,4 @@ public final class StoreManager {
         return new ArrayList<>(references.valueSet());
     }
 }
+// TODO test possible nulls checks

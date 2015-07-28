@@ -53,7 +53,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
@@ -70,19 +69,15 @@ import org.slf4j.LoggerFactory;
 public class Looter implements Closeable {
 
     public static Looter of(Config config) {
-
         return of(config, System.out, System.err);
     }
 
     public static Looter of(Config config, PrintStream std, PrintStream err) {
         logger.trace("<< of()");
 
-        Looter looter = new Looter(
-                config,
-                HttpClientFactory.from(config.http()).client(std),
-                std,
-                err,
-                FileFilter.from(config.fileFilter()));
+        CloseableHttpClient client = HttpClientFactory.from(config.http()).client(std);
+        FileFilter fileFilter = FileFilter.from(config.fileFilter());
+        Looter looter = new Looter(config, client, std, err, fileFilter);
 
         logger.trace(">> of()");
         return looter;
@@ -122,7 +117,7 @@ public class Looter implements Closeable {
 
 //        String s = bbb;
 //
-//        Headers headers = Headers.create();
+//        Headers headers = Headers.from();
 //
 //        String authToken = headers.basicToken(
 //                auth.dsPrsID(),
@@ -148,6 +143,7 @@ public class Looter implements Closeable {
 //        System.out.println(x);
 //        System.exit(0);
         Account account = Accounts.from(client, core);
+        client.close();
         List<Backup> backups = Backups.from(client, account);
 
         UnaryOperator<List<ICloud.MBSBackup>> backupSelector
@@ -252,7 +248,8 @@ public class Looter implements Closeable {
             //                    debug);
             try {
 
-                SnapshotDownloader downloader = new SnapshotDownloader(config.file(), std);
+                OutcomesPrinter outcomesPrinter = OutcomesPrinter.create();
+                ConcurrentDownloader downloader = ConcurrentDownloader.from(config.engine(), config.file(), outcomesPrinter);
 
                 downloader.download(client, decryptable);
 

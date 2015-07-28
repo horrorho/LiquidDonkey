@@ -193,13 +193,13 @@ public class WorkPoolsTest {
 
         isDepleted = pools.process(Pool.ONE, i -> {
             assertThat(i, is(1));
-            return Release.requeue(Pool.TWO, i + 1);
+            return ToDo.requeue(Pool.TWO, i + 1);
         });
         assertThat(isDepleted, is(false));
 
         isDepleted = pools.process(Pool.TWO, i -> {
             assertThat(i, is(2));
-            return Release.dispose();
+            return ToDo.dispose();
         });
         assertThat(isDepleted, is(true));
 
@@ -208,13 +208,13 @@ public class WorkPoolsTest {
 
         isDepleted = pools.process(Pool.ONE, i -> {
             assertThat(i, is(1));
-            return Release.requeue(Pool.TWO, i + 1);
+            return ToDo.requeue(Pool.TWO, i + 1);
         });
         assertThat(isDepleted, is(false));
 
         isDepleted = pools.process(Pool.TWO, i -> {
             assertThat(i, is(2));
-            return Release.requeue(null);
+            return ToDo.requeue(null);
         });
         assertThat(isDepleted, is(true));
 
@@ -223,13 +223,13 @@ public class WorkPoolsTest {
 
         isDepleted = pools.process(Pool.ONE, i -> {
             assertThat(i, is(1));
-            return Release.requeue(Pool.TWO, i + 1);
+            return ToDo.requeue(Pool.TWO, i + 1);
         });
         assertThat(isDepleted, is(false));
 
         isDepleted = pools.process(Pool.TWO, i -> {
             assertThat(i, is(2));
-            return Release.requeue(Pool.THREE, null);
+            return ToDo.requeue(Pool.THREE, null);
         });
         assertThat(isDepleted, is(true));
 
@@ -238,7 +238,7 @@ public class WorkPoolsTest {
 
         isDepleted = pools.process(Pool.ONE, i -> {
             assertThat(i, is(1));
-            return Release.requeue(Pool.TWO, i + 1);
+            return ToDo.requeue(Pool.TWO, i + 1);
         });
         assertThat(isDepleted, is(false));
 
@@ -429,10 +429,10 @@ public class WorkPoolsTest {
                     Integer item = i > 0 ? i : null;
                     if (item == null) {
                         logger.debug(marker, "-- runnable > dispose, pool: {} item: {}", nextPool, item);
-                        return Release.dispose();
+                        return ToDo.dispose();
                     } else {
                         logger.debug(marker, "-- runnable > requeue, pool: {} item: {}", nextPool, item);
-                        return Release.requeue(nextPool, item);
+                        return ToDo.requeue(nextPool, item);
                     }
                 })) {
                 }

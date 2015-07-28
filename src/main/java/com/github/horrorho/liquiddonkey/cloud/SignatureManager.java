@@ -21,21 +21,26 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.cloud.file;
+package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
+import com.github.horrorho.liquiddonkey.cloud.file.CloudFileWriter;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSFile;
+import com.github.horrorho.liquiddonkey.cloud.store.DataWriter;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -44,16 +49,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Signature Writer.
+ * Signature Manager.
  * <p>
- * Writes out the {@link ICloud.MBSFile}/s referenced by signatures. Locking single threaded mode from action.
+ * Manages signatures.
  *
  * @author ahseya
  */
 @ThreadSafe
-public final class SignatureWriter {
+public final class SignatureManager {
 
-    private static final Logger logger = LoggerFactory.getLogger(SignatureWriter.class);
+    private static final Logger logger = LoggerFactory.getLogger(SignatureManager.class);
 
     /**
      * Returns a new instance.
@@ -62,7 +67,7 @@ public final class SignatureWriter {
      * @param fileConfig not null
      * @return a new instance, not null
      */
-    public static SignatureWriter from(Snapshot snapshot, FileConfig fileConfig) {
+    public static SignatureManager from(Snapshot snapshot, FileConfig fileConfig) {
         logger.trace("<< from() < snapshot: {} fileConfig: {}", snapshot, fileConfig);
 
         CloudFileWriter cloudWriter = CloudFileWriter.from(snapshot, fileConfig);
@@ -76,7 +81,8 @@ public final class SignatureWriter {
 
         Lock lock = new ReentrantLock();
 
-        SignatureWriter instance = new SignatureWriter(signatures, cloudWriter, lock, totalBytes, 0);
+        SignatureManager instance
+                = new SignatureManager(signatures, cloudWriter, lock, totalBytes, new AtomicLong(0), new AtomicLong(0));
 
         logger.trace(">> from() > {}", instance);
         return instance;
@@ -86,59 +92,119 @@ public final class SignatureWriter {
     private final CloudFileWriter cloudWriter;
     private final Lock lock;
     private final long totalBytes;
-    private volatile long outBytes;
+    private final AtomicLong outBytes;
+    private final AtomicLong failedBytes;
 
-    public SignatureWriter(
+    public SignatureManager(
             Map<ByteString, Set<MBSFile>> signatureToFileSet,
             CloudFileWriter cloudWriter,
             Lock lock,
             long totalBytes,
-            long outBytes) {
+            AtomicLong outBytes,
+            AtomicLong failedBytes) {
 
         this.signatureToFileSet = Objects.requireNonNull(signatureToFileSet);
         this.cloudWriter = Objects.requireNonNull(cloudWriter);
         this.lock = Objects.requireNonNull(lock);
         this.totalBytes = totalBytes;
         this.outBytes = outBytes;
+        this.failedBytes = failedBytes;
+    }
+
+    // Doesn't close the writers
+    public Map<ICloud.MBSFile, FileOutcome> write(Map<ByteString, DataWriter> writers)
+            throws IOException, InterruptedException {
+
+        logger.trace("<< write() < signatures: {}", writers.keySet());
+
+        Map<ICloud.MBSFile, FileOutcome> outcomes = new HashMap<>();
+        for (Map.Entry<ByteString, DataWriter> entry : writers.entrySet()) {
+            outcomes.putAll(write(entry.getKey(), entry.getValue()));
+        }
+
+        logger.trace(">> write() > {}", outcomes);
+        return outcomes;
     }
 
     /**
      * Writes the files referenced by the specified signature.
      * <p>
      * If encrypted, attempts to decrypt the file. Optionally set's the last-modified timestamp.
+     * <p>
+     * The writer is not closed.
      *
      * @param signature not null
      * @param writer not null
-     * @return map from ICloud.MBSFile to CloudWriterResult/s, or null if the signature doesn't reference any files
+     * @return map from ICloud.MBSFile to CloudWriterResult/s, empty if the signature doesn't reference any files
      * @throws IOException
      * @throws InterruptedException
      */
-    public Map<ICloud.MBSFile, WriterResult> write(ByteString signature, IOFunction<OutputStream, Long> writer)
+    public Map<ICloud.MBSFile, FileOutcome> write(ByteString signature, IOFunction<OutputStream, Long> writer)
             throws IOException, InterruptedException {
 
         logger.trace("<< write() < signature: {}", Bytes.hex(signature));
 
         lock.lockInterruptibly();
         try {
-            Set<ICloud.MBSFile> files = signatureToFileSet.get(signature);
+            Map<ICloud.MBSFile, FileOutcome> outcomes = new HashMap<>();
+
+            Set<ICloud.MBSFile> files = signatureToFileSet.remove(signature);
             if (files == null) {
-                return null;
+                logger.warn("-- write() > unreferenced signature: {}", Bytes.hex(signature));
+            } else {
+                for (ICloud.MBSFile file : files) {
+                    outcomes.put(file, cloudWriter.write(file, writer));
+                    outBytes.addAndGet(file.getSize());
+                }
+                logger.debug("-- write() > out: {} failed: {} total: {}", outBytes, failedBytes, totalBytes);
             }
 
-            Map<ICloud.MBSFile, WriterResult> results = new HashMap<>();
-            for (ICloud.MBSFile file : files) {
-                results.put(file, cloudWriter.write(file, writer));
-                outBytes += file.getSize();
-            }
-
-            signatureToFileSet.remove(signature);
-
-            logger.debug("-- write() > out: {} total: {}", outBytes, totalBytes);
-            logger.trace(">> write()");
-            return results;
+            logger.trace(">> write() > {}", outcomes);
+            return outcomes;
         } finally {
             lock.unlock();
         }
+    }
+
+    public Map<ICloud.MBSFile, FileOutcome> fail(Set<ByteString> signatures) {
+        logger.trace("<< fail() < signatures: {}", signatures);
+
+        Map<ICloud.MBSFile, FileOutcome> outcomes = new HashMap<>();
+        signatures.stream().forEach(signature -> outcomes.putAll(fail(signature)));
+
+        logger.trace(">> fail() > {}", outcomes);
+        return outcomes;
+    }
+
+    public Map<ICloud.MBSFile, FileOutcome> fail(ByteString signature) {
+        logger.trace("<< fail() < signature: {}", Bytes.hex(signature));
+
+        Map<ICloud.MBSFile, FileOutcome> outcomes = new HashMap<>();
+
+        Set<ICloud.MBSFile> files = signatureToFileSet.remove(signature);
+        if (files == null) {
+            logger.warn("-- writer() > unreferenced signature: {}", Bytes.hex(signature));
+        } else {
+            long total = files.stream()
+                    .peek(file -> outcomes.put(file, FileOutcome.FAILED_DOWNLOAD))
+                    .mapToLong(ICloud.MBSFile::getSize)
+                    .sum();
+            failedBytes.addAndGet(total);
+        }
+
+        logger.trace(">> fail() > {}", outcomes);
+        return outcomes;
+    }
+
+    public Set<ByteString> remainingSignatures() {
+        return new HashSet<>(signatureToFileSet.keySet());
+    }
+
+    public Set<ICloud.MBSFile> remainingFiles() {
+        return signatureToFileSet.values()
+                .stream()
+                .flatMap(Collection::stream)
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -149,6 +215,7 @@ public final class SignatureWriter {
                 + ", lock=" + lock
                 + ", totalBytes=" + totalBytes
                 + ", outBytes=" + outBytes
+                + ", failedBytes=" + failedBytes
                 + '}';
     }
 }

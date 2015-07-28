@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.cloud.file;
+package com.github.horrorho.liquiddonkey.cloud;
 
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -33,10 +33,11 @@ import net.jcip.annotations.ThreadSafe;
  */
 @Immutable
 @ThreadSafe
-public enum WriterResult {
+public enum FileOutcome {
 
     SUCCESS("Success.", true),
     SUCCESS_DECRYPT("Success. Decrypted.", true),
+    FAILED_DOWNLOAD("Failed. Download failure.", false),
     FAILED_DECRYPT_ERROR("Failed. Decrypt error.", false),
     FAILED_DECRYPT_NO_FILE("Failed. Internal decrypt error.", false),
     FAILED_DECRYPT_NO_KEY("Failed. No key.", false);
@@ -44,7 +45,7 @@ public enum WriterResult {
     private final String toString;
     private final boolean isSuccess;
 
-    private WriterResult(String toString, boolean isSuccess) {
+    private FileOutcome(String toString, boolean isSuccess) {
         this.toString = toString;
         this.isSuccess = isSuccess;
     }

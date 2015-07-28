@@ -35,6 +35,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
 
 /**
@@ -42,6 +43,7 @@ import org.apache.http.client.HttpClient;
  *
  * @author Ahseya
  */
+@ThreadSafe
 public class DonkeyFactory {
 
     public static DonkeyFactory from(
