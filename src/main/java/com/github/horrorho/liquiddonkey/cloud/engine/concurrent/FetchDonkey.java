@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.cloud.donkey;
+package com.github.horrorho.liquiddonkey.cloud.engine.concurrent;
 
 import com.github.horrorho.liquiddonkey.cloud.client.ChunksClient;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;

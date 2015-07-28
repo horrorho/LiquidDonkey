@@ -23,8 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.donkey.Donkey;
-import com.github.horrorho.liquiddonkey.cloud.donkey.Track;
+import com.github.horrorho.liquiddonkey.cloud.engine.concurrent.Donkey;
+import com.github.horrorho.liquiddonkey.cloud.engine.concurrent.Track;
 import com.github.horrorho.liquiddonkey.util.pool.WorkPools;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

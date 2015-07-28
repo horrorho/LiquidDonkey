@@ -23,9 +23,9 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.donkey.Donkey;
-import com.github.horrorho.liquiddonkey.cloud.donkey.DonkeyFactory;
-import com.github.horrorho.liquiddonkey.cloud.donkey.Track;
+import com.github.horrorho.liquiddonkey.cloud.engine.concurrent.Donkey;
+import com.github.horrorho.liquiddonkey.cloud.engine.concurrent.DonkeyFactory;
+import com.github.horrorho.liquiddonkey.cloud.engine.concurrent.Track;
 import com.github.horrorho.liquiddonkey.cloud.store.DataWriter;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.iofunction.IOConsumer;
