@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.cloud;
+package com.github.horrorho.liquiddonkey.cloud.engine.concurrent;
 
 import com.github.horrorho.liquiddonkey.cloud.engine.concurrent.Donkey;
 import com.github.horrorho.liquiddonkey.cloud.engine.concurrent.DonkeyFactory;
@@ -85,7 +85,7 @@ public class ConcurrentEngine {
         this.executorTimeoutMs = executorTimeoutMs;
     }
 
-    boolean execute(
+    public boolean execute(
             HttpClient client,
             StoreManager storeManager,
             AtomicReference<Exception> fatal,

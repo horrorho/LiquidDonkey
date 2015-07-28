@@ -249,7 +249,7 @@ public class Looter implements Closeable {
             try {
 
                 OutcomesPrinter outcomesPrinter = OutcomesPrinter.create();
-                ConcurrentDownloader downloader = ConcurrentDownloader.from(config.engine(), config.file(), outcomesPrinter);
+                SnapshotDownloader downloader = SnapshotDownloader.from(config.engine(), config.file(), outcomesPrinter);
 
                 downloader.download(client, decryptable);
 

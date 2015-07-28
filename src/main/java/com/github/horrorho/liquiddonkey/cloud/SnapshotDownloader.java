@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.engine.concurrent.ConcurrentEngine;
 import com.github.horrorho.liquiddonkey.cloud.data.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
@@ -48,14 +49,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ConcurrentDownloader.
+ * SnapshotDownloader.
  *
  * @author Ahseya
  */
 @ThreadSafe
-public final class ConcurrentDownloader {
+public final class SnapshotDownloader {
 
-    public static ConcurrentDownloader from(
+    public static SnapshotDownloader from(
             EngineConfig engineConfig,
             FileConfig fileConfig,
             Consumer<Map<ICloud.MBSFile, FileOutcome>> outcomes) {
@@ -63,24 +64,24 @@ public final class ConcurrentDownloader {
         ConcurrentEngine engine = ConcurrentEngine.from(engineConfig);
         Function<Snapshot, SignatureManager> signatureManagers = s -> SignatureManager.from(s, fileConfig);
 
-        return new ConcurrentDownloader(engine, signatureManagers, outcomes);
+        return new SnapshotDownloader(engine, signatureManagers, outcomes);
     }
 
-    public static ConcurrentDownloader from(
+    public static SnapshotDownloader from(
             ConcurrentEngine engine,
             Function<Snapshot, SignatureManager> signatureWriters,
             Consumer<Map<ICloud.MBSFile, FileOutcome>> outcomes) {
 
-        return new ConcurrentDownloader(engine, signatureWriters, outcomes);
+        return new SnapshotDownloader(engine, signatureWriters, outcomes);
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(ConcurrentDownloader.class);
+    private static final Logger logger = LoggerFactory.getLogger(SnapshotDownloader.class);
 
     private final ConcurrentEngine engine;
     private final Function<Snapshot, SignatureManager> signatureManagers;
     private final Consumer<Map<ICloud.MBSFile, FileOutcome>> outcomes;
 
-    ConcurrentDownloader(
+    SnapshotDownloader(
             ConcurrentEngine engine,
             Function<Snapshot, SignatureManager> signatureWriters,
             Consumer<Map<ICloud.MBSFile, FileOutcome>> outcomes) {
