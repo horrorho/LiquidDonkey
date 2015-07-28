@@ -120,6 +120,7 @@ public class DonkeyFactory {
         return new WriterDonkey(
                 this::fetchDonkey,
                 signaturesWriter,
+                data,
                 storeManager,
                 donkey.chunkList(),
                 donkey.exceptions(),
