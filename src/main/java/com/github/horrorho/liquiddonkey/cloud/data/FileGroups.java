@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.data;
 
-import com.github.horrorho.liquiddonkey.cloud.clients.FileGroupsClient;
+import com.github.horrorho.liquiddonkey.cloud.client.FileGroupsClient;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import java.io.IOException;

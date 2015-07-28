@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.donkey;
 
-import com.github.horrorho.liquiddonkey.cloud.clients.ChunksClient;
+import com.github.horrorho.liquiddonkey.cloud.client.ChunksClient;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.util.pool.ToDo;

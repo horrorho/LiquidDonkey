@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.data;
 
-import com.github.horrorho.liquiddonkey.cloud.clients.SnapshotClient;
+import com.github.horrorho.liquiddonkey.cloud.client.SnapshotClient;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.settings.Markers;
 import java.io.IOException;

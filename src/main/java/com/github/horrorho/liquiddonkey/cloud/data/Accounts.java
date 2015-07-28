@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.data;
 
-import com.github.horrorho.liquiddonkey.cloud.clients.AccountClient;
+import com.github.horrorho.liquiddonkey.cloud.client.AccountClient;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import java.io.IOException;

@@ -1,4 +1,3 @@
-
 /*
  * The MIT License
  *
@@ -22,10 +21,9 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.cloud.clients;
+package com.github.horrorho.liquiddonkey.cloud.client;
 
-import com.github.horrorho.liquiddonkey.util.SimplePropertyList;
-import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.http.ResponseHandlerFactory;
 import java.io.IOException;
 import java.util.Objects;
@@ -33,61 +31,57 @@ import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.methods.RequestBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * SettingsClient.
+ * ChunksClient.
  *
  * @author Ahseya
  */
 @Immutable
 @ThreadSafe
-public final class SettingsClient {
+public final class ChunksClient {
 
-    public static SettingsClient create() {
+    public static ChunksClient create() {
         return instance;
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(SettingsClient.class);
+    private static final Logger logger = LoggerFactory.getLogger(ChunksClient.class);
 
-    private static final SettingsClient instance
-            = new SettingsClient(ResponseHandlerFactory.toByteArray(), Headers.create());
+    private static final ChunksClient instance
+            = new ChunksClient(ResponseHandlerFactory.toByteArray(), Headers.create());
 
     private final ResponseHandler<byte[]> byteArrayResponseHandler;
     private final Headers headers;
 
-    SettingsClient(ResponseHandler<byte[]> byteArrayResponseHandler, Headers headers) {
+    ChunksClient(ResponseHandler<byte[]> byteArrayResponseHandler, Headers headers) {
         this.byteArrayResponseHandler = Objects.requireNonNull(byteArrayResponseHandler);
         this.headers = Objects.requireNonNull(headers);
     }
 
     /**
-     * Queries the server and returns settings.
+     * Queries the server and returns chunk data.
      *
      * @param client, not null
-     * @param dsPrsID, not null
-     * @param mmeAuthToken, not null
-     * @return settings, not null
+     * @param chunks, not null
+     * @return chunk data, not null
      * @throws IOException
-     * @throws BadDataException
      */
-    public SimplePropertyList get(HttpClient client, String dsPrsID, String mmeAuthToken)
-            throws BadDataException, IOException {
+    public byte[] get(HttpClient client, ChunkServer.StorageHostChunkList chunks) throws IOException {
+        logger.trace("<< chunks() < chunks count: {}", chunks.getChunkInfoCount());
 
-        logger.trace("<< get() < dsPrsID: {} mmeAuthToken: {}", dsPrsID, mmeAuthToken);
+        ChunkServer.HostInfo hostInfo = chunks.getHostInfo();
+        String uri = hostInfo.getScheme() + "://" + hostInfo.getHostname() + "/" + hostInfo.getUri();
 
-        String authToken = headers.basicToken(dsPrsID, mmeAuthToken);
+        HttpUriRequest request = RequestBuilder.create(hostInfo.getMethod()).setUri(uri).build();
+        headers.headers(hostInfo.getHeadersList()).stream().forEach(request::addHeader);
 
-        HttpGet get = new HttpGet("https://setup.icloud.com/setup/get_account_settings");
-        get.addHeader(headers.mmeClientInfo());
-        get.addHeader(headers.authorization(authToken));
-        byte[] data = client.execute(get, byteArrayResponseHandler);
-        
-        SimplePropertyList propertyList = SimplePropertyList.from(data);
+        byte[] data = client.execute(request, byteArrayResponseHandler);
 
-        logger.trace(">> get() > {}", propertyList);
-        return propertyList;
+        logger.trace(">> chunks() >  {}", data.length);
+        return data;
     }
 }

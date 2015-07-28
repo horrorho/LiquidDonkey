@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.cloud.clients;
+package com.github.horrorho.liquiddonkey.cloud.client;
  
 import java.util.Arrays;
 import java.util.stream.Collectors;
