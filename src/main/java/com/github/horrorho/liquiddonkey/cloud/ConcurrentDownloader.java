@@ -26,9 +26,6 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.github.horrorho.liquiddonkey.cloud.data.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
-import com.github.horrorho.liquiddonkey.cloud.donkey.Donkey;
-import com.github.horrorho.liquiddonkey.cloud.donkey.DonkeyFactory;
-import com.github.horrorho.liquiddonkey.cloud.donkey.Track;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.DataWriter;
@@ -37,17 +34,14 @@ import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.iofunction.IOConsumer;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
-import com.github.horrorho.liquiddonkey.util.pool.WorkPools;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
@@ -66,37 +60,32 @@ public final class ConcurrentDownloader {
             FileConfig fileConfig,
             Consumer<Map<ICloud.MBSFile, FileOutcome>> outcomes) {
 
-        ConcurrentEngine engine
-                = ConcurrentEngine.from(engineConfig.threadCount(), engineConfig.threadStaggerDelayMs(), 1800000);
+        ConcurrentEngine engine = ConcurrentEngine.from(engineConfig);
         Function<Snapshot, SignatureManager> signatureManagers = s -> SignatureManager.from(s, fileConfig);
 
-        return new ConcurrentDownloader(engine, engineConfig.retryCount(), signatureManagers, outcomes);
+        return new ConcurrentDownloader(engine, signatureManagers, outcomes);
     }
 
     public static ConcurrentDownloader from(
             ConcurrentEngine engine,
-            int retryCount,
             Function<Snapshot, SignatureManager> signatureWriters,
             Consumer<Map<ICloud.MBSFile, FileOutcome>> outcomes) {
 
-        return new ConcurrentDownloader(engine, retryCount, signatureWriters, outcomes);
+        return new ConcurrentDownloader(engine, signatureWriters, outcomes);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(ConcurrentDownloader.class);
 
     private final ConcurrentEngine engine;
-    private final int retryCount;
     private final Function<Snapshot, SignatureManager> signatureManagers;
     private final Consumer<Map<ICloud.MBSFile, FileOutcome>> outcomes;
 
     ConcurrentDownloader(
             ConcurrentEngine engine,
-            int retryCount,
             Function<Snapshot, SignatureManager> signatureWriters,
             Consumer<Map<ICloud.MBSFile, FileOutcome>> outcomes) {
 
         this.engine = Objects.requireNonNull(engine);
-        this.retryCount = Objects.requireNonNull(retryCount);
         this.signatureManagers = Objects.requireNonNull(signatureWriters);
         this.outcomes = Objects.requireNonNull(outcomes);
     }
@@ -108,8 +97,9 @@ public final class ConcurrentDownloader {
                 snapshot.dsPrsID(), snapshot.backupUDID(), snapshot.snapshotID());
 
         AtomicReference<Exception> fatal = new AtomicReference(null);
+        boolean isTimedOut = false;
 
-        while (!snapshot.files().isEmpty()) {
+        while (!isTimedOut && !snapshot.files().isEmpty()) {
             logger.debug("-- download() > begin: {}", snapshot.files().size());
 
             // Files to download.
@@ -121,28 +111,19 @@ public final class ConcurrentDownloader {
 
             // Create result consumers.
             Consumer<Set<ByteString>> failures = set -> fail(signatureManager, set);
-            IOConsumer<Map<ByteString, DataWriter>> signatures = writers -> write(signatureManager, writers);
-
-            // Donkey Factory.
-            DonkeyFactory factory = DonkeyFactory.from(client, storeManager, retryCount, fatal, failures, signatures);
-
-            // Populate WorkPools with FetchDonkeys on the FETCH track.
-            Map<Track, List<Donkey>> donkies = storeManager.chunkListList().stream()
-                    .map(factory::fetchDonkey)
-                    .collect(Collectors.groupingBy(list -> Track.FETCH));
-            WorkPools<Track, Donkey> pools = WorkPools.from(Track.class, donkies);
+            IOConsumer<Map<ByteString, DataWriter>> completed = writers -> write(signatureManager, writers);
 
             // Execute.
-            engine.execute(pools, fatal);
+            isTimedOut = engine.execute(client, storeManager, fatal, failures, completed);
 
             // Filter out completed files.
             Set<ICloud.MBSFile> remaining = signatureManager.remainingFiles();
             snapshot = Snapshots.from(snapshot, file -> remaining.contains(file));
 
             // TODO timeout option
-            
             // TODO checksum/ salvage completed chunks from the StoreManager in the case of timeout downloads.
-            logger.debug("-- download() > end: {}", snapshot.files().size());
+            logger.debug("-- download() > isTimedOut: {} fatal: {} remaining: {}",
+                    isTimedOut, fatal, snapshot.files().size());
         }
 
         logger.trace(">> download()");
