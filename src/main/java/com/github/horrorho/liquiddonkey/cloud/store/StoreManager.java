@@ -187,6 +187,12 @@ public final class StoreManager {
         if (list != null) {
             list.forEach(store::remove);
         }
+        
+        signatureToChunkListReferenceList.remove(signature);
+    }
+    
+    public Set<ByteString> signatures() {
+        return new HashSet<>(signatureToChunkListReferenceList.keySet());
     }
 
     public List<ChunkServer.StorageHostChunkList> chunkListList() {
