@@ -33,38 +33,42 @@ import org.slf4j.LoggerFactory;
  * @author Ahseya
  */
 public class Runner implements Runnable {
-
+    
     private static final Logger logger = LoggerFactory.getLogger(Runner.class);
-
+    
     static Runner newInstance(WorkPools<Track, Donkey> pools, Track track) {
         return new Runner(pools, track, 0);
     }
-
+    
     private final WorkPools<Track, Donkey> pools;
     private final Track track;
     private int count;
-
+    
     Runner(WorkPools<Track, Donkey> pools, Track track, int count) {
         this.pools = pools;
         this.track = track;
         this.count = count;
     }
-
+    
     @Override
     public void run() {
         logger.trace("<< run() < track: {}", track);
-
+        
         try {
             while (!pools.process(track, Donkey::process)) {
                 count++;
+                if (Thread.currentThread().isInterrupted()) {
+                    logger.warn("-- run() > interrupt flag set");
+                    throw new InterruptedException("Interrupted");
+                }
             }
         } catch (RuntimeException | InterruptedException ex) {
             logger.warn("-- run() > exception: ", ex);
         }
-
+        
         logger.trace(">> run() > track: {} count: {}", track, count);
     }
-
+    
     public int getCount() {
         return count;
     }
