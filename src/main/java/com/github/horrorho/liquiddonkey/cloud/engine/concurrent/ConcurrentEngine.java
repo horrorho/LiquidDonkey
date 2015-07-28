@@ -23,9 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.engine.concurrent;
 
-import com.github.horrorho.liquiddonkey.cloud.engine.concurrent.Donkey;
-import com.github.horrorho.liquiddonkey.cloud.engine.concurrent.DonkeyFactory;
-import com.github.horrorho.liquiddonkey.cloud.engine.concurrent.Track;
 import com.github.horrorho.liquiddonkey.cloud.store.DataWriter;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.iofunction.IOConsumer;
@@ -63,7 +60,7 @@ public class ConcurrentEngine {
                 config.threadCount(),
                 config.threadStaggerDelayMs(),
                 config.retryCount(),
-                1800000 // TODO
+                180000 // TODO
         );
     }
 
@@ -135,7 +132,7 @@ public class ConcurrentEngine {
                 logger.debug("-- execute() > completed");
             }
             
-            logger.trace(">> execute() > {}", isTimedOut);
+            logger.trace(">> execute() > timed out: {}", isTimedOut);
             return isTimedOut;
 
         } catch (InterruptedException ex) {
