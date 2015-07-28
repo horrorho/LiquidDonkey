@@ -59,6 +59,7 @@ public final class WriterDonkey extends Donkey {
     public WriterDonkey(
             Function<WriterDonkey, FetchDonkey> fetchDonkeys,
             IOConsumer<Map<ByteString, DataWriter>> signaturesWriter,
+            byte[] data,
             StoreManager manager,
             ChunkServer.StorageHostChunkList chunkList,
             List<Exception> exceptions,
@@ -70,6 +71,7 @@ public final class WriterDonkey extends Donkey {
 
         this.fetchDonkeys = Objects.requireNonNull(fetchDonkeys);
         this.signaturesWriter = Objects.requireNonNull(signaturesWriter);
+        this.data = Objects.requireNonNull(data);
     }
 
     @Override
