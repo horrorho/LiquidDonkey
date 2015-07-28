@@ -126,21 +126,21 @@ public class ConcurrentEngine {
             logger.debug("-- execute() > runners running: {}", threads);
             executor.shutdown();
 
-            logger.debug("-- execute() > awaiting termination");
-            isTimedOut = executor.awaitTermination(executorTimeoutMs, TimeUnit.MILLISECONDS);
-
+            logger.debug("-- execute() > awaiting termination, timeout (ms): {}", executorTimeoutMs);
+            isTimedOut = !executor.awaitTermination(executorTimeoutMs, TimeUnit.MILLISECONDS);
+            
             if (isTimedOut) {
                 logger.warn("-- execute() > timed out");
             } else {
                 logger.debug("-- execute() > completed");
             }
-
+            
             logger.trace(">> execute() > {}", isTimedOut);
             return isTimedOut;
 
         } catch (InterruptedException ex) {
             logger.warn("-- execute() > interrupted: {}", ex);
-            fatal.compareAndSet(null, ex);
+            fatal.compareAndSet(null, ex); 
             throw (ex);
 
         } finally {
