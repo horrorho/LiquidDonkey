@@ -161,7 +161,8 @@ public final class PersistentHttpRequestRetryHandler implements HttpRequestRetry
         try {
             TimeUnit.MILLISECONDS.sleep(timeMs);
         } catch (InterruptedException ex) {
-            throw new IllegalStateException("Interrupted", ex);
+            logger.warn("-- sleep() > interrupted: ", ex);
+            Thread.currentThread().interrupt();
         }
     }
 }
