@@ -88,7 +88,7 @@ public final class PropertyListClient {
         
         SimplePropertyList propertyList = SimplePropertyList.from(data);
 
-        logger.trace(">> get() > {}", propertyList);
+        logger.trace(">> get() > propertyList bytes: {}", data.length);
         return propertyList;
     }
 }
