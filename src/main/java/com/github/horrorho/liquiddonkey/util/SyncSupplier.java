@@ -66,7 +66,10 @@ public final class SyncSupplier<T> {
                 return null;
             }
 
-            return items.get(--index);
+            index--;
+            T item = items.get(index);
+            items.set(index, null);
+            return item;
         } finally {
             lock.unlock();
         }
