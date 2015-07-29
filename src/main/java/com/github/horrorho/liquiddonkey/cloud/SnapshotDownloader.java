@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.data.Core;
 import com.github.horrorho.liquiddonkey.cloud.engine.concurrent.ConcurrentEngine;
 import com.github.horrorho.liquiddonkey.cloud.data.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
@@ -40,7 +41,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import net.jcip.annotations.ThreadSafe;
@@ -91,7 +91,7 @@ public final class SnapshotDownloader {
         this.outcomes = Objects.requireNonNull(outcomes);
     }
 
-    public void download(HttpClient client, Snapshot snapshot)
+    public void download(HttpClient client, Core core, String mmeAuthToken, Snapshot snapshot)
             throws BadDataException, IOException, InterruptedException {
 
         logger.trace("<< download() < dsPrsID: {} udid: {} snapshot: {}",
@@ -104,7 +104,7 @@ public final class SnapshotDownloader {
             logger.debug("-- download() > loop, files: {}", snapshot.files().size());
 
             // Files to download.
-            ChunkServer.FileGroups fileGroups = FileGroups.from(client, snapshot);
+            ChunkServer.FileGroups fileGroups = FileGroups.from(client, core, mmeAuthToken, snapshot);
 
             // Store manager
             StoreManager storeManager = StoreManager.from(fileGroups);
