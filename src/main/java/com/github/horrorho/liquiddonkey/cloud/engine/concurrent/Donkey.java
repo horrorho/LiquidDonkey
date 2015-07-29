@@ -150,7 +150,7 @@ class Donkey implements Runnable {
             fatal.compareAndSet(null, ex);
             logger.warn("-- run() > exception: ", ex);
         }
-        
+
         logger.trace(">> run() > fatal: {} killed: {}", fatal == null ? null : fatal.get().getMessage(), !isAlive);
     }
 
@@ -191,7 +191,7 @@ class Donkey implements Runnable {
                 continue;
             }
 
-            return signatureManager.write(writers);
+            return write(writers);
         }
 
         Set<ByteString> failedSignatures = storeManager.fail(chunkList);
@@ -239,6 +239,20 @@ class Donkey implements Runnable {
 
         logger.trace(">> decode() > outcomes: {}", outcomes);
         return outcomes;
+    }
+
+    Map<ICloud.MBSFile, Outcome> write(Map<ByteString, DataWriter> writers) throws IOException, InterruptedException {
+        try {
+            return signatureManager.write(writers);
+        } finally {
+            writers.values().forEach(writer -> {
+                try {
+                    writer.close();
+                } catch (IOException ex) {
+                    logger.warn("-- writer() > exception on close: {}", ex);
+                }
+            });
+        }
     }
 
     void kill() {
