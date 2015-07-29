@@ -27,24 +27,38 @@ import com.github.horrorho.liquiddonkey.cloud.client.FileGroupsClient;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import java.io.IOException;
+import net.jcip.annotations.Immutable;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
+ * FileGroups.
  *
  * @author Ahseya
  */
-public class FileGroups {
+@Immutable
+@ThreadSafe
+public final class FileGroups {
 
-    public static ChunkServer.FileGroups from(HttpClient client, Snapshot snapshot) throws IOException, BadDataException {
+    public static ChunkServer.FileGroups from(HttpClient client, Core core, Snapshot snapshot)
+            throws IOException, BadDataException {
+
+        if (!core.dsPrsID().equals(snapshot.dsPrsID())) {
+            logger.error("-- from() > dsPrsID mismatch, core: {} snapshot: {}", core.dsPrsID(), snapshot.dsPrsID());
+        }
+
         return FileGroupsClient.create().get(
                 client,
-                snapshot.dsPrsID(),
-                snapshot.mmeAuthToken(),
-                snapshot.contentUrl(),
-                snapshot.mobileBackupUrl(),
+                core.dsPrsID(),
+                core.mmeAuthToken(),
+                core.contentUrl(),
+                core.mobileBackupUrl(),
                 snapshot.backupUDID(),
                 snapshot.snapshotID(),
                 snapshot.files());
     }
 
+    private static final Logger logger = LoggerFactory.getLogger(FileGroups.class);
 }

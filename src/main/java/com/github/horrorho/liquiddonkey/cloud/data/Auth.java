@@ -24,10 +24,11 @@
 package com.github.horrorho.liquiddonkey.cloud.data;
 
 import com.github.horrorho.liquiddonkey.cloud.client.AuthClient;
-import com.github.horrorho.liquiddonkey.util.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.github.horrorho.liquiddonkey.util.SimplePropertyList;
 import java.io.IOException;
 import java.util.Objects;
+import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
@@ -38,10 +39,39 @@ import org.slf4j.LoggerFactory;
  *
  * @author Ahseya
  */
+@Immutable
 @ThreadSafe
-public class Auth {
+public final class Auth {
 
+    public static Auth from(String dsPrsID, String mmeAuthToken) {
+        logger.trace("<< from() < dsPrsID: {} mmeAuthToken: {}", dsPrsID, mmeAuthToken);
 
+        Auth auth = new Auth(dsPrsID, mmeAuthToken);
+
+        logger.trace(">> from > auth: {}", auth);
+        return auth;
+    }
+
+    public static Auth from(HttpClient client, String id, String password) throws BadDataException, IOException {
+        logger.trace("<< from() < id: {} password: {}", id, password);
+
+        SimplePropertyList propertyList = authClient.get(client, id, password);
+
+        String dsPrsID = propertyList.value("appleAccountInfo", "dsPrsID");
+        logger.debug("-- from() >  dsPrsID: {}", dsPrsID);
+
+        String mmeAuthToken = propertyList.value("tokens", "mmeAuthToken");
+        logger.debug("-- from() >   mmeAuthToken: {}", mmeAuthToken);
+
+        Auth auth = new Auth(dsPrsID, mmeAuthToken);
+
+        logger.trace(">> from > auth: {}", auth);
+        return auth;
+    }
+
+    private static final Logger logger = LoggerFactory.getLogger(Auth.class);
+
+    private static final AuthClient authClient = AuthClient.create();
 
     private final String dsPrsID;
     private final String mmeAuthToken;

@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.http.client.HttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Backups.
@@ -41,45 +43,60 @@ import org.apache.http.client.HttpClient;
  */
 public class Backups {
 
-    public static List<Backup> from(HttpClient client, Account account) throws IOException, BadDataException {
+    public static List<Backup> from(HttpClient client, Core core, Account account)
+            throws IOException, BadDataException {
         List<Backup> list = new ArrayList<>();
         for (ByteString udid : account.mbsAccount().getBackupUDIDList()) {
-            list.add(backup(client, account, udid));
+            list.add(backup(client, core, account, udid));
         }
         return list;
     }
 
-    public static Backup from(HttpClient client, Account account, ByteString udid) throws IOException, BadDataException {
+    public static Backup from(HttpClient client, Core core, Account account, ByteString udid)
+            throws IOException, BadDataException {
+
         final Backup backup;
         if (account.mbsAccount().getBackupUDIDList().contains(udid)) {
-            backup = backup(client, account, udid);
+            backup = backup(client, core, account, udid);
         } else {
             backup = null;
         }
         return backup;
     }
 
-    static Backup backup(HttpClient client, Account account, ByteString udid) throws IOException, BadDataException {
+    static Backup backup(HttpClient client, Core core, Account account, ByteString udid)
+            throws IOException, BadDataException {
+
+        logger.trace("<< from() < dsPrsID: {} udid: {}", core.dsPrsID(), Bytes.hex(udid));
+
+        if (!core.dsPrsID().equals(account.dsPrsID())) {
+            logger.error("-- from() > dsPrsID mismatch, core: {} account: {}", core.dsPrsID(), account.dsPrsID());
+        }
+
         String udidString = Bytes.hex(udid);
 
         ICloud.MBSBackup mbsBackup = backupClient.mbsBackup(
                 client,
-                account.dsPrsID(),
-                account.mmeAuthToken(),
-                account.mobileBackupUrl(),
+                core.dsPrsID(),
+                core.mmeAuthToken(),
+                core.mobileBackupUrl(),
                 udidString);
 
         ICloud.MBSKeySet mbsKeySet = backupClient.mbsKeySet(
                 client,
-                account.dsPrsID(),
-                account.mmeAuthToken(),
-                account.mobileBackupUrl(),
+                core.dsPrsID(),
+                core.mmeAuthToken(),
+                core.mobileBackupUrl(),
                 udidString);
 
         KeyBagManager keyBagManager = KeyBagManager.from(mbsKeySet);
+        Backup backup = new Backup(account, mbsBackup, mbsKeySet, keyBagManager);
 
-        return new Backup(account, mbsBackup, mbsKeySet, keyBagManager);
+        logger.trace(">> from() > backup: {}", backup);
+        return backup;
     }
+
+    private static final Logger logger = LoggerFactory.getLogger(Backups.class);
 
     private static final BackupClient backupClient = BackupClient.create();
 }

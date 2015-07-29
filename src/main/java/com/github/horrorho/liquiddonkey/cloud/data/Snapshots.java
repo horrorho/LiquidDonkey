@@ -25,7 +25,6 @@ package com.github.horrorho.liquiddonkey.cloud.data;
 
 import com.github.horrorho.liquiddonkey.cloud.client.SnapshotClient;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.settings.Markers;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,8 +33,6 @@ import java.util.stream.Collectors;
 import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.Marker;
-import org.slf4j.MarkerFactory;
 
 /**
  * Snapshots.
@@ -49,11 +46,17 @@ public class Snapshots {
         return new Snapshot(snapshot, filtered);
     }
 
-    public static final Snapshot from(HttpClient client, Backup backup, int id, int listLimit) throws IOException {
+    public static final Snapshot from(HttpClient client, Core core, Backup backup, int id, int listLimit)
+            throws IOException {
+
         logger.trace("<< from() < dsPrsID: {} udid: {} id: {} listLimit: {}",
                 backup.dsPrsID(), backup.backupUDID(), id, listLimit);
 
-        ICloud.MBSSnapshot mbsSnapshot = backup.backup().getSnapshotList().stream()
+        if (!core.dsPrsID().equals(backup.dsPrsID())) {
+            logger.error("-- from() > dsPrsID mismatch, core: {} backup: {}", core.dsPrsID(), backup.dsPrsID());
+        }
+
+        ICloud.MBSSnapshot mbsSnapshot = backup.mbsBackup().getSnapshotList().stream()
                 .filter(s -> s.getSnapshotID() == id)
                 .findFirst().orElse(null);
 
@@ -64,9 +67,9 @@ public class Snapshots {
         } else {
             List<ICloud.MBSFile> files = snapshotClient.files(
                     client,
-                    backup.dsPrsID(),
-                    backup.mmeAuthToken(),
-                    backup.mobileBackupUrl(),
+                    core.dsPrsID(),
+                    core.mmeAuthToken(),
+                    core.mobileBackupUrl(),
                     backup.backupUDID(),
                     mbsSnapshot.getSnapshotID(),
                     listLimit);
@@ -74,18 +77,21 @@ public class Snapshots {
             snapshot = new Snapshot(backup, mbsSnapshot, files);
         }
 
-        logger.debug(marker, "-- from() > snapshots: {}", snapshot);
-        logger.trace(">> from() > files: {}", snapshot == null ? null : snapshot.files().size());
+        logger.trace(">> from() > snapshot: {}", snapshot);
         return snapshot;
     }
 
-    public static List<Snapshot> from(HttpClient client, Backup backup, int listLimit) throws IOException {
+    public static List<Snapshot> from(HttpClient client, Core core, Backup backup, int listLimit) throws IOException {
         logger.trace("<< from() < dsPrsID: {} udid: {} listLimit: {}",
                 backup.dsPrsID(), backup.backupUDID(), listLimit);
 
+        if (!core.dsPrsID().equals(backup.dsPrsID())) {
+            logger.error("-- from() > dsPrsID mismatch, core: {} backup: {}", core.dsPrsID(), backup.dsPrsID());
+        }
+
         List<Snapshot> snapshots = new ArrayList<>();
 
-        for (ICloud.MBSSnapshot mbsSnapshot : backup.backup().getSnapshotList()) {
+        for (ICloud.MBSSnapshot mbsSnapshot : backup.mbsBackup().getSnapshotList()) {
             final List<ICloud.MBSFile> files;
 
             if (mbsSnapshot.getCommitted() == 0) {
@@ -95,9 +101,9 @@ public class Snapshots {
             } else {
                 files = snapshotClient.files(
                         client,
-                        backup.dsPrsID(),
-                        backup.mmeAuthToken(),
-                        backup.mobileBackupUrl(),
+                        core.dsPrsID(),
+                        core.mmeAuthToken(),
+                        core.mobileBackupUrl(),
                         backup.backupUDID(),
                         mbsSnapshot.getSnapshotID(),
                         listLimit);
@@ -107,13 +113,11 @@ public class Snapshots {
             snapshots.add(snapshot);
         }
 
-        logger.debug(marker, "-- from() > snapshots: {}", snapshots);
-        logger.trace(">> from() > snapshots: {}", snapshots.size());
+        logger.trace(">> from() > snapshots: {}", snapshots);
         return snapshots;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(Snapshots.class);
-    private static final Marker marker = MarkerFactory.getMarker(Markers.CLIENT);
 
     private static final SnapshotClient snapshotClient = SnapshotClient.create();
 }

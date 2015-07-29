@@ -26,42 +26,56 @@ package com.github.horrorho.liquiddonkey.cloud.data;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import java.util.ArrayList;
 import java.util.List;
+import net.jcip.annotations.Immutable;
+import net.jcip.annotations.ThreadSafe;
 
 /**
  * Snapshot.
  *
  * @author Ahseya
  */
+@Immutable
+@ThreadSafe
 public class Snapshot extends Backup {
 
-    private final ICloud.MBSSnapshot snapshot;
+    private final ICloud.MBSSnapshot mbsSnapshot;
     private final List<ICloud.MBSFile> files;
     private final Backup backup;
 
-    Snapshot(Backup backup, ICloud.MBSSnapshot snapshot, List<ICloud.MBSFile> files) {
+    Snapshot(Backup backup, ICloud.MBSSnapshot mbsSnapshot, List<ICloud.MBSFile> files) {
         super(backup);
-        this.snapshot = snapshot;
+        this.mbsSnapshot = mbsSnapshot;
         this.files = files;
         this.backup = backup;
     }
 
     Snapshot(Snapshot snapshot, List<ICloud.MBSFile> files) {
-        this(snapshot.backup, snapshot.snapshot, files);
+        this(snapshot.backup, snapshot.mbsSnapshot, files);
     }
 
     Snapshot(Snapshot snapshot) {
-        this(snapshot.backup, snapshot.snapshot, snapshot.files());
+        this(snapshot.backup, snapshot.mbsSnapshot, snapshot.files());
     }
 
     public final int snapshotID() {
-        return snapshot.getSnapshotID();
+        return mbsSnapshot.getSnapshotID();
     }
 
-    public final ICloud.MBSSnapshot snapshot() {
-        return snapshot;
+    public final ICloud.MBSSnapshot mbsSnapshot() {
+        return mbsSnapshot;
     }
 
     public final List<ICloud.MBSFile> files() {
         return new ArrayList<>(files);
+    }
+
+    @Override
+    public String toString() {
+        return "Snapshot{"
+                + "dsPrsID=" + dsPrsID()
+                + "udid=" + backupUDID()
+                + "mbsSnapshot=" + mbsSnapshot
+                + ", files=" + files.size()
+                + '}';
     }
 }

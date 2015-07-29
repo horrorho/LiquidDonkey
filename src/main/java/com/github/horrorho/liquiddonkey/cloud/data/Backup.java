@@ -25,52 +25,52 @@ package com.github.horrorho.liquiddonkey.cloud.data;
 
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.util.Bytes;
-import com.google.protobuf.ByteString;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import org.apache.http.client.HttpClient;
+import net.jcip.annotations.Immutable;
+import net.jcip.annotations.ThreadSafe;
 
 /**
  * Backup.
  *
  * @author Ahseya
  */
+@Immutable
+@ThreadSafe
 public class Backup extends Account {
 
-    
-
-    private final ICloud.MBSBackup backup;
-    private final ICloud.MBSKeySet keySet;
+    private final ICloud.MBSBackup mbsBackup;
+    private final ICloud.MBSKeySet mbsKeySet;
     private final KeyBagManager keyBagManager;
     private final Account account;
 
-    Backup(Account account, ICloud.MBSBackup backup, ICloud.MBSKeySet keySet, KeyBagManager keyBagManager) {
+    Backup(Account account, ICloud.MBSBackup mbsBackup, ICloud.MBSKeySet mbsKeySet, KeyBagManager keyBagManager) {
         super(account);
 
-        this.backup = Objects.requireNonNull(backup);
+        this.mbsBackup = Objects.requireNonNull(mbsBackup);
         this.account = Objects.requireNonNull(account);
-        this.keySet = Objects.requireNonNull(keySet);
+        this.mbsKeySet = Objects.requireNonNull(mbsKeySet);
         this.keyBagManager = keyBagManager;
     }
 
     Backup(Backup backup) {
-        this(backup.account, backup.backup(), backup.keySet(), backup.keyBagManager());
+        this(backup.account, backup.mbsBackup(), backup.mbsKeySet(), backup.keyBagManager());
+    }
+
+    public final Account account() {
+        return account;
     }
 
     public final String backupUDID() {
-        return Bytes.hex(backup.getBackupUDID());
+        return Bytes.hex(mbsBackup.getBackupUDID());
     }
 
-    public final ICloud.MBSBackup backup() {
-        return backup;
+    public final ICloud.MBSBackup mbsBackup() {
+        return mbsBackup;
     }
 
-    public final ICloud.MBSKeySet keySet() {
-        return keySet;
+    public final ICloud.MBSKeySet mbsKeySet() {
+        return mbsKeySet;
     }
 
     public final KeyBagManager keyBagManager() {
@@ -79,6 +79,6 @@ public class Backup extends Account {
 
     @Override
     public String toString() {
-        return "Backup{" + "backup=" + backup + ", account=" + account + '}';
+        return "Backup{" + "mbsBackup=" + mbsBackup + ", account=" + account + '}';
     }
 }

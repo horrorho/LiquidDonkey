@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
+ * Accounts.
  *
  * @author Ahseya
  */
@@ -43,17 +44,16 @@ public class Accounts {
         ICloud.MBSAccount mbsaAccount
                 = accountClient.get(client, core.dsPrsID(), core.mmeAuthToken(), core.mobileBackupUrl());
 
-        if (!mbsaAccount.getAccountID().equals(core.dsPrsID())) {
-            logger.error("-- from() > dsPrsID mismatch, settings: {}, mbsaAccount: {}",
-                    core.dsPrsID(), mbsaAccount.getAccountID());
+        Account account = new Account(mbsaAccount);
+
+        if (!account.dsPrsID().equals(core.dsPrsID())) {
+            logger.error("-- from() > dsPrsID mismatch, core: {} account: {}", core.dsPrsID(), account.dsPrsID());
         }
 
-        Account account = new Account(core, mbsaAccount);
-
-        logger.trace(">> from() > {}", account);
+        logger.trace(">> from() > account: {}", account);
         return account;
     }
-    
+
     private static final Logger logger = LoggerFactory.getLogger(Accounts.class);
 
     private static final AccountClient accountClient = AccountClient.create();

@@ -25,6 +25,7 @@ package com.github.horrorho.liquiddonkey.cloud.data;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import java.util.Objects;
+import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
 /**
@@ -32,24 +33,31 @@ import net.jcip.annotations.ThreadSafe;
  *
  * @author Ahseya
  */
+@Immutable
 @ThreadSafe
-public class Account extends Core {
+public class Account {
 
     private final ICloud.MBSAccount mbsAccount;
-    private final Core core;
 
-    Account(Core core, ICloud.MBSAccount mbsAccount) {
-        super(core);
+    Account(ICloud.MBSAccount mbsAccount) {
 
-        this.core = Objects.requireNonNull(core);
         this.mbsAccount = Objects.requireNonNull(mbsAccount);
     }
 
     Account(Account account) {
-        this(account.core, account.mbsAccount());
+        this(account.mbsAccount);
     }
 
     public final ICloud.MBSAccount mbsAccount() {
         return mbsAccount;
+    }
+
+    public final String dsPrsID() {
+        return mbsAccount.getAccountID();
+    }
+
+    @Override
+    public String toString() {
+        return "Account{" + "mbsAccount=" + mbsAccount + '}';
     }
 }

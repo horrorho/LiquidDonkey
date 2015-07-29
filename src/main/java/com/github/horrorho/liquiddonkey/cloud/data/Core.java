@@ -23,17 +23,79 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.data;
 
+import com.github.horrorho.liquiddonkey.cloud.client.SettingsClient;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.github.horrorho.liquiddonkey.util.SimplePropertyList;
+import java.io.IOException;
 import java.util.Objects;
+import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.http.client.HttpClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Core.
+ * <p>
+ * Core settings.
  *
  * @author Ahseya
  */
+@Immutable
 @ThreadSafe
-public class Core extends Auth {
+public class Core {
 
+    public static Core from(HttpClient client, Auth auth) throws BadDataException, IOException {
+        logger.trace("<< from() < auth: {}", auth);
+
+        SimplePropertyList propertyList = settingsClient.get(client, auth.dsPrsID(), auth.mmeAuthToken());
+        Core instance = Core.from(propertyList);
+
+        if (!instance.dsPrsID().equals(auth.dsPrsID())) {
+            logger.error("-- from() > dsPrsID mismatch, settings: {}, auth: {}", instance.dsPrsID(), auth.dsPrsID());
+        }
+
+        logger.trace(">> from() > core: {}", instance);
+        return instance;
+    }
+
+    public static Core from(SimplePropertyList settings) throws BadDataException {
+        logger.trace("<< from() < property list : {}", settings);
+
+        String dsPrsID = settings.value("appleAccountInfo", "dsPrsID");
+        String mmeAuthToken = settings.value("tokens", "mmeAuthToken");
+        String fullName = settings.defaultOr("Unknown", "appleAccountInfo", "fullName");
+        String appleId = settings.defaultOr("Unknown", "appleAccountInfo", "appleId");
+        String mobileBackupUrl = settings.value("com.apple.mobileme", "com.apple.Dataclass.Backup", "url");
+        String contentUrl = settings.value("com.apple.mobileme", "com.apple.Dataclass.Content", "url");
+
+        Core instance = new Core(dsPrsID, mmeAuthToken, contentUrl, mobileBackupUrl, appleId, fullName);
+
+        logger.trace(">> from() > core: {}", instance);
+        return instance;
+    }
+
+    public static Core from(Core core, String mmeAuthToken) {
+        logger.trace("<< from() < mmeAuthToken: {}", mmeAuthToken);
+
+        Core instance = new Core(
+                core.dsPrsID(),
+                mmeAuthToken,
+                core.contentUrl(),
+                core.mobileBackupUrl(),
+                core.appleId(),
+                core.fullName());
+
+        logger.trace(">> frome() > core: {}", instance);
+        return instance;
+    }
+
+    private static final Logger logger = LoggerFactory.getLogger(Core.class);
+
+    private static final SettingsClient settingsClient = SettingsClient.create();
+
+    private final String dsPrsID;
+    private final String mmeAuthToken;
     private final String contentUrl;
     private final String mobileBackupUrl;
     private final String appleId;
@@ -46,8 +108,9 @@ public class Core extends Auth {
             String mobileBackupUrl,
             String appleId,
             String fullName) {
-        super(dsPrsID, mmeAuthToken);
 
+        this.dsPrsID = Objects.requireNonNull(dsPrsID);
+        this.mmeAuthToken = Objects.requireNonNull(mmeAuthToken);
         this.contentUrl = Objects.requireNonNull(contentUrl);
         this.mobileBackupUrl = Objects.requireNonNull(mobileBackupUrl);
         this.appleId = Objects.requireNonNull(appleId);
@@ -64,29 +127,39 @@ public class Core extends Auth {
                 settings.fullName());
     }
 
-    public final String contentUrl() {
+    public String dsPrsID() {
+        return dsPrsID;
+    }
+
+    public String mmeAuthToken() {
+        return mmeAuthToken;
+    }
+
+    public String contentUrl() {
         return contentUrl;
     }
 
-    public final String mobileBackupUrl() {
+    public String mobileBackupUrl() {
         return mobileBackupUrl;
     }
 
-    public final String appleId() {
+    public String appleId() {
         return appleId;
     }
 
-    public final String fullName() {
+    public String fullName() {
         return fullName;
     }
 
     @Override
     public String toString() {
-        return "Settings{"
-                + "contentUrl=" + contentUrl
+        return "Core{"
+                + "dsPrsID=" + dsPrsID
+                + ", mmeAuthToken=" + mmeAuthToken
+                + ", contentUrl=" + contentUrl
                 + ", mobileBackupUrl=" + mobileBackupUrl
                 + ", appleId=" + appleId
                 + ", fullName=" + fullName
-                + "}," + super.toString();
+                + '}';
     }
 }
