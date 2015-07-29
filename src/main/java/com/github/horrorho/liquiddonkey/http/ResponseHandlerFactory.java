@@ -26,6 +26,7 @@ package com.github.horrorho.liquiddonkey.http;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketTimeoutException;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -33,6 +34,8 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.impl.client.AbstractResponseHandler;
 import org.apache.http.util.EntityUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Response handler factory.
@@ -42,6 +45,8 @@ import org.apache.http.util.EntityUtils;
 @ThreadSafe
 @Immutable
 public class ResponseHandlerFactory {
+
+    private static final Logger logger = LoggerFactory.getLogger(ResponseHandlerFactory.class);
 
     /**
      * Returns an entity to function result response handler.
@@ -59,6 +64,9 @@ public class ResponseHandlerFactory {
             public R handleEntity(HttpEntity entity) throws IOException {
                 try (InputStream inputStream = entity.getContent()) {
                     return function.apply(inputStream);
+                } catch (SocketTimeoutException ex) {
+                    logger.warn("-- handleEntity() > exception: ", ex);
+                    throw new IOException("Intercepted SocketTimeoutException", ex);
                 }
             }
         };
@@ -74,7 +82,12 @@ public class ResponseHandlerFactory {
 
             @Override
             public byte[] handleEntity(HttpEntity entity) throws IOException {
-                return EntityUtils.toByteArray(entity);
+                try {
+                    return EntityUtils.toByteArray(entity);
+                } catch (SocketTimeoutException ex) {
+                    logger.warn("-- handleEntity() > exception: ", ex);
+                    throw new IOException("Intercepted SocketTimeoutException", ex);
+                }
             }
         };
     }
