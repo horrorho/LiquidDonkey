@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class FileGroups {
 
-    public static ChunkServer.FileGroups from(HttpClient client, Core core, Snapshot snapshot)
+    public static ChunkServer.FileGroups from(HttpClient client, Core core, String mmeAuthToken, Snapshot snapshot)
             throws IOException, BadDataException {
 
         if (!core.dsPrsID().equals(snapshot.dsPrsID())) {
@@ -52,7 +52,7 @@ public final class FileGroups {
         return FileGroupsClient.create().get(
                 client,
                 core.dsPrsID(),
-                core.mmeAuthToken(),
+                mmeAuthToken,
                 core.contentUrl(),
                 core.mobileBackupUrl(),
                 snapshot.backupUDID(),

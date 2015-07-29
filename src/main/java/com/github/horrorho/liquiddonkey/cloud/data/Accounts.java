@@ -38,11 +38,11 @@ import org.slf4j.LoggerFactory;
  */
 public class Accounts {
 
-    public static Account from(HttpClient client, Core core) throws BadDataException, IOException {
+    public static Account from(HttpClient client, Core core, String mmeAuthToken) throws BadDataException, IOException {
         logger.trace("<< from() < dsPrsID: {}", core.dsPrsID());
 
         ICloud.MBSAccount mbsaAccount
-                = accountClient.get(client, core.dsPrsID(), core.mmeAuthToken(), core.mobileBackupUrl());
+                = accountClient.get(client, core.dsPrsID(), mmeAuthToken, core.mobileBackupUrl());
 
         Account account = new Account(mbsaAccount);
 

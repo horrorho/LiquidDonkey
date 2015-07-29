@@ -46,7 +46,7 @@ public class Snapshots {
         return new Snapshot(snapshot, filtered);
     }
 
-    public static final Snapshot from(HttpClient client, Core core, Backup backup, int id, int listLimit)
+    public static final Snapshot from(HttpClient client, Core core, String mmeAuthToken, Backup backup, int id, int listLimit)
             throws IOException {
 
         logger.trace("<< from() < dsPrsID: {} udid: {} id: {} listLimit: {}",
@@ -68,7 +68,7 @@ public class Snapshots {
             List<ICloud.MBSFile> files = snapshotClient.files(
                     client,
                     core.dsPrsID(),
-                    core.mmeAuthToken(),
+                    mmeAuthToken,
                     core.mobileBackupUrl(),
                     backup.backupUDID(),
                     mbsSnapshot.getSnapshotID(),
@@ -81,9 +81,11 @@ public class Snapshots {
         return snapshot;
     }
 
-    public static List<Snapshot> from(HttpClient client, Core core, Backup backup, int listLimit) throws IOException {
-        logger.trace("<< from() < dsPrsID: {} udid: {} listLimit: {}",
-                backup.dsPrsID(), backup.backupUDID(), listLimit);
+    // TODO simplify/ refactor
+    public static List<Snapshot> from(HttpClient client, Core core, String mmeAuthToken, Backup backup, int listLimit)
+            throws IOException {
+
+        logger.trace("<< from() < dsPrsID: {} udid: {} listLimit: {}", backup.dsPrsID(), backup.backupUDID(), listLimit);
 
         if (!core.dsPrsID().equals(backup.dsPrsID())) {
             logger.error("-- from() > dsPrsID mismatch, core: {} backup: {}", core.dsPrsID(), backup.dsPrsID());
@@ -102,7 +104,7 @@ public class Snapshots {
                 files = snapshotClient.files(
                         client,
                         core.dsPrsID(),
-                        core.mmeAuthToken(),
+                        mmeAuthToken,
                         core.mobileBackupUrl(),
                         backup.backupUDID(),
                         mbsSnapshot.getSnapshotID(),

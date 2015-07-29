@@ -43,28 +43,28 @@ import org.slf4j.LoggerFactory;
  */
 public class Backups {
 
-    public static List<Backup> from(HttpClient client, Core core, Account account)
+    public static List<Backup> from(HttpClient client, Core core, String mmeAuthToken, Account account)
             throws IOException, BadDataException {
         List<Backup> list = new ArrayList<>();
         for (ByteString udid : account.mbsAccount().getBackupUDIDList()) {
-            list.add(backup(client, core, account, udid));
+            list.add(backup(client, core, mmeAuthToken, account, udid));
         }
         return list;
     }
 
-    public static Backup from(HttpClient client, Core core, Account account, ByteString udid)
+    public static Backup from(HttpClient client, Core core, String mmeAuthToken, Account account, ByteString udid)
             throws IOException, BadDataException {
 
         final Backup backup;
         if (account.mbsAccount().getBackupUDIDList().contains(udid)) {
-            backup = backup(client, core, account, udid);
+            backup = backup(client, core, mmeAuthToken, account, udid);
         } else {
             backup = null;
         }
         return backup;
     }
 
-    static Backup backup(HttpClient client, Core core, Account account, ByteString udid)
+    static Backup backup(HttpClient client, Core core, String mmeAuthToken, Account account, ByteString udid)
             throws IOException, BadDataException {
 
         logger.trace("<< from() < dsPrsID: {} udid: {}", core.dsPrsID(), Bytes.hex(udid));
@@ -78,14 +78,14 @@ public class Backups {
         ICloud.MBSBackup mbsBackup = backupClient.mbsBackup(
                 client,
                 core.dsPrsID(),
-                core.mmeAuthToken(),
+                mmeAuthToken,
                 core.mobileBackupUrl(),
                 udidString);
 
         ICloud.MBSKeySet mbsKeySet = backupClient.mbsKeySet(
                 client,
                 core.dsPrsID(),
-                core.mmeAuthToken(),
+                mmeAuthToken,
                 core.mobileBackupUrl(),
                 udidString);
 
