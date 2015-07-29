@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.data;
 
-import com.github.horrorho.liquiddonkey.cloud.client.SettingsClient;
+import com.github.horrorho.liquiddonkey.cloud.client.PropertyListClient;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.util.SimplePropertyList;
 import java.io.IOException;
@@ -41,7 +41,7 @@ public class Cores {
     public static Core from(HttpClient client, Auth auth) throws BadDataException, IOException {
         logger.trace("<< from() < auth: {}", auth);
 
-        SimplePropertyList propertyList = settingsClient.get(client, auth.dsPrsID(), auth.mmeAuthToken());
+        SimplePropertyList propertyList = propertyListClient.get(client, auth.dsPrsID(), auth.mmeAuthToken(), SETUP_URL);
         Core instance = from(propertyList);
 
         if (!instance.dsPrsID().equals(auth.dsPrsID())) {
@@ -55,14 +55,29 @@ public class Cores {
     public static Core from(SimplePropertyList settings) throws BadDataException {
         logger.trace("<< from() < property list : {}", settings);
 
+        // Core requirements
         String dsPrsID = settings.value("appleAccountInfo", "dsPrsID");
         String mmeAuthToken = settings.value("tokens", "mmeAuthToken");
-        String fullName = settings.defaultOr("Unknown", "appleAccountInfo", "fullName");
-        String appleId = settings.defaultOr("Unknown", "appleAccountInfo", "appleId");
         String mobileBackupUrl = settings.value("com.apple.mobileme", "com.apple.Dataclass.Backup", "url");
         String contentUrl = settings.value("com.apple.mobileme", "com.apple.Dataclass.Content", "url");
 
-        Core instance = new Core(dsPrsID, mmeAuthToken, contentUrl, mobileBackupUrl, appleId, fullName);
+        // Optional        
+        String fullName = settings.defaultOr("Unknown", "appleAccountInfo", "fullName");
+        String appleId = settings.defaultOr("Unknown", "appleAccountInfo", "appleId");
+        String quotaInfoURL = settings.defaultOr("", "com.apple.mobileme", "com.apple.Dataclass.Quota", "quotaInfoURL");
+        String quotaUpdateURL = settings.defaultOr("", "com.apple.mobileme", "com.apple.Dataclass.Quota", "quotaUpdateURL");
+        String storageInfoURL = settings.defaultOr("", "com.apple.mobileme", "com.apple.Dataclass.Quota", "storageInfoURL");
+
+        Core instance = new Core(
+                dsPrsID,
+                mmeAuthToken,
+                contentUrl,
+                mobileBackupUrl,
+                appleId,
+                fullName,
+                quotaInfoURL,
+                quotaUpdateURL,
+                storageInfoURL);
 
         logger.trace(">> from() > core: {}", instance);
         return instance;
@@ -70,5 +85,6 @@ public class Cores {
 
     private static final Logger logger = LoggerFactory.getLogger(Cores.class);
 
-    private static final SettingsClient settingsClient = SettingsClient.create();
+    private static final PropertyListClient propertyListClient = PropertyListClient.create();
+    private static final String SETUP_URL = "https://setup.icloud.com/setup/get_account_settings"; // TODO inject
 }

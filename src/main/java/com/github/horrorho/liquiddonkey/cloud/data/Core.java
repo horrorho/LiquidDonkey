@@ -44,6 +44,9 @@ public class Core {
     private final String mobileBackupUrl;
     private final String appleId;
     private final String fullName;
+    private final String quotaInfoURL;
+    private final String quotaUpdateURL;
+    private final String storageInfoURL;
 
     Core(
             String dsPrsID,
@@ -51,7 +54,10 @@ public class Core {
             String contentUrl,
             String mobileBackupUrl,
             String appleId,
-            String fullName) {
+            String fullName,
+            String quotaInfoURL,
+            String quotaUpdateURL,
+            String storageInfoURL) {
 
         this.dsPrsID = Objects.requireNonNull(dsPrsID);
         this.mmeAuthToken = Objects.requireNonNull(mmeAuthToken);
@@ -59,6 +65,9 @@ public class Core {
         this.mobileBackupUrl = Objects.requireNonNull(mobileBackupUrl);
         this.appleId = Objects.requireNonNull(appleId);
         this.fullName = Objects.requireNonNull(fullName);
+        this.quotaInfoURL = Objects.requireNonNull(quotaInfoURL);
+        this.quotaUpdateURL = Objects.requireNonNull(quotaUpdateURL);
+        this.storageInfoURL = Objects.requireNonNull(storageInfoURL);
     }
 
     Core(Core settings) {
@@ -68,7 +77,10 @@ public class Core {
                 settings.contentUrl,
                 settings.mobileBackupUrl,
                 settings.appleId,
-                settings.fullName);
+                settings.fullName,
+                settings.quotaInfoURL,
+                settings.quotaUpdateURL,
+                settings.storageInfoURL);
     }
 
     public final Auth auth() {
@@ -95,6 +107,18 @@ public class Core {
         return fullName;
     }
 
+    public final String quotaInfoURL() {
+        return quotaInfoURL;
+    }
+
+    public final String quotaUpdateURL() {
+        return quotaUpdateURL;
+    }
+
+    public final String storageInfoURL() {
+        return storageInfoURL;
+    }
+
     @Override
     public String toString() {
         return "Core{"
@@ -104,6 +128,9 @@ public class Core {
                 + ", mobileBackupUrl=" + mobileBackupUrl
                 + ", appleId=" + appleId
                 + ", fullName=" + fullName
+                + ", quotaInfoURL=" + quotaInfoURL
+                + ", quotaUpdateURL=" + quotaUpdateURL
+                + ", storageInfoURL=" + storageInfoURL
                 + '}';
     }
 }
