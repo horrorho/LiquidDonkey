@@ -34,7 +34,6 @@ import net.jcip.annotations.ThreadSafe;
 import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.HttpRequest;
 import org.apache.http.client.HttpRequestRetryHandler;
-import org.apache.http.client.methods.HttpExecutionAware;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.protocol.HttpContext;
 import org.slf4j.Logger;
@@ -115,19 +114,8 @@ public final class PersistentHttpRequestRetryHandler implements HttpRequestRetry
             final int executionCount,
             final HttpContext context) {
 
-        if (Thread.currentThread().isInterrupted()) {
-            throw new IllegalStateException("Interruped");
-        }
-
         HttpClientContext clientContext = HttpClientContext.adapt(context);
         HttpRequest request = clientContext.getRequest();
-
-        // TODO test this, probably doesn't belong here
-        if (request instanceof HttpExecutionAware && (((HttpExecutionAware) request).isAborted())) {
-            logger.debug("-- doRetryRequest() > {} {} > false (aborted)",
-                    request.getRequestLine(), exception.toString());
-            return false;
-        }
 
         if (executionCount > retryCount) {
             logger.debug("-- doRetryRequest() > {} {} > false (limit)", request.getRequestLine(), exception.toString());
