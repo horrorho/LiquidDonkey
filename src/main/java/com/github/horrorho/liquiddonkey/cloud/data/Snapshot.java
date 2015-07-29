@@ -69,6 +69,10 @@ public class Snapshot extends Backup {
         return new ArrayList<>(files);
     }
 
+    public final int filesCount() {
+        return files.size();
+    }
+    
     @Override
     public String toString() {
         return "Snapshot{"
