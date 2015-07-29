@@ -113,12 +113,12 @@ public final class SignatureManager {
     }
 
     // Doesn't close the writers
-    public Map<ICloud.MBSFile, FileOutcome> write(Map<ByteString, DataWriter> writers)
+    public Map<ICloud.MBSFile, Outcome> write(Map<ByteString, DataWriter> writers)
             throws IOException, InterruptedException {
 
         logger.trace("<< write() < signatures: {}", writers.keySet());
 
-        Map<ICloud.MBSFile, FileOutcome> outcomes = new HashMap<>();
+        Map<ICloud.MBSFile, Outcome> outcomes = new HashMap<>();
         for (Map.Entry<ByteString, DataWriter> entry : writers.entrySet()) {
             outcomes.putAll(write(entry.getKey(), entry.getValue()));
         }
@@ -140,14 +140,14 @@ public final class SignatureManager {
      * @throws IOException
      * @throws InterruptedException
      */
-    public Map<ICloud.MBSFile, FileOutcome> write(ByteString signature, IOFunction<OutputStream, Long> writer)
+    public Map<ICloud.MBSFile, Outcome> write(ByteString signature, IOFunction<OutputStream, Long> writer)
             throws IOException, InterruptedException {
 
         logger.trace("<< write() < signature: {}", Bytes.hex(signature));
 
         lock.lockInterruptibly();
         try {
-            Map<ICloud.MBSFile, FileOutcome> outcomes = new HashMap<>();
+            Map<ICloud.MBSFile, Outcome> outcomes = new HashMap<>();
 
             Set<ICloud.MBSFile> files = signatureToFileSet.remove(signature);
             if (files == null) {
@@ -167,27 +167,27 @@ public final class SignatureManager {
         }
     }
 
-    public Map<ICloud.MBSFile, FileOutcome> fail(Set<ByteString> signatures) {
+    public Map<ICloud.MBSFile, Outcome> fail(Set<ByteString> signatures) {
         logger.trace("<< fail() < signatures: {}", signatures);
 
-        Map<ICloud.MBSFile, FileOutcome> outcomes = new HashMap<>();
+        Map<ICloud.MBSFile, Outcome> outcomes = new HashMap<>();
         signatures.stream().forEach(signature -> outcomes.putAll(fail(signature)));
 
         logger.trace(">> fail()");
         return outcomes;
     }
 
-    public Map<ICloud.MBSFile, FileOutcome> fail(ByteString signature) {
+    public Map<ICloud.MBSFile, Outcome> fail(ByteString signature) {
         logger.trace("<< fail() < signature: {}", Bytes.hex(signature));
 
-        Map<ICloud.MBSFile, FileOutcome> outcomes = new HashMap<>();
+        Map<ICloud.MBSFile, Outcome> outcomes = new HashMap<>();
 
         Set<ICloud.MBSFile> files = signatureToFileSet.remove(signature);
         if (files == null) {
             logger.warn("-- writer() > unreferenced signature: {}", Bytes.hex(signature));
         } else {
             long total = files.stream()
-                    .peek(file -> outcomes.put(file, FileOutcome.FAILED_DOWNLOAD))
+                    .peek(file -> outcomes.put(file, Outcome.FAILED_DOWNLOAD))
                     .mapToLong(ICloud.MBSFile::getSize)
                     .sum();
             failedBytes.addAndGet(total);

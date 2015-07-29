@@ -63,7 +63,7 @@ public class ConcurrentEngine {
                 config.threadCount(),
                 config.threadStaggerDelayMs(),
                 config.retryCount(),
-                10000 // TODO
+                1800000 // TODO
         );
     }
 
@@ -159,7 +159,7 @@ public class ConcurrentEngine {
             logger.debug("-- execute() > shutting down");
             executor.shutdownNow();
 
-            // Kill donkies (aborting http requests in progress).
+            // Kill donkies (aborting any http requests in progress).
             donkies.stream().forEach(Donkey::kill);
 
             long finished = futures.stream().filter(Future::isDone).count();
@@ -171,3 +171,4 @@ public class ConcurrentEngine {
     }
 }
 // TODO trace exception handling
+// TODO handle java.net.SocketTimeoutException: Read timed out

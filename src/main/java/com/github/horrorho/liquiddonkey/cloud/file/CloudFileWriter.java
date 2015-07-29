@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.file;
 
-import com.github.horrorho.liquiddonkey.cloud.FileOutcome;
+import com.github.horrorho.liquiddonkey.cloud.Outcome;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
@@ -121,11 +121,11 @@ public final class CloudFileWriter {
      *
      * @param file not null
      * @param writer not null
-     * @return map from ICloud.MBSFile to FileOutcome/s, or null if the signature doesn't reference any files
+     * @return map from ICloud.MBSFile to Outcome/s, or null if the signature doesn't reference any files
      * @throws IOException
      * @throws IllegalStateException if the signature is unknown
      */
-    public FileOutcome write(ICloud.MBSFile file, IOFunction<OutputStream, Long> writer) throws IOException {
+    public Outcome write(ICloud.MBSFile file, IOFunction<OutputStream, Long> writer) throws IOException {
         logger.trace("<< write() < file: {}", file.getRelativePath());
 
         Path path = directory.apply(file);
@@ -133,13 +133,13 @@ public final class CloudFileWriter {
         long written = createDirectoryWriteFile(path, writer);
         logger.debug("-- write() > path: {} written: {}", path, written);
 
-        FileOutcome result;
+        Outcome result;
 
         if (file.getAttributes().hasEncryptionKey()) {
             result = decrypt(path, file);
         } else {
             logger.debug("-- write() > success: {}", file.getRelativePath());
-            result = FileOutcome.SUCCESS;
+            result = Outcome.SUCCESS;
         }
 
         if (setLastModifiedTime) {
@@ -150,27 +150,27 @@ public final class CloudFileWriter {
         return result;
     }
 
-    FileOutcome decrypt(Path path, MBSFile file) throws IOException {
+    Outcome decrypt(Path path, MBSFile file) throws IOException {
         ByteString key = keyBag.fileKey(file);
 
         if (key == null) {
             logger.warn("-- decrypt() > failed to derive key: {}", file.getRelativePath());
-            return FileOutcome.FAILED_DECRYPT_NO_KEY;
+            return Outcome.FAILED_DECRYPT_NO_KEY;
         }
 
         if (!Files.exists(path)) {
             logger.warn("-- decrypt() > no such file: {}", file.getRelativePath());
-            return FileOutcome.FAILED_DECRYPT_NO_FILE;
+            return Outcome.FAILED_DECRYPT_NO_FILE;
         }
 
         try {
             decrypter.decrypt(path, key, file.getAttributes().getDecryptedSize());
             logger.debug("-- decrypt() > success: {}", file.getRelativePath());
-            return FileOutcome.SUCCESS_DECRYPT;
+            return Outcome.SUCCESS_DECRYPT;
 
         } catch (BadDataException ex) {
             logger.warn("-- decrypt() > failed: {} exception: {}", file.getRelativePath(), ex);
-            return FileOutcome.FAILED_DECRYPT_ERROR;
+            return Outcome.FAILED_DECRYPT_ERROR;
         }
     }
 

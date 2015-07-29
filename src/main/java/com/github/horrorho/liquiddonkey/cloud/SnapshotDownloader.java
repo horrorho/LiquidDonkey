@@ -32,7 +32,6 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.DataWriter;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.iofunction.IOConsumer;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.google.protobuf.ByteString;
@@ -40,6 +39,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -59,7 +59,7 @@ public final class SnapshotDownloader {
     public static SnapshotDownloader from(
             EngineConfig engineConfig,
             FileConfig fileConfig,
-            Consumer<Map<ICloud.MBSFile, FileOutcome>> outcomes) {
+            Consumer<Map<ICloud.MBSFile, Outcome>> outcomes) {
 
         ConcurrentEngine engine = ConcurrentEngine.from(engineConfig);
         Function<Snapshot, SignatureManager> signatureManagers = s -> SignatureManager.from(s, fileConfig);
@@ -70,7 +70,7 @@ public final class SnapshotDownloader {
     public static SnapshotDownloader from(
             ConcurrentEngine engine,
             Function<Snapshot, SignatureManager> signatureWriters,
-            Consumer<Map<ICloud.MBSFile, FileOutcome>> outcomes) {
+            Consumer<Map<ICloud.MBSFile, Outcome>> outcomes) {
 
         return new SnapshotDownloader(engine, signatureWriters, outcomes);
     }
@@ -79,12 +79,12 @@ public final class SnapshotDownloader {
 
     private final ConcurrentEngine engine;
     private final Function<Snapshot, SignatureManager> signatureManagers;
-    private final Consumer<Map<ICloud.MBSFile, FileOutcome>> outcomes;
+    private final Consumer<Map<ICloud.MBSFile, Outcome>> outcomes;
 
     SnapshotDownloader(
             ConcurrentEngine engine,
             Function<Snapshot, SignatureManager> signatureWriters,
-            Consumer<Map<ICloud.MBSFile, FileOutcome>> outcomes) {
+            Consumer<Map<ICloud.MBSFile, Outcome>> outcomes) {
 
         this.engine = Objects.requireNonNull(engine);
         this.signatureManagers = Objects.requireNonNull(signatureWriters);
@@ -97,11 +97,11 @@ public final class SnapshotDownloader {
         logger.trace("<< download() < dsPrsID: {} udid: {} snapshot: {}",
                 snapshot.dsPrsID(), snapshot.backupUDID(), snapshot.snapshotID());
 
-        AtomicReference<Exception> fatal = new AtomicReference(null);
-        boolean isTimedOut = false;
+        Exception fatal = null;
+        boolean isCompleted = false;
 
-        while (!isTimedOut && !snapshot.files().isEmpty()) {
-            logger.debug("-- download() > begin: {}", snapshot.files().size());
+        while (!isCompleted && !snapshot.files().isEmpty()) {
+            logger.debug("-- download() > loop, files: {}", snapshot.files().size());
 
             // Files to download.
             ChunkServer.FileGroups fileGroups = FileGroups.from(client, snapshot);
@@ -110,32 +110,41 @@ public final class SnapshotDownloader {
             StoreManager storeManager = StoreManager.from(fileGroups);
 
             // Filter snapshots to reflect downloadbles.  
-            // ICloud.MBSFiles may non-downloadable, e.g. directories, empty files.
-            Set<ByteString> downloadables = storeManager.signatures();
+            // ICloud.MBSFiles may be non-downloadable, e.g. directories, empty files.
+            Set<ByteString> downloadables = storeManager.remainingSignatures();
             snapshot = Snapshots.from(snapshot, file -> downloadables.contains(file.getSignature()));
 
             // Signature manager.
             SignatureManager signatureManager = signatureManagers.apply(snapshot);
 
-            // Create result consumers.
-            Consumer<Set<ByteString>> failures = set -> fail(signatureManager, set);
-            IOConsumer<Map<ByteString, DataWriter>> completed = writers -> write(signatureManager, writers);
+            // Outcome Consumer
+            Consumer<Map<ICloud.MBSFile, Outcome>> outcomes = OutcomesPrinter.create();
+            // Sanity check.
+            logger.debug("-- download() > loaded signatures, StoreManager: {} SignatureManager: {}",
+                    storeManager.remainingSignatures().size(), signatureManager.remainingSignatures().size());
 
-            // Execute.
-            isTimedOut = engine.execute(client, storeManager, fatal, failures, completed);
+            try {
+                // Execute.
+                fatal = engine.execute(client, storeManager, signatureManager, outcomes);
+                isCompleted = true;
+                // TODO rethrow or handle this exception, eg 401 status codes
+            } catch (TimeoutException ex) {
+                logger.warn("-- download() > exception: {}", ex);
+                isCompleted = false;
+            }
 
             // Mismatches are possible.
             // DataWriters may have left the Store but termination occured before the contents were consumed.
             logger.debug("-- download() > remaining signatures, StoreManager: {} SignatureManager: {}",
-                    storeManager.signatures().size(), signatureManager.remainingFiles().size());
+                    storeManager.remainingSignatures().size(), signatureManager.remainingSignatures().size());
 
             // Filter out completed files. We use the SignatureManager as our reference.
             Set<ICloud.MBSFile> remaining = signatureManager.remainingFiles();
             snapshot = Snapshots.from(snapshot, file -> remaining.contains(file));
 
             // TODO checksum/ salvage completed chunks from the StoreManager in the case of timeout downloads.
-            logger.debug("-- download() > isTimedOut: {} fatal: {} remaining: {}",
-                    isTimedOut, fatal, snapshot.files().size());
+            logger.debug("-- download() > end loop, is completed: {} fatal: {} remaining files: {}",
+                    isCompleted, fatal, snapshot.files().size());
         }
 
         logger.trace(">> download()");

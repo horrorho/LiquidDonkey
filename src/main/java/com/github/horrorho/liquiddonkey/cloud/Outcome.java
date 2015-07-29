@@ -21,49 +21,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.util.pool;
+package com.github.horrorho.liquiddonkey.cloud;
+
+import net.jcip.annotations.Immutable;
+import net.jcip.annotations.ThreadSafe;
 
 /**
- * ToDo.
+ * Writer result.
  *
  * @author Ahseya
- * @param <E> enum key type
- * @param <T> item type
  */
-public final class ToDo<E extends Enum<E>, T> {
+@Immutable
+@ThreadSafe
+public enum Outcome {
 
-    public static <E extends Enum<E>, T> ToDo<E, T> dispose() {
-        return toDispose;
+    SUCCESS("Success.", true),
+    SUCCESS_DECRYPT("Success. Decrypted.", true),
+    FAILED_DOWNLOAD("Failed. Download failure.", false),
+    FAILED_DECRYPT_ERROR("Failed. Decrypt error.", false),
+    FAILED_DECRYPT_NO_FILE("Failed. Internal decrypt error.", false),
+    FAILED_DECRYPT_NO_KEY("Failed. No key.", false);
+
+    private final String toString;
+    private final boolean isSuccess;
+
+    private Outcome(String toString, boolean isSuccess) {
+        this.toString = toString;
+        this.isSuccess = isSuccess;
     }
 
-    public static <E extends Enum<E>, T> ToDo<E, T> requeue(T item) {
-        return new ToDo<>(null, item);
-    }
-
-    public static <E extends Enum<E>, T> ToDo<E, T> requeue(E pool, T item) {
-        return new ToDo<>(pool, item);
-    }
-
-    private static final ToDo toDispose = new ToDo<>(null, null);
-
-    private final E pool;
-    private final T item;
-
-    ToDo(E pool, T item) {
-        this.pool = pool;
-        this.item = item;
-    }
-
-    public E pool() {
-        return pool;
-    }
-
-    public T item() {
-        return item;
+    public boolean isSuccess() {
+        return isSuccess;
     }
 
     @Override
     public String toString() {
-        return "Release{" + "pool=" + pool + ", item=" + item + '}';
+        return toString;
     }
 }

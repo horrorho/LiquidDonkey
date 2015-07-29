@@ -109,8 +109,7 @@ public class Looter implements Closeable {
         Auth auth = config.authentication().hasAppleIdPassword()
                 ? Auths.from(client, config.authentication().appleId(), config.authentication().password())
                 : Auths.from(config.authentication().dsPrsId(), config.authentication().mmeAuthToken());
-        
-        
+
         if (config.engine().toDumpToken()) {
             std.println("Authorization token: " + auth.dsPrsID() + ":" + auth.mmeAuthToken());
             return;
@@ -145,7 +144,7 @@ public class Looter implements Closeable {
 //
 //        System.out.println(x);
 //        System.exit(0);
-        Account account = Accounts.from(client, core); 
+        Account account = Accounts.from(client, core);
         List<Backup> backups = Backups.from(client, account);
 
         UnaryOperator<List<ICloud.MBSBackup>> backupSelector
@@ -198,7 +197,7 @@ public class Looter implements Closeable {
 
             // TODO resolve ids
             // TODO use set, important, don't duplicate downloads. preserve order
-            logger.info("-- backup() > id");
+            logger.info("-- backup() > snapshot: {}", id);
 
             Snapshot snapshot = Snapshots.from(client, backup, id, config.client().listLimit());
 
@@ -209,6 +208,7 @@ public class Looter implements Closeable {
 
             Snapshot filtered = Snapshots.from(snapshot, filter);
 
+            // TODO empty size filter
             logger.info("-- backup() > filtered: {}", filtered.files().size());
 
             IOPredicate<ICloud.MBSFile> localFilter = LocalFileFilter.from(snapshot, config.file());
@@ -229,10 +229,12 @@ public class Looter implements Closeable {
             long b = System.currentTimeMillis();
             logger.info("-- backup() > delay (ms): {}", (b - a));
 
+            // TODO expand to dump info
             Predicate<ICloud.MBSFile> decryptableFilter
                     = file -> !file.getAttributes().hasEncryptionKey() || backup.keyBagManager().fileKey(file) != null;
 
             Snapshot decryptable = Snapshots.from(filteredLocal, decryptableFilter);
+            logger.info("-- backup() >decryptable filtered: {}", decryptable.files().size());
 
 //            filteredLocal.signatures().values().stream().forEach(System.out::print);
 //            filteredLocal.signatures().values().stream().flatMap(Set::stream)

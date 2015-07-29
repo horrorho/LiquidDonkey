@@ -33,7 +33,7 @@ import java.util.function.Consumer;
  *
  * @author Ahseya
  */
-public class OutcomesPrinter implements Consumer<Map<ICloud.MBSFile, FileOutcome>> {
+public class OutcomesPrinter implements Consumer<Map<ICloud.MBSFile, Outcome>> {
 
     public static OutcomesPrinter create() {
         return new OutcomesPrinter(System.out, System.err);
@@ -52,12 +52,12 @@ public class OutcomesPrinter implements Consumer<Map<ICloud.MBSFile, FileOutcome
     }
 
     @Override
-    public void accept(Map<ICloud.MBSFile, FileOutcome> outcomes) {
+    public void accept(Map<ICloud.MBSFile, Outcome> outcomes) {
         if (outcomes != null) {
             outcomes.entrySet().stream()
                     .forEach(entry -> {
                         ICloud.MBSFile file = entry.getKey();
-                        FileOutcome result = entry.getValue();
+                        Outcome result = entry.getValue();
                         PrintStream printStream = result.isSuccess() ? out : err;
                         printStream.println("\t" + file.getDomain() + " " + file.getRelativePath() + " " + result);
                     });

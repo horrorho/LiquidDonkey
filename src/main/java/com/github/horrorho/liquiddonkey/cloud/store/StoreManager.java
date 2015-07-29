@@ -191,7 +191,7 @@ public final class StoreManager {
         signatureToChunkListReferenceList.remove(signature);
     }
     
-    public Set<ByteString> signatures() {
+    public Set<ByteString> remainingSignatures() {
         return new HashSet<>(signatureToChunkListReferenceList.keySet());
     }
 
