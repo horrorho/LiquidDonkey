@@ -50,7 +50,7 @@ public class Backup extends Account {
         this.mbsBackup = Objects.requireNonNull(mbsBackup);
         this.account = Objects.requireNonNull(account);
         this.mbsKeySet = Objects.requireNonNull(mbsKeySet);
-        this.keyBagManager = keyBagManager;
+        this.keyBagManager = Objects.requireNonNull(keyBagManager);
     }
 
     Backup(Backup backup) {

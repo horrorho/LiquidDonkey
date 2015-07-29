@@ -27,10 +27,10 @@ import com.github.horrorho.liquiddonkey.cloud.data.Backup;
 import com.github.horrorho.liquiddonkey.cloud.data.Account;
 import com.github.horrorho.liquiddonkey.cloud.data.Accounts;
 import com.github.horrorho.liquiddonkey.cloud.data.Auth;
-import com.github.horrorho.liquiddonkey.cloud.data.Auths;
 import com.github.horrorho.liquiddonkey.cloud.data.Backups;
 import com.github.horrorho.liquiddonkey.cloud.data.Core;
 import com.github.horrorho.liquiddonkey.cloud.data.Cores;
+import com.github.horrorho.liquiddonkey.cloud.data.Quota;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
@@ -103,63 +103,45 @@ public class Looter implements Closeable {
         logger.trace("<< loot()");
 
         std.println("Authenticating.");
-        // TODO reauthentication
 
-        // TODO token based
+        // Authenticate
         Auth auth = config.authentication().hasAppleIdPassword()
-                ? Auths.from(client, config.authentication().appleId(), config.authentication().password())
-                : Auths.from(config.authentication().dsPrsId(), config.authentication().mmeAuthToken());
+                ? Auth.from(client, config.authentication().appleId(), config.authentication().password())
+                : Auth.from(config.authentication().dsPrsId(), config.authentication().mmeAuthToken());
 
         if (config.engine().toDumpToken()) {
             std.println("Authorization token: " + auth.dsPrsID() + ":" + auth.mmeAuthToken());
             return;
         }
 
+        // Core settings.
         Core core = Cores.from(client, auth);
 
-//        String s = bbb;
-//
-//        Headers headers = Headers.from();
-//
-//        String authToken = headers.basicToken(
-//                auth.dsPrsID(),
-//                auth.mmeAuthToken());
-//
-//        HttpGet get = new HttpGet(s);
-//
-//        get.addHeader(headers.mmeClientInfo());
-//        get.addHeader(headers.authorization(authToken));
-//
-//        byte[] x = client.execute(get, ResponseHandlerFactory.toByteArray());
-//
-//        System.out.println("test");
-//        try {
-//            SimplePropertyList xx = SimplePropertyList.from(x);
-//            System.out.println(xx);
-//        } catch (BadDataException ex) {
-//            ex.printStackTrace();
-//        } catch (IOException ex) {
-//            ex.printStackTrace();
-//        }
-//
-//        System.out.println(x);
-//        System.exit(0);
-        Account account = Accounts.from(client, core);
-        List<Backup> backups = Backups.from(client, account);
+        // Use the new mmeAuthToken in case it's changed.
+        String mmeAuthToken = core.auth().mmeAuthToken();
+
+        // Testing
+        Quota.from(client, core, mmeAuthToken);
+
+        // Account
+        Account account = Accounts.from(client, core, mmeAuthToken);
+
+        // Backups
+        List<Backup> backups = Backups.from(client, core, mmeAuthToken, account);
 
         UnaryOperator<List<ICloud.MBSBackup>> backupSelector
                 = BackupSelector.from(config.selection().udids(), BackupFormatter.create(), std);
 
         // TODO rework for when udid know, also command to dump info only
         Map<ICloud.MBSBackup, Backup> udidToBackup
-                = backups.stream().collect(Collectors.toMap(Backup::backup, Function.identity()));
+                = backups.stream().collect(Collectors.toMap(Backup::mbsBackup, Function.identity()));
 
-        List<ICloud.MBSBackup> filtered = backupSelector.apply(backups.stream().map(Backup::backup).collect(Collectors.toList()));
+        List<ICloud.MBSBackup> filtered = backupSelector.apply(backups.stream().map(Backup::mbsBackup).collect(Collectors.toList()));
 
         MemMonitor memMonitor = null;
         try {
             if (logger.isDebugEnabled()) {
-                // Memory leakage a real concern. Lightweight reporting on all debugged runs.
+                // Potential for severe memory leakage. Lightweight reporting on all debugged runs.
                 memMonitor = MemMonitor.from(5000);
                 Thread thread = new Thread(memMonitor);
                 thread.setDaemon(true);
@@ -169,7 +151,7 @@ public class Looter implements Closeable {
             for (ICloud.MBSBackup b : filtered) {
                 Backup bb = udidToBackup.get(b);
 
-                backup(client, bb);
+                backup(client, core, mmeAuthToken, bb);
             }
         } finally {
             if (memMonitor != null) {
@@ -181,10 +163,11 @@ public class Looter implements Closeable {
         logger.trace(">> loot()");
     }
 
-    void backup(HttpClient client, Backup backup) throws BadDataException, IOException, InterruptedException {
+    void backup(HttpClient client, Core core, String mmeAuthToken, Backup backup) throws BadDataException, IOException, InterruptedException {
+        OutcomesPrinter outcomesPrinter = OutcomesPrinter.from(std, err); // TODO move to private final
 
-        //  logger.info("-- backup() > snapshots: {}", backup.snapshots());
-        SnapshotIdReferences references = SnapshotIdReferences.from(backup.backup());
+        //  logger.info("-- mbsBackup() > snapshots: {}", mbsBackup.snapshots());
+        SnapshotIdReferences references = SnapshotIdReferences.from(backup.mbsBackup());
         logger.debug("-- backup() > ids: {}", config.selection().snapshots());
         Set<Integer> resolved = new LinkedHashSet<>();
 
@@ -199,17 +182,25 @@ public class Looter implements Closeable {
             // TODO use set, important, don't duplicate downloads. preserve order
             logger.info("-- backup() > snapshot: {}", id);
 
-            Snapshot snapshot = Snapshots.from(client, backup, id, config.client().listLimit());
+            Snapshot snapshot = Snapshots.from(client, core, mmeAuthToken, backup, id, config.client().listLimit());
 
             if (snapshot == null) {
                 logger.warn("-- backup() > snapshot not found: {}", id);
                 continue;
             }
 
-            Snapshot filtered = Snapshots.from(snapshot, filter);
+            logger.info("-- backup() > files: {}", snapshot.filesCount());
 
-            // TODO empty size filter
-            logger.info("-- backup() > filtered: {}", filtered.files().size());
+            snapshot = Snapshots.from(snapshot, file -> file.getSize() != 0);
+            logger.info("-- backup() > filtered, non empty: {}", snapshot.filesCount());
+
+            snapshot = Snapshots.from(snapshot, filter);
+            logger.info("-- backup() > filtered, filter: {}", snapshot.filesCount());
+
+            Predicate<ICloud.MBSFile> decryptableFilter
+                    = DecryptableFilter.from(backup.keyBagManager(), outcomesPrinter);
+            snapshot = Snapshots.from(snapshot, decryptableFilter);
+            logger.info("-- backup() > filtered, decryptable: {}", snapshot.filesCount());
 
             IOPredicate<ICloud.MBSFile> localFilter = LocalFileFilter.from(snapshot, config.file());
             Predicate<ICloud.MBSFile> localFilterUnchecked = file -> {
@@ -219,63 +210,20 @@ public class Looter implements Closeable {
                     throw new UncheckedIOException(ex);
                 }
             };
-            // TODO handle UncheckedIOException
-
-            logger.info("-- backup() > locally filtered: {}", filtered.files().size());
-
             long a = System.currentTimeMillis();
             // TODO force overwrite flag
-            Snapshot filteredLocal = Snapshots.from(filtered, localFilterUnchecked);
+            snapshot = Snapshots.from(snapshot, localFilterUnchecked);
             long b = System.currentTimeMillis();
-            logger.info("-- backup() > delay (ms): {}", (b - a));
+            logger.info("-- backup() > filtered, local: {} delay(ms): {}", snapshot.filesCount(), b - a);
 
-            // TODO expand to dump info
-            Predicate<ICloud.MBSFile> decryptableFilter
-                    = file -> !file.getAttributes().hasEncryptionKey() || backup.keyBagManager().fileKey(file) != null;
-
-            Snapshot decryptable = Snapshots.from(filteredLocal, decryptableFilter);
-            logger.info("-- backup() >decryptable filtered: {}", decryptable.files().size());
-
-//            filteredLocal.signatures().values().stream().forEach(System.out::print);
-//            filteredLocal.signatures().values().stream().flatMap(Set::stream)
-//                    .forEach(x -> {
-//
-//                        if (Mode.mode(x) == Mode.FILE) {
-//                            System.out.println(x);
-//                        }
-//                    });
-            //            SnapshotDownloader sd = new SnapshotDownloader(
-            //                    http,
-            //                    client,
-            //                    ChunkDataFetcher.from(http, client),
-            //                    SignatureWriter.get(snapshot, config.file()),
-            //                    debug);
             try {
 
-                OutcomesPrinter outcomesPrinter = OutcomesPrinter.create();
                 SnapshotDownloader downloader = SnapshotDownloader.from(config.engine(), config.file(), outcomesPrinter);
 
-                downloader.download(client, decryptable);
+                downloader.download(client, core, mmeAuthToken, snapshot);
 
-//            try {
-//                ChunkServer.FileGroups fetchFileGroups = client.fetchFileGroups(http, backup.udidString(), id, filtered.files());
-//                logger.debug("-- back() > fileChunkErrorList: {}", fetchFileGroups.getFileChunkErrorList());
-//                logger.debug("-- back() > fileErrorList: {}", fetchFileGroups.getFileErrorList());
-//
-//                for (ChunkServer.FileChecksumStorageHostChunkLists group : fetchFileGroups.getFileGroupsList()) {
-//                    StoreManager manager = StoreManager.get(group);
-//                }
-//
-//            } catch (BadDataException ex) {
-//                logger.warn("-- backup() > exception: ", ex);
-//            }
-//
-//            System.exit(0);
-//            ConcurrentMap<Boolean, ConcurrentMap<ByteString, Set<ICloud.MBSFile>>> results
-//                    = downloader.execute(http, filtered, filtered.signatures(), debug);
-//            logger.debug("--backup() > completed: {}", results.get(Boolean.TRUE).size());
-//            logger.debug("--backup() > failed: {}", results.get(Boolean.FALSE).size());
-            } catch (BadDataException ex) {
+            } 
+            catch (BadDataException ex) {
                 ex.printStackTrace();
             }
         }

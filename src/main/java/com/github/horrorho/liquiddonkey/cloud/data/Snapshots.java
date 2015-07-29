@@ -44,7 +44,7 @@ public class Snapshots {
     public static final Snapshot from(Snapshot snapshot, Predicate<ICloud.MBSFile> predicate) {
         List<ICloud.MBSFile> filtered = snapshot.files().stream().filter(predicate).collect(Collectors.toList());
         return new Snapshot(snapshot, filtered);
-    }
+    } 
 
     public static final Snapshot from(HttpClient client, Core core, String mmeAuthToken, Backup backup, int id, int listLimit)
             throws IOException {
