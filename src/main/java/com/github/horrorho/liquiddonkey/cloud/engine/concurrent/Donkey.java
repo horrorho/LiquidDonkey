@@ -23,138 +23,233 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.engine.concurrent;
 
+import com.github.horrorho.liquiddonkey.cloud.Outcome;
+import com.github.horrorho.liquiddonkey.cloud.SignatureManager;
+import com.github.horrorho.liquiddonkey.cloud.client.ChunksClient;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.cloud.store.DataWriter;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
-import com.github.horrorho.liquiddonkey.util.pool.ToDo;
+import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.github.horrorho.liquiddonkey.util.SyncSupplier;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.net.UnknownHostException;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import net.jcip.annotations.NotThreadSafe;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.HttpResponseException;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Donkey. Base work unit.
+ * Donkey.
  *
  * @author Ahseya
  */
 @NotThreadSafe
-public abstract class Donkey {
+class Donkey implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(Donkey.class);
 
-    private final StoreManager manager;
-    private final ChunkServer.StorageHostChunkList chunkList;
-    private final List<Exception> exceptions;
+    private final HttpClient client;
+    private final ChunksClient chunksClient;
+    private final SyncSupplier<ChunkServer.StorageHostChunkList> chunks;
+    private final StoreManager storeManager;
+    private final SignatureManager signatureManager;
+    private final Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer;
     private final int retryCount;
+    private final long retryDelayMs;
     private final AtomicReference<Exception> fatal;
-    private final Consumer<Set<ByteString>> failures;
+    private volatile boolean isAlive;
+    private volatile HttpUriRequest request;
 
-    public Donkey(
-            StoreManager manager,
-            ChunkServer.StorageHostChunkList chunkList,
-            List<Exception> exceptions,
+    Donkey(
+            HttpClient client,
+            ChunksClient chunksClient,
+            SyncSupplier<ChunkServer.StorageHostChunkList> chunks,
+            StoreManager storeManager,
+            SignatureManager signatureManager,
+            Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer,
             int retryCount,
+            long retryDelayMs,
             AtomicReference<Exception> fatal,
-            Consumer<Set<ByteString>> failures) {
+            boolean isAlive,
+            HttpUriRequest request) {
 
-        this.manager = Objects.requireNonNull(manager);
-        this.chunkList = Objects.requireNonNull(chunkList);
-        this.exceptions = new ArrayList<>(exceptions);
+        this.client = client;
+        this.chunksClient = chunksClient;
+        this.chunks = chunks;
+        this.storeManager = storeManager;
+        this.signatureManager = signatureManager;
+        this.outcomesConsumer = outcomesConsumer;
         this.retryCount = retryCount;
-        this.fatal = Objects.requireNonNull(fatal);
-        this.failures = Objects.requireNonNull(failures);
+        this.retryDelayMs = retryDelayMs;
+        this.fatal = fatal;
+        this.isAlive = isAlive;
+        this.request = request;
     }
 
-    public ToDo<Track, Donkey> process() {
-        logger.trace("<< process()");
+    Donkey(
+            HttpClient client,
+            ChunksClient chunksClient,
+            SyncSupplier<ChunkServer.StorageHostChunkList> chunks,
+            StoreManager storeManager,
+            SignatureManager signatureManager,
+            Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer,
+            int retryCount,
+            long retryDelayMs,
+            AtomicReference<Exception> fatal) {
 
-        ToDo<Track, Donkey> toDo;
-        try {
-            Exception ex = fatal.get();
-            toDo = ex == null
-                    ? toProcess()
-                    : abort(ex);
-
-        } catch (IOException | InterruptedException | RuntimeException ex) {
-            logger.warn("-- process() > fatal: {}", ex);
-            exceptions.add(ex);
-            fatal.compareAndSet(null, ex);
-            toDo = abort(ex);
-        }
-
-        logger.trace(">> process() > release: {}", toDo);
-        return toDo;
-    }
-
-    protected boolean isExceptionLimit() {
-        return exceptions.size() > retryCount;
-    }
-
-    protected ToDo complete() {
-        logger.debug("-- complete() > chunkList: {}", chunkList.getHostInfo().getUri());
-        return ToDo.dispose();
-    }
-
-    protected ToDo requeue(Track track, Donkey donkey) {
-        return ToDo.requeue(track, donkey);
-    }
-
-    protected ToDo retry(Exception ex) {
-        exceptions.add(ex);
-        return isExceptionLimit()
-                ? fail()
-                : ToDo.requeue(this);
-    }
-
-    protected ToDo retry(Exception ex, Track track, Donkey donkey) {
-        exceptions.add(ex);
-        return isExceptionLimit()
-                ? fail()
-                : ToDo.requeue(track, donkey);
-    }
-
-    protected ToDo abort(Exception ex) {
-        exceptions.add(ex);
-        return fail();
-    }
-
-    protected ToDo fail() {
-        logger.debug("-- fail() > chunkList: {}", chunkList.getHostInfo().getUri());
-        Set<ByteString> signatures = manager.fail(chunkList);
-        failures.accept(signatures);
-        return ToDo.dispose();
-    }
-
-    ChunkServer.StorageHostChunkList chunkList() {
-        return chunkList;
-    }
-
-    List<Exception> exceptions() {
-        return new ArrayList<>(exceptions);
-    }
-
-    StoreManager manager() {
-        return manager;
-    }
-
-    protected abstract ToDo<Track, Donkey> toProcess() throws IOException, InterruptedException;
-
-    void kill() {
-        logger.trace("<< kill()");
-
-        fatal.compareAndSet(null, new IllegalStateException("Killed"));
-
-        logger.trace(">> kill()");
+        this(
+                client,
+                chunksClient,
+                chunks,
+                storeManager,
+                signatureManager,
+                outcomesConsumer,
+                retryCount,
+                retryDelayMs,
+                fatal,
+                true,
+                null);
     }
 
     @Override
-    public String toString() {
-        return "Donkey{" + "chunkList=" + chunkList.getHostInfo().getUri() + '}';
+    public void run() {
+        logger.trace("<< run()");
+
+        try {
+            while (isAlive) {
+                if (Thread.currentThread().isInterrupted()) {
+                    logger.warn("-- run() > interrupt flag set");
+                    throw new InterruptedException("Interrupted");
+                }
+
+                Exception ex = fatal.get();
+                if (ex != null) {
+                    logger.warn("-- run() > fatal: {}", ex);
+                    break;
+                }
+
+                ChunkServer.StorageHostChunkList chunkList = chunks.get();
+
+                if (chunkList == null) {
+                    logger.debug("-- run() > depleted");
+                    break;
+                }
+
+                process(chunkList);
+            }
+        } catch (IOException | InterruptedException | RuntimeException ex) {
+            fatal.compareAndSet(null, ex);
+            logger.warn("-- run() > exception: ", ex);
+        }
+        
+        logger.trace(">> run() > fatal: {} killed: {}", fatal == null ? null : fatal.get().getMessage(), !isAlive);
+    }
+
+    Map<ICloud.MBSFile, Outcome> process(ChunkServer.StorageHostChunkList chunkList)
+            throws IOException, InterruptedException {
+
+        logger.trace("<< process() < chunk list: {}", chunkList.getHostInfo().getUri());
+
+        Map<ICloud.MBSFile, Outcome> outcomes = doProcess(chunkList);
+
+        if (outcomes != null) {
+            outcomesConsumer.accept(outcomes);
+        }
+
+        logger.trace(">> process() >  outcomes: {}", outcomes == null ? null : outcomes.size());
+        return outcomes;
+    }
+
+    Map<ICloud.MBSFile, Outcome> doProcess(ChunkServer.StorageHostChunkList chunkList)
+            throws IOException, InterruptedException {
+
+        // TODO test fatal in loop
+        for (int i = 0; i < retryCount && isAlive; i++) {
+            request = chunksClient.get(chunkList);
+            byte[] data = fetch();
+
+            if (data == null) {
+                logger.warn("-- doProcess() > null data, attempt: {} sleeping (ms): {}", i, retryDelayMs);
+                TimeUnit.MILLISECONDS.sleep(retryDelayMs);
+                continue;
+            }
+
+            Map<ByteString, DataWriter> writers = decode(chunkList, data);
+
+            if (writers == null) {
+                logger.warn("-- doProcess() > null writers, attempt: {} sleeping (ms): {}", i, retryDelayMs);
+                TimeUnit.MILLISECONDS.sleep(retryDelayMs);
+                continue;
+            }
+
+            return signatureManager.write(writers);
+        }
+
+        Set<ByteString> failedSignatures = storeManager.fail(chunkList);
+        return signatureManager.fail(failedSignatures);
+    }
+
+    byte[] fetch() throws IOException {
+        logger.trace("<< fetch() < request: {}", request.getURI());
+
+        byte[] data;
+        try {
+            data = client.execute(request, chunksClient.responseHandler());
+
+        } catch (UnknownHostException ex) {
+            logger.warn("-- fetch() > exception: {}", ex);
+            data = null;
+
+        } catch (HttpResponseException ex) {
+            logger.warn("-- fetch() > exception: {}", ex);
+
+            if (ex.getStatusCode() == 401) {
+                // Unauthorized.
+                throw ex;
+            }
+            data = null;
+        }
+
+        logger.trace(">> fetch() > data: {}", data == null ? null : data.length);
+        return data;
+    }
+
+    Map<ByteString, DataWriter> decode(ChunkServer.StorageHostChunkList chunkList, byte[] data)
+            throws IOException, InterruptedException {
+
+        logger.trace("<< decode() < chunk list: {} data: {}", chunkList.getHostInfo().getUri(), data.length);
+
+        Map<ByteString, DataWriter> outcomes;
+        try {
+            outcomes = storeManager.put(chunkList, data);
+
+        } catch (BadDataException ex) {
+            logger.warn("-- decodeWrite() > exception: ", ex);
+            outcomes = null;
+        }
+
+        logger.trace(">> decode() > outcomes: {}", outcomes);
+        return outcomes;
+    }
+
+    void kill() {
+        isAlive = false;
+        HttpUriRequest local = request;
+        if (local != null) {
+            try {
+                local.abort();
+            } catch (UnsupportedOperationException ex) {
+                logger.warn("-- kill() > exception: {}", ex);
+            }
+        }
     }
 }

@@ -23,20 +23,22 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.engine.concurrent;
 
-import com.github.horrorho.liquiddonkey.cloud.store.DataWriter;
+import com.github.horrorho.liquiddonkey.cloud.Outcome;
+import com.github.horrorho.liquiddonkey.cloud.SignatureManager;
+import com.github.horrorho.liquiddonkey.cloud.client.ChunksClient;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
-import com.github.horrorho.liquiddonkey.iofunction.IOConsumer;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
-import com.github.horrorho.liquiddonkey.util.pool.WorkPools;
-import com.google.protobuf.ByteString;
+import com.github.horrorho.liquiddonkey.util.SyncSupplier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -55,104 +57,115 @@ import org.slf4j.LoggerFactory;
 @Immutable
 @ThreadSafe
 public class ConcurrentEngine {
-    
+
     public static ConcurrentEngine from(EngineConfig config) {
         return from(
                 config.threadCount(),
                 config.threadStaggerDelayMs(),
                 config.retryCount(),
-                180000 // TODO
+                10000 // TODO
         );
     }
-    
+
     public static ConcurrentEngine from(int threads, int staggerMs, int retryCount, long executorTimeoutMs) {
         return new ConcurrentEngine(threads, staggerMs, retryCount, executorTimeoutMs);
     }
-    
+
     private static final Logger logger = LoggerFactory.getLogger(ConcurrentEngine.class);
-    
+
     private final int threads;
     private final int staggerMs;
     private final int retryCount;
     private final long executorTimeoutMs;
-    
+    private final long retryDelayMs = 1000;
+    private final ChunksClient chunksClient = ChunksClient.create();
+
     ConcurrentEngine(int threads, int staggerMs, int retryCount, long executorTimeoutMs) {
         this.threads = threads;
         this.staggerMs = staggerMs;
         this.retryCount = retryCount;
         this.executorTimeoutMs = executorTimeoutMs;
     }
-    
-    public boolean execute(
+
+    public Exception execute(
             HttpClient client,
             StoreManager storeManager,
-            AtomicReference<Exception> fatal,
-            Consumer<Set<ByteString>> failures,
-            IOConsumer<Map<ByteString, DataWriter>> completed
-    ) throws InterruptedException {
+            SignatureManager signatureManager,
+            Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer
+    ) throws InterruptedException, TimeoutException {
 
-        // Donkey Factory.
-        DonkeyFactory factory = DonkeyFactory.from(client, storeManager, retryCount, fatal, failures, completed);
+        List<ChunkServer.StorageHostChunkList> chunks = storeManager.chunkListList().stream().collect(Collectors.toList());
+        logger.debug("-- execute() > chunks count: {}", chunks.size());
 
-        // Populate WorkPools with FetchDonkeys on the FETCH track.
-        Map<Track, List<Donkey>> donkies = storeManager.chunkListList().stream()
-                .map(factory::fetchDonkey)
-                .collect(Collectors.groupingBy(list -> Track.FETCH));
-        WorkPools<Track, Donkey> pools = WorkPools.from(Track.class, donkies);
-        
-        return execute(pools, fatal, factory::killDonkies);
+        SyncSupplier<ChunkServer.StorageHostChunkList> syncSupplier = SyncSupplier.from(chunks);
+        AtomicReference<Exception> fatal = new AtomicReference(null);
+        Supplier<Donkey> donkies = ()
+                -> new Donkey(
+                        client,
+                        chunksClient,
+                        syncSupplier,
+                        storeManager,
+                        signatureManager,
+                        outcomesConsumer,
+                        retryCount,
+                        retryDelayMs,
+                        fatal);
+
+        return execute(donkies, fatal);
     }
-    
-    boolean execute(WorkPools<Track, Donkey> pools, AtomicReference<Exception> fatal, Supplier<Long> killAll)
-            throws InterruptedException {
-        
+
+    Exception execute(Supplier<Donkey> donkeySupplier, AtomicReference<Exception> fatal)
+            throws InterruptedException, TimeoutException {
+
         logger.trace("<< execute()");
-        
+
         boolean isTimedOut;
-        List<Future<?>> futuresFetch = new ArrayList<>();
-        List<Future<?>> futuresDecodeWrite = new ArrayList<>();
-        
+        List<Future<?>> futures = new ArrayList<>();
+        List<Donkey> donkies = new ArrayList<>();
+
         ExecutorService executor = Executors.newCachedThreadPool();
         logger.debug("-- execute() > executor created");
-        
+
         try {
             for (int i = 0; i < threads; i++) {
-                futuresFetch.add(executor.submit(Runner.newInstance(pools, Track.FETCH)));
-                futuresDecodeWrite.add(executor.submit(Runner.newInstance(pools, Track.DECODE_WRITE)));
-                logger.debug("-- execute() > thread submitted: {}", i);
+                Donkey donkey = donkeySupplier.get();
+                donkies.add(donkey);
+                futures.add(executor.submit(donkey));
+
+                logger.debug("-- execute() > donkey submitted: {}", i);
                 TimeUnit.MILLISECONDS.sleep(staggerMs);
             }
-            
+
             logger.debug("-- execute() > runners running: {}", threads);
             executor.shutdown();
-            
+
             logger.debug("-- execute() > awaiting termination, timeout (ms): {}", executorTimeoutMs);
             isTimedOut = !executor.awaitTermination(executorTimeoutMs, TimeUnit.MILLISECONDS);
-            
+
             if (isTimedOut) {
                 logger.warn("-- execute() > timed out");
-            } else {
-                logger.debug("-- execute() > completed");
+                throw new TimeoutException("Concurrent engine timed out");
             }
-            
-            logger.trace(">> execute() > timed out: {}", isTimedOut);
-            return isTimedOut;
-            
-        } catch (InterruptedException | IllegalStateException ex) {
+
+            Exception ex = fatal.get();
+            logger.trace(">> execute() > fatal: {}", ex);
+            return ex;
+
+        } catch (InterruptedException ex) {
             logger.warn("-- execute() > interrupted: {}", ex);
-            fatal.compareAndSet(null, ex);
             throw (ex);
-            
+
         } finally {
             logger.debug("-- execute() > shutting down");
             executor.shutdownNow();
-            
+
             // Kill donkies (aborting http requests in progress).
-            long killed = killAll.get();
-            
-            logger.debug("-- execute() > killed donkies: {}", killed);
-            logger.debug("-- execute() > fetch futures: {}", futuresFetch);
-            logger.debug("-- execute() > decodeWriter futures: {}", futuresDecodeWrite);
+            donkies.stream().forEach(Donkey::kill);
+
+            long finished = futures.stream().filter(Future::isDone).count();
+            long pending = threads - finished;
+
+            logger.debug("-- execute() > runnables, finished: {} pending: {}", finished, pending);
             logger.debug("-- execute() > has shut down");
         }
     }
