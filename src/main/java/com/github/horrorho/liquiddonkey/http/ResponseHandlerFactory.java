@@ -64,9 +64,6 @@ public class ResponseHandlerFactory {
             public R handleEntity(HttpEntity entity) throws IOException {
                 try (InputStream inputStream = entity.getContent()) {
                     return function.apply(inputStream);
-                } catch (SocketTimeoutException ex) {
-                    logger.warn("-- handleEntity() > exception: ", ex);
-                    throw new IOException("Intercepted SocketTimeoutException", ex);
                 }
             }
         };
@@ -82,12 +79,7 @@ public class ResponseHandlerFactory {
 
             @Override
             public byte[] handleEntity(HttpEntity entity) throws IOException {
-                try {
-                    return EntityUtils.toByteArray(entity);
-                } catch (SocketTimeoutException ex) {
-                    logger.warn("-- handleEntity() > exception: ", ex);
-                    throw new IOException("Intercepted SocketTimeoutException", ex);
-                }
+                return EntityUtils.toByteArray(entity);
             }
         };
     }
