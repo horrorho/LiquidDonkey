@@ -67,6 +67,8 @@ public class Selector<T> {
     private final Supplier<List<T>> onLineIsEmpty;
     private final Supplier<List<T>> onQuit;
     private final String delimiter;
+    private final PrintStream out;
+    private final InputStream in;
 
     Selector(
             String prompt,
@@ -77,7 +79,9 @@ public class Selector<T> {
             String footer,
             Supplier<List<T>> onLineIsEmpty,
             Supplier<List<T>> onQuit,
-            String delimiter) {
+            String delimiter,
+            PrintStream out,
+            InputStream in) {
 
         this.prompt = prompt;
         this.quit = quit;
@@ -88,41 +92,26 @@ public class Selector<T> {
         this.onLineIsEmpty = onLineIsEmpty;
         this.onQuit = onQuit;
         this.delimiter = Objects.requireNonNull(delimiter);
-    }
-
-    /**
-     * @see Selector#printOptions(java.io.PrintStream)
-     * @return this Selector, not null
-     */
-    public Selector printOptions() {
-        return printOptions(System.out);
+        this.out = Objects.requireNonNull(out);
+        this.in = Objects.requireNonNull(in);
     }
 
     /**
      * Prints options. First option is 1.
      *
-     * @param output, not null
      * @return this Selector, not null
      */
-    public Selector printOptions(PrintStream output) {
+    public Selector printOptions() {
         if (header != null) {
-            output.println(header);
+            out.println(header);
         }
         for (int i = 0; i < options.size(); i++) {
-            output.println((i + 1) + ":" + formatter.apply(options.get(i)));
+            out.println((i + 1) + ":" + formatter.apply(options.get(i)));
         }
         if (footer != null) {
-            output.println(footer);
+            out.println(footer);
         }
         return this;
-    }
-
-    /**
-     * @see Selector#selection(java.io.InputStream, java.io.PrintStream)
-     * @return the user's selection
-     */
-    public List<T> selection() {
-        return selection(System.in, System.out);
     }
 
     /**
@@ -133,14 +122,12 @@ public class Selector<T> {
      * <p>
      * Streams are not closed after use.
      *
-     * @param source, not null
-     * @param output, not null
      * @return the user's selection, not null
      */
-    public List<T> selection(InputStream source, PrintStream output) {
-        Scanner console = new Scanner(source, StandardCharsets.UTF_8.name());
+    public List<T> selection() {
+        Scanner console = new Scanner(in, StandardCharsets.UTF_8.name());
         while (true) {
-            output.print(prompt);
+            out.print(prompt);
             String line = console.nextLine();
             if (line == null || line.toLowerCase(Locale.getDefault()).equals(quit)) {
                 return onQuit.get();
@@ -150,8 +137,8 @@ public class Selector<T> {
                 return onLineIsEmpty.get();
             }
 
-            Set<Integer> numbers = parseLineToNumbers(output, line);
-            if (numbers != null && validate(output, numbers, options)) {
+            Set<Integer> numbers = parseLineToNumbers(line);
+            if (numbers != null && validate(numbers, options)) {
                 return numbers.stream()
                         .map(i -> i - 1)
                         .map(options::get)
@@ -160,17 +147,17 @@ public class Selector<T> {
         }
     }
 
-    boolean validate(PrintStream output, Set<Integer> selected, List<T> options) {
+    boolean validate(Set<Integer> selected, List<T> options) {
         for (Integer i : selected) {
             if (i < 1 || i > options.size()) {
-                output.println("Invalid selection: " + i);
+                out.println("Invalid selection: " + i);
                 return false;
             }
         }
         return true;
     }
 
-    Set<Integer> parseLineToNumbers(PrintStream output, String line) {
+    Set<Integer> parseLineToNumbers(String line) {
         Scanner tokens = new Scanner(line).useDelimiter(delimiter);
         // LinkedHashSet to preserve the input order and avoid duplicates
         Set<Integer> numbers = new LinkedHashSet<>();
@@ -178,7 +165,7 @@ public class Selector<T> {
             if (tokens.hasNextInt()) {
                 numbers.add(tokens.nextInt());
             } else {
-                output.println("Bad number: " + tokens.next());
+                out.println("Bad number: " + tokens.next());
                 return null;
             }
         }
@@ -196,6 +183,8 @@ public class Selector<T> {
         private String footer = null;
         private Supplier<List<T>> onLineIsEmpty = ArrayList::new;
         private Supplier<List<T>> onQuit = ArrayList::new;
+        private PrintStream out = System.out;
+        private InputStream in = System.in;
 
         /**
          * Selector Builder.
@@ -246,8 +235,29 @@ public class Selector<T> {
             return this;
         }
 
+        public Builder<T> input(InputStream in) {
+            this.in = in;
+            return this;
+        }
+
+        public Builder<T> output(PrintStream out) {
+            this.out = out;
+            return this;
+        }
+
         public Selector<T> build() {
-            return new Selector<>(prompt, quit, header, options, formatter, footer, onLineIsEmpty, onQuit, delimiter);
+            return new Selector<>(
+                    prompt,
+                    quit,
+                    header,
+                    options,
+                    formatter,
+                    footer,
+                    onLineIsEmpty,
+                    onQuit,
+                    delimiter,
+                    out,
+                    in);
         }
     }
 }
