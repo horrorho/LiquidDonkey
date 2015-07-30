@@ -103,7 +103,7 @@ public final class PersistentHttpRequestRetryHandler implements HttpRequestRetry
 
         boolean toRetry = doRetryRequest(exception, executionCount, context);
 
-        err.println("IOError " + (toRetry ? "(retrying): " : "(failed): ") + exception.getMessage());
+        err.println("IOError" + (toRetry ? "(retrying): " : "(failed): ") + exception.getMessage());
 
         logger.trace(">> retryRequest() > {}", toRetry);
         return toRetry;
