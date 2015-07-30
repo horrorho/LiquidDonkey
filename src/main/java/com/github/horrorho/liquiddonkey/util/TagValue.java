@@ -24,7 +24,6 @@
 package com.github.horrorho.liquiddonkey.util;
 
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import static com.github.horrorho.liquiddonkey.util.Bytes.hex;
 import com.google.protobuf.ByteString;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,7 +44,7 @@ public final class TagValue {
         int i = 0;
         while (i + 8 <= tagLengthValues.size()) {
             String tag = tagLengthValues.substring(i, i + 4).toStringUtf8();
-            // Signed 32 bit length. Limited to 2 GB
+            // Signed 32 bit length. Limited to 2 GB.
             int length = tagLengthValues.substring(i + 4, i + 8).asReadOnlyByteBuffer().getInt();
 
             int end = i + 8 + length;
@@ -78,6 +77,6 @@ public final class TagValue {
 
     @Override
     public String toString() {
-        return "TagValue{" + "tag=" + tag + ", value=0x" + hex(value) + '}';
+        return "TagValue{" + "tag=" + tag + ", value=0x" + Bytes.hex(value) + '}';
     }
 }
