@@ -24,15 +24,19 @@
 package com.github.horrorho.liquiddonkey.cloud.file;
 
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
+import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
+import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import com.github.horrorho.liquiddonkey.iofunction.IOPredicate;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,9 +51,7 @@ import org.slf4j.LoggerFactory;
  * @author Ahseya
  */
 @NotThreadSafe
-public final class LocalFileFilter implements IOPredicate<ICloud.MBSFile> {
-
-    private static final Logger logger = LoggerFactory.getLogger(LocalFileFilter.class);
+public final class LocalFileFilter implements IOPredicate<ICloud.MBSFile>, IOFunction<Snapshot, Snapshot> {
 
     /**
      * Returns a new instance.
@@ -81,6 +83,8 @@ public final class LocalFileFilter implements IOPredicate<ICloud.MBSFile> {
         return new LocalFileFilter(directory, toCheckLastModifiedTimestamp, isCombined);
     }
 
+    private static final Logger logger = LoggerFactory.getLogger(LocalFileFilter.class);
+
     private final SnapshotDirectory directory;
     private final boolean toCheckLastModifiedTimestamp;
     private final boolean isCombined;
@@ -103,6 +107,23 @@ public final class LocalFileFilter implements IOPredicate<ICloud.MBSFile> {
 
         logger.trace(">> test() > is local: {}", isLocal);
         return isLocal;
+    }
+
+    @Override
+    public Snapshot apply(Snapshot snapshot) throws IOException {
+        try {
+            Predicate<ICloud.MBSFile> localFilterUnchecked = file -> {
+                try {
+                    return !test(file);
+                } catch (IOException ex) {
+                    throw new UncheckedIOException(ex);
+                }
+            };
+            snapshot = Snapshots.from(snapshot, localFilterUnchecked);
+        } catch (UncheckedIOException ex) {
+            throw ex.getCause();
+        }
+        return snapshot;
     }
 
     boolean testExists(Path local, ICloud.MBSFile remote) throws IOException {

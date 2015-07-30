@@ -26,6 +26,7 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import java.io.PrintStream;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
@@ -33,7 +34,8 @@ import java.util.function.Consumer;
  *
  * @author Ahseya
  */
-public class OutcomesPrinter implements Consumer<Map<ICloud.MBSFile, Outcome>> {
+public class OutcomesPrinter
+        implements Consumer<Map<ICloud.MBSFile, Outcome>>, BiConsumer<Double, Map<ICloud.MBSFile, Outcome>> {
 
     public static OutcomesPrinter create() {
         return new OutcomesPrinter(System.out, System.err);
@@ -53,13 +55,23 @@ public class OutcomesPrinter implements Consumer<Map<ICloud.MBSFile, Outcome>> {
 
     @Override
     public void accept(Map<ICloud.MBSFile, Outcome> outcomes) {
+        print("\t", outcomes);
+    }
+
+    @Override
+    public void accept(Double progress, Map<ICloud.MBSFile, Outcome> outcomes) {
+        String percent = "   " + String.format("%4s", (int) (progress * 100.0) + "% ");
+        print(percent, outcomes);
+    }
+
+    public void print(String prefix, Map<ICloud.MBSFile, Outcome> outcomes) {
         if (outcomes != null) {
             outcomes.entrySet().stream()
                     .forEach(entry -> {
                         ICloud.MBSFile file = entry.getKey();
                         Outcome result = entry.getValue();
                         PrintStream printStream = result.isSuccess() ? out : err;
-                        printStream.println("\t" + file.getDomain() + " " + file.getRelativePath() + " " + result);
+                        printStream.println(prefix + file.getDomain() + " " + file.getRelativePath() + " " + result);
                     });
         }
     }

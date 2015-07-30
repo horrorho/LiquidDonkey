@@ -208,6 +208,18 @@ public final class SignatureManager {
                 .collect(Collectors.toSet());
     }
 
+    public long totalBytes() {
+        return totalBytes;
+    }
+
+    public long outBytes() {
+        return outBytes.get();
+    }
+
+    public long failedBytes() {
+        return failedBytes.get();
+    }
+
     @Override
     public String toString() {
         return "SignatureWriter{"

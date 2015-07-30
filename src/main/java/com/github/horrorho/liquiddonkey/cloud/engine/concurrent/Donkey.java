@@ -151,7 +151,7 @@ class Donkey implements Runnable {
             logger.warn("-- run() > exception: ", ex);
         }
 
-        logger.trace(">> run() > fatal: {} killed: {}", fatal == null ? null : fatal.get().getMessage(), !isAlive);
+        logger.trace(">> run() > fatal: {} isAlive: {}", fatal == null ? null : fatal.get().getMessage(), isAlive);
     }
 
     Map<ICloud.MBSFile, Outcome> process(ChunkServer.StorageHostChunkList chunkList)
@@ -202,8 +202,8 @@ class Donkey implements Runnable {
         logger.trace("<< fetch() < request: {}", request.getURI());
 
         byte[] data;
-        try {            
-            data = client.execute(request, chunksClient.responseHandler()); 
+        try {
+            data = client.execute(request, chunksClient.responseHandler());
 
         } catch (UnknownHostException ex) {
             logger.warn("-- fetch() > exception: {}", ex);

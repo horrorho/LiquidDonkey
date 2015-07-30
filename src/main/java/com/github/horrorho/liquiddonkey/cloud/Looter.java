@@ -35,24 +35,23 @@ import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
+import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.HttpClientFactory;
-import com.github.horrorho.liquiddonkey.iofunction.IOPredicate;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import com.github.horrorho.liquiddonkey.util.MemMonitor;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
-import java.io.UncheckedIOException;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
@@ -68,18 +67,18 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public class Looter implements Closeable {
 
-    public static Looter of(Config config) {
-        return of(config, System.out, System.err);
+    public static Looter from(Config config) {
+        return from(config, System.out, System.err);
     }
 
-    public static Looter of(Config config, PrintStream std, PrintStream err) {
-        logger.trace("<< of()");
+    public static Looter from(Config config, PrintStream std, PrintStream err) {
+        logger.trace("<< from()");
 
         CloseableHttpClient client = HttpClientFactory.from(config.http()).client(std);
         FileFilter fileFilter = FileFilter.from(config.fileFilter());
-        Looter looter = new Looter(config, client, std, err, fileFilter);
+        Looter looter = new Looter(config, client, std, err, OutcomesPrinter.from(std, err), fileFilter);
 
-        logger.trace(">> of()");
+        logger.trace(">> from()");
         return looter;
     }
 
@@ -89,13 +88,24 @@ public class Looter implements Closeable {
     private final CloseableHttpClient client;
     private final PrintStream std;
     private final PrintStream err;
+    private final InputStream in = System.in;
+    private final OutcomesPrinter outcomesPrinter;
     private final FileFilter filter;
+    private final boolean isAggressive = true;
 
-    Looter(Config config, CloseableHttpClient client, PrintStream std, PrintStream err, FileFilter filter) {
+    Looter(
+            Config config,
+            CloseableHttpClient client,
+            PrintStream std,
+            PrintStream err,
+            OutcomesPrinter  outcomesPrinter,
+            FileFilter filter) {
+
         this.config = Objects.requireNonNull(config);
         this.client = Objects.requireNonNull(client);
         this.std = Objects.requireNonNull(std);
         this.err = Objects.requireNonNull(err);
+        this.outcomesPrinter = outcomesPrinter;
         this.filter = Objects.requireNonNull(filter);
     }
 
@@ -120,124 +130,128 @@ public class Looter implements Closeable {
         // Use the new mmeAuthToken in case it's changed.
         String mmeAuthToken = core.auth().mmeAuthToken();
 
-        // Testing
+        // Testing.
         Quota.from(client, core, mmeAuthToken);
 
-        // Account
+        // Account.
         Account account = Accounts.from(client, core, mmeAuthToken);
 
-        // Backups
+        // Available backups.
         List<Backup> backups = Backups.from(client, core, mmeAuthToken, account);
 
-        UnaryOperator<List<ICloud.MBSBackup>> backupSelector
-                = BackupSelector.from(config.selection().udids(), BackupFormatter.create(), std);
+        // Filter backups. 
+        List<Backup> selected
+                = BackupSelector.from(config.selection().udids(), Backup::mbsBackup, BackupFormatter.create(), std, in)
+                .apply(backups);
 
-        // TODO rework for when udid know, also command to dump info only
-        Map<ICloud.MBSBackup, Backup> udidToBackup
-                = backups.stream().collect(Collectors.toMap(Backup::mbsBackup, Function.identity()));
-
-        List<ICloud.MBSBackup> filtered = backupSelector.apply(backups.stream().map(Backup::mbsBackup).collect(Collectors.toList()));
-
-        MemMonitor memMonitor = null;
-        try {
+        // Fetch backups.
+        for (Backup backup : selected) {
             if (logger.isDebugEnabled()) {
-                // Potential for severe memory leakage. Lightweight reporting on all debugged runs.
-                memMonitor = MemMonitor.from(5000);
-                Thread thread = new Thread(memMonitor);
-                thread.setDaemon(true);
-                thread.start();
-            }
-
-            for (ICloud.MBSBackup b : filtered) {
-                Backup bb = udidToBackup.get(b);
-
-                backup(client, core, mmeAuthToken, bb);
-            }
-        } finally {
-            if (memMonitor != null) {
-                memMonitor.stop();
-                logger.debug("-- loot() > max sampled memory used (MB): {}", memMonitor.max() / 1048510);
+                monitoredBackup(client, core, mmeAuthToken, backup);
+            } else {
+                backup(client, core, mmeAuthToken, backup);
             }
         }
 
         logger.trace(">> loot()");
     }
 
-    void backup(HttpClient client, Core core, String mmeAuthToken, Backup backup) throws BadDataException, IOException, InterruptedException {
-        OutcomesPrinter outcomesPrinter = OutcomesPrinter.from(std, err); // TODO move to private final
+    void monitoredBackup(HttpClient client, Core core, String mmeAuthToken, Backup backup)
+            throws BadDataException, IOException, InterruptedException {
 
-        //  logger.info("-- mbsBackup() > snapshots: {}", mbsBackup.snapshots());
+        // Potential for large scale memory leakage. Lightweight reporting on all debugged runs.
+        MemMonitor memMonitor = MemMonitor.from(5000);
+        try {
+            Thread thread = new Thread(memMonitor);
+            thread.setDaemon(true);
+            thread.start();
+
+            // Fetch backup.
+            backup(client, core, mmeAuthToken, backup);
+
+        } finally {
+            memMonitor.kill();
+            logger.debug("-- loot() > max sampled memory used (MB): {}", memMonitor.max() / 1048510);
+        }
+    }
+
+    void backup(HttpClient client, Core core, String mmeAuthToken, Backup backup)
+            throws BadDataException, IOException, InterruptedException {
+
+        logger.info("-- backup() > udid: {}", backup.backupUDID());
+        std.println("Retrieving backup: " + backup.backupUDID());
+
+        // Available snapshots
         SnapshotIdReferences references = SnapshotIdReferences.from(backup.mbsBackup());
-        logger.debug("-- backup() > ids: {}", config.selection().snapshots());
-        Set<Integer> resolved = new LinkedHashSet<>();
+        logger.debug("-- backup() > requested ids: {}", config.selection().snapshots());
 
-        config.selection().snapshots().stream()
-                .map(references::applyAsInt).filter(id -> id != -1)
-                .forEach(resolved::add);
+        // Resolve snapshots with configured selection
+        Set<Integer> resolved = config.selection().snapshots()
+                .stream()
+                .map(references::applyAsInt).
+                filter(id -> id != -1)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         logger.debug("-- backup() > resolved ids: {}", resolved);
 
+        // Fetch snapshots
         for (int id : resolved) {
-
-            // TODO resolve ids
-            // TODO use set, important, don't duplicate downloads. preserve order
-            logger.info("-- backup() > snapshot: {}", id);
-
-            Snapshot snapshot = Snapshots.from(client, core, mmeAuthToken, backup, id, config.client().listLimit());
-
-            if (snapshot == null) {
-                logger.warn("-- backup() > snapshot not found: {}", id);
-                continue;
-            }
-
-            logger.info("-- backup() > files: {}", snapshot.filesCount());
-
-            snapshot = Snapshots.from(snapshot, file -> file.getSize() != 0);
-            logger.info("-- backup() > filtered, non empty: {}", snapshot.filesCount());
-
-            snapshot = Snapshots.from(snapshot, filter);
-            logger.info("-- backup() > filtered, filter: {}", snapshot.filesCount());
-
-            Predicate<ICloud.MBSFile> decryptableFilter
-                    = DecryptableFilter.from(backup.keyBagManager(), outcomesPrinter);
-            snapshot = Snapshots.from(snapshot, decryptableFilter);
-            logger.info("-- backup() > filtered, decryptable: {}", snapshot.filesCount());
-
-            IOPredicate<ICloud.MBSFile> localFilter = LocalFileFilter.from(snapshot, config.file());
-            Predicate<ICloud.MBSFile> localFilterUnchecked = file -> {
-                try {
-                    return !localFilter.test(file);
-                } catch (IOException ex) {
-                    throw new UncheckedIOException(ex);
-                }
-            };
-            long a = System.currentTimeMillis();
-            // TODO force overwrite flag
-            snapshot = Snapshots.from(snapshot, localFilterUnchecked);
-            long b = System.currentTimeMillis();
-            logger.info("-- backup() > filtered, local: {} delay(ms): {}", snapshot.filesCount(), b - a);
-
             try {
-
-                SnapshotDownloader downloader = SnapshotDownloader.from(config.engine(), config.file(), outcomesPrinter);
-
-                downloader.download(client, core, mmeAuthToken, snapshot);
-
-            } 
-            catch (BadDataException ex) {
-                ex.printStackTrace();
+                logger.info("-- backup() > snapshot: {}", id);
+                snapshot(client, core, mmeAuthToken, backup, id);
+            } catch (BadDataException | IOException ex) {
+                if (isAggressive) {
+                    logger.warn("-- backup() > exception: {}", ex);
+                } else {
+                    throw ex;
+                }
             }
         }
     }
 
-//    <T, K> Map<K, List<T>> groupingBy(List<T> t, Function<T, K> classifier) {
-//        return t == null
-//                ? new HashMap<>()
-//                : t.stream().collect(Collectors.groupingBy(classifier));
-//    }
-//
-//    <K, V> Map<K, Integer> summary(Map<K, List<V>> map) {
-//        return map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().size()));
-//    }
+    void snapshot(HttpClient client, Core core, String mmeAuthToken, Backup backup, int id)
+            throws BadDataException, IOException, InterruptedException {
+
+        // Retrieve file list.
+        Snapshot snapshot = Snapshots.from(client, core, mmeAuthToken, backup, id, config.client().listLimit());
+        if (snapshot == null) {
+            logger.warn("-- snapshot() > snapshot not found: {}", id);
+            return;
+        }
+        logger.info("-- snapshot() > files: {}", snapshot.filesCount());
+        std.println("Retrieving snapshot: " + id + ", (" + snapshot.mbsSnapshot().getAttributes().getDeviceName() + ")");
+
+        // Filter files
+        snapshot = filterFiles(snapshot, backup.keyBagManager());
+
+        // Fetch files
+        SnapshotDownloader.from(config.engine(), config.file(), outcomesPrinter)
+                .download(client, core, mmeAuthToken, snapshot);
+    }
+
+    Snapshot filterFiles(Snapshot snapshot, KeyBagManager keyBagManager) throws IOException {
+        snapshot = Snapshots.from(snapshot, file -> file.getSize() != 0);
+        logger.info("-- filter() > filtered, non empty: {}", snapshot.filesCount());
+
+        snapshot = Snapshots.from(snapshot, filter);
+        logger.info("-- filter() > filtered, configured: {}", snapshot.filesCount());
+
+        Predicate<ICloud.MBSFile> undecryptableFilter
+                = UndecryptableFilter.from(keyBagManager, outcomesPrinter);
+        snapshot = Snapshots.from(snapshot, undecryptableFilter);
+        logger.info("-- filter() > filtered, undecryptable: {}", snapshot.filesCount());
+
+        if (config.engine().toForceOverwrite()) {
+            logger.debug("-- filter() > forced overwrite");
+        } else {
+            long a = System.currentTimeMillis();
+            snapshot = LocalFileFilter.from(snapshot, config.file()).apply(snapshot);
+            long b = System.currentTimeMillis();
+            logger.info("-- filter() > filtered, local: {} delay(ms): {}", snapshot.filesCount(), b - a);
+        }
+
+        return snapshot;
+    }
+
     @Override
     public void close() throws IOException {
         client.close();
