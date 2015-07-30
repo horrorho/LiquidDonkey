@@ -100,10 +100,10 @@ public final class KeyBagFactory {
     KeyBagFactory unlock() throws BadDataException {
         parseKeySet();
 
-        iterations = Bytes.integer32(attribute("ITER"));
+        iterations = integer(attribute("ITER"));
         salt = attribute("SALT");
         uuid = attribute("UUID");
-        type = KeyBagType.from(Bytes.integer32(attribute("TYPE")));
+        type = KeyBagType.from(integer(attribute("TYPE")));
 
         unlock(passcode);
         return this;
@@ -124,7 +124,7 @@ public final class KeyBagFactory {
 
     void sort(Map<String, ByteString> block) throws BadDataException {
         if (block.containsKey("CLAS")) {
-            classKeys.put(Bytes.integer32(block.get("CLAS")) & 0xF, new HashMap<>(block));
+            classKeys.put(integer(block.get("CLAS")) & 0xF, new HashMap<>(block));
         } else {
             attributes.putAll(block);
         }
@@ -153,7 +153,7 @@ public final class KeyBagFactory {
                 continue;
             }
 
-            int wrap = Bytes.integer32(keys.get("WRAP"));
+            int wrap = integer(keys.get("WRAP"));
             if ((wrap & WRAP_DEVICE) == 0 && (wrap & WRAP_PASSCODE) != 0) {
                 byte[] wrappedKey = keys.get("WPKY").toByteArray();
                 try {
@@ -192,5 +192,15 @@ public final class KeyBagFactory {
 
     Map<String, ByteString> attributes() {
         return new HashMap<>(attributes);
+    }
+
+    int integer(ByteString byteString) throws BadDataException {
+        if (byteString == null) {
+            throw new BadDataException("Integer. Null ByteString");
+        }
+        if (byteString.size() != 4) {
+            throw new BadDataException("Integer. Expected data size of 4 bytes. Got: " + byteString.size());
+        }
+        return byteString.asReadOnlyByteBuffer().getInt();
     }
 }
