@@ -41,17 +41,17 @@ public class MemMonitor implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(MemMonitor.class);
 
     public static MemMonitor from(long intervalMs) {
-        return new MemMonitor(intervalMs, new AtomicLong(0), false);
+        return new MemMonitor(intervalMs, new AtomicLong(0), true);
     }
 
     private final long intervalMs;
     private final AtomicLong max;
-    private volatile boolean stop;
+    private volatile boolean isAlive;
 
-    MemMonitor(long intervalMs, AtomicLong max, boolean stop) {
+    MemMonitor(long intervalMs, AtomicLong max, boolean isAlive) {
         this.intervalMs = intervalMs;
         this.max = Objects.requireNonNull(max);
-        this.stop = stop;
+        this.isAlive = isAlive;
     }
 
     @Override
@@ -59,7 +59,7 @@ public class MemMonitor implements Runnable {
         logger.trace("<< run()");
         Runtime runtime = Runtime.getRuntime();
         try {
-            while (!stop) {
+            while (isAlive) {
                 long usedMb = runtime.totalMemory() - runtime.freeMemory();
                 long totalMb = runtime.totalMemory();
                 max.getAndUpdate(current -> usedMb > current ? usedMb : current);
@@ -76,8 +76,8 @@ public class MemMonitor implements Runnable {
         }
     }
 
-    public void stop() {
-        stop = true;
+    public void kill() {
+        isAlive = false;
     }
 
     public long max() {
