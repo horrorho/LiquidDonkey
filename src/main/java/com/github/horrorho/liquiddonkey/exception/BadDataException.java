@@ -23,18 +23,20 @@
  */
 package com.github.horrorho.liquiddonkey.exception;
 
+import java.io.IOException;
+
 /**
  * Something is wrong with the data.
- * 
+ *
  * @author ahseya
  */
-public class BadDataException extends Exception {
+public class BadDataException extends IOException {
 
     public BadDataException() {
     }
 
-    public BadDataException(String s) {
-        super(s);
+    public BadDataException(String message) {
+        super(message);
     }
 
     public BadDataException(String message, Throwable cause) {
