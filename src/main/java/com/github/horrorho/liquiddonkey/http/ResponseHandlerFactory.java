@@ -26,7 +26,6 @@ package com.github.horrorho.liquiddonkey.http;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.SocketTimeoutException;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
