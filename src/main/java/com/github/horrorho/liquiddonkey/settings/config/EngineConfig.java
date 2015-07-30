@@ -62,7 +62,7 @@ public final class EngineConfig {
             long batchSizeMinimumBytes,
             int retryCount,
             boolean isPersistent,
-            int retryDelay,
+            int retryDelayMs,
             int threadStaggerDelayMs,
             int threadCount,
             boolean toForceOverwrite,
@@ -73,7 +73,7 @@ public final class EngineConfig {
                 batchSizeMinimumBytes,
                 retryCount,
                 isPersistent,
-                retryDelay,
+                retryDelayMs,
                 threadStaggerDelayMs,
                 threadCount,
                 toForceOverwrite,
@@ -85,7 +85,7 @@ public final class EngineConfig {
     private final long batchSizeMinimumBytes;
     private final int retryCount;
     private final boolean isPersistent;
-    private final int retryDelay;
+    private final int retryDelayMs;
     private final int threadStaggerDelayMs;
     private final int threadCount;
     private final boolean toForceOverwrite;
@@ -97,7 +97,7 @@ public final class EngineConfig {
             long batchSizeMinimumBytes,
             int retryCount,
             boolean isPersistent,
-            int retryDelay,
+            int retryDelayMs,
             int threadStaggerDelayMs,
             int threadCount,
             boolean toForceOverwrite,
@@ -108,7 +108,7 @@ public final class EngineConfig {
         this.batchSizeMinimumBytes = batchSizeMinimumBytes;
         this.retryCount = retryCount;
         this.isPersistent = isPersistent;
-        this.retryDelay = retryDelay;
+        this.retryDelayMs = retryDelayMs;
         this.threadStaggerDelayMs = threadStaggerDelayMs;
         this.threadCount = threadCount;
         this.toForceOverwrite = toForceOverwrite;
@@ -132,8 +132,8 @@ public final class EngineConfig {
         return isPersistent;
     }
 
-    public int retryDelay() {
-        return retryDelay;
+    public int retryDelayMs() {
+        return retryDelayMs;
     }
 
     public int threadStaggerDelayMs() {
@@ -163,7 +163,7 @@ public final class EngineConfig {
                 + ", batchSizeMinimumBytes=" + batchSizeMinimumBytes
                 + ", chunkListDownloadRetry=" + retryCount
                 + ", isPersistent=" + isPersistent
-                + ", retryDelay=" + retryDelay
+                + ", retryDelay=" + retryDelayMs
                 + ", threadStaggerDelay=" + threadStaggerDelayMs
                 + ", threadCount=" + threadCount
                 + ", toForceOverwrite=" + toForceOverwrite
