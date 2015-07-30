@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.util;
 
-import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.google.protobuf.ByteString;
 import java.util.Locale;
 import net.jcip.annotations.Immutable;
@@ -43,16 +42,6 @@ import org.apache.commons.codec.binary.Hex;
 public final class Bytes {
 
     private static final String[] units = new String[]{"kB", "MB", "GB", "TB", "PB", "EB"};
-
-    public static int integer32(ByteString byteString) throws BadDataException {
-        if (byteString == null) {
-            throw new BadDataException("Integer. Null ByteString");
-        }
-        if (byteString.size() != 4) {
-            throw new BadDataException("Integer. Expected data size of 4 bytes. Got: " + byteString.size());
-        }
-        return byteString.asReadOnlyByteBuffer().getInt();
-    }
 
     public static String hex(ByteString byteString) {
         if (byteString == null) {
