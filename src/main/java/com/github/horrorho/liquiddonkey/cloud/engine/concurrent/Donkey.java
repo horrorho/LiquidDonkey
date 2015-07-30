@@ -202,8 +202,8 @@ class Donkey implements Runnable {
         logger.trace("<< fetch() < request: {}", request.getURI());
 
         byte[] data;
-        try {
-            data = client.execute(request, chunksClient.responseHandler());
+        try {            
+            data = client.execute(request, chunksClient.responseHandler()); 
 
         } catch (UnknownHostException ex) {
             logger.warn("-- fetch() > exception: {}", ex);
