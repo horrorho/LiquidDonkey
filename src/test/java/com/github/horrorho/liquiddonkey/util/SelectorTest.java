@@ -64,9 +64,7 @@ public class SelectorTest {
     @Parameters
     public void testSelection(List<String> expected, String... inputs) throws IOException {
 
-        String input = inputs == null
-                ? null
-                : Stream.of(inputs).collect(Collectors.joining(newline));
+        String input = Stream.of(inputs).collect(Collectors.joining(newline));
 
         try (InputStream inputStream = new ByteArrayInputStream(input.getBytes());
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -74,7 +72,7 @@ public class SelectorTest {
 
             List<String> results;
             try {
-                results = Selector.builder(options).build().selection(inputStream, printStream);
+                results = Selector.builder(options).input(inputStream).output(printStream).build().selection();
             } catch (NoSuchElementException ex) {
                 logger.debug(marker, "-- testSelection() > input stream depleted");
                 results = null;
