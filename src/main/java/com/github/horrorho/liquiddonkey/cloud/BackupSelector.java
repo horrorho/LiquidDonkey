@@ -26,6 +26,7 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.github.horrorho.liquiddonkey.util.Selector;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,9 +44,10 @@ import org.slf4j.LoggerFactory;
  * Backup selector.
  *
  * @author Ahseya
+ * @param <T> backup container
  */
 @ThreadSafe
-public abstract class BackupSelector implements UnaryOperator<List<ICloud.MBSBackup>> {
+public abstract class BackupSelector<T> implements UnaryOperator<List<T>> {
 
     /**
      * Returns a new instance.
@@ -53,100 +55,128 @@ public abstract class BackupSelector implements UnaryOperator<List<ICloud.MBSBac
      * The from UDIDs will be fully or partially matched against the supplied UDIDs, case-insensitive. If the supplied
      * UDIDs list is empty, the user will be prompted for a selection.
      *
+     * @param <T> item type
      * @param commandLineUdids the command line UDID/s, not null
+     * @param mbsBackup get mbsBackup from item function, not null
      * @param formatter ICloud.MBSBackup user display formatter, not null
-     * @param std the std PrintStream, not null
+     * @param out output, not null
+     * @param in input, not null
      * @return a new instance, not null
      */
-    public static UnaryOperator<List<ICloud.MBSBackup>> from(
+    public static <T> UnaryOperator<List<T>> from(
             Collection<String> commandLineUdids,
+            Function<T, ICloud.MBSBackup> mbsBackup,
             Function<ICloud.MBSBackup, String> formatter,
-            PrintStream std) {
+            PrintStream out,
+            InputStream in) {
 
         return commandLineUdids.isEmpty()
-                ? new User(std, formatter)
-                : new Udid(std, new ArrayList<>(commandLineUdids));
+                ? new User(mbsBackup, out, in, formatter)
+                : new Udid(mbsBackup, out, in, new ArrayList<>(commandLineUdids));
     }
 
     private static final Logger logger = LoggerFactory.getLogger(BackupSelector.class);
 
-    protected final PrintStream std;
+    protected final Function<T, ICloud.MBSBackup> mbsBackup;
+    protected final PrintStream out;
+    protected final InputStream in;
 
-    BackupSelector(PrintStream std) {
-        this.std = Objects.requireNonNull(std);
+    public BackupSelector(Function<T, ICloud.MBSBackup> mbsBackup, PrintStream out, InputStream in) {
+        this.mbsBackup = Objects.requireNonNull(mbsBackup);
+        this.out = Objects.requireNonNull(out);
+        this.in = Objects.requireNonNull(in);
     }
 
     @Override
-    public List<ICloud.MBSBackup> apply(List<ICloud.MBSBackup> available) {
+    public List<T> apply(List<T> available) {
         logger.trace("<< apply < available: {}", udids(available));
 
         if (available.isEmpty()) {
-            std.println("No backups available.");
+            out.println("No backups available.");
             return new ArrayList<>();
         }
 
-        List<ICloud.MBSBackup> selected = doApply(available);
+        List<T> selected = doApply(available);
         String selectedStr = selected.isEmpty()
                 ? "None"
                 : selected.stream()
+                .map(mbsBackup::apply)
                 .map(ICloud.MBSBackup::getBackupUDID)
                 .map(Bytes::hex)
                 .collect(Collectors.joining(" "));
 
-        std.println("Selected backup/s: " + selectedStr);
+        out.println("Selected backup/s: " + selectedStr);
 
         logger.trace(">> apply > selected: {}", udids(selected));
         return selected;
     }
 
-    List<String> udids(List<ICloud.MBSBackup> backups) {
+    List<String> udids(List<T> backups) {
         return backups == null
                 ? null
-                : backups.stream().map(ICloud.MBSBackup::getBackupUDID).map(Bytes::hex).collect(Collectors.toList());
+                : backups.stream()
+                .map(mbsBackup::apply)
+                .map(ICloud.MBSBackup::getBackupUDID)
+                .map(Bytes::hex)
+                .collect(Collectors.toList());
     }
 
-    protected abstract List<ICloud.MBSBackup> doApply(List<ICloud.MBSBackup> backups);
+    protected abstract List<T> doApply(List<T> backups);
 
-    static final class Udid extends BackupSelector {
+    static final class Udid<T> extends BackupSelector<T> {
 
         private final List<String> commandLineUdids;
 
-        Udid(PrintStream std, List<String> commandLineUdids) {
-            super(std);
+        Udid(
+                Function<T, ICloud.MBSBackup> mbsBackup,
+                PrintStream out,
+                InputStream in,
+                List<String> commandLineUdids) {
+
+            super(mbsBackup, out, in);
             this.commandLineUdids = commandLineUdids.stream().map(String::toLowerCase).collect(Collectors.toList());
         }
 
         @Override
-        protected List<ICloud.MBSBackup> doApply(List<ICloud.MBSBackup> availableBackups) {
-            return availableBackups.stream().filter(this::matches).collect(Collectors.toList());
+        protected List<T> doApply(List<T> backups) {
+            return backups.stream()
+                    .filter(this::matches)
+                    .collect(Collectors.toList());
         }
 
-        boolean matches(ICloud.MBSBackup backup) {
+        boolean matches(T t) {
             return commandLineUdids.stream()
-                    .anyMatch(udid -> Bytes.hex(backup.getBackupUDID()).toLowerCase(Locale.US).contains(udid));
+                    .anyMatch(udid -> Bytes.hex(mbsBackup.apply(t).getBackupUDID()).toLowerCase(Locale.US).contains(udid));
         }
     }
 
-    static final class User extends BackupSelector {
+    static final class User<T> extends BackupSelector<T> {
 
         private final Function<ICloud.MBSBackup, String> formatter;
 
-        User(PrintStream std, Function<ICloud.MBSBackup, String> formatter) {
-            super(std);
+        User(
+                Function<T, ICloud.MBSBackup> mbsBackup,
+                PrintStream out,
+                InputStream in,
+                Function<ICloud.MBSBackup, String> formatter) {
+
+            super(mbsBackup, out, in);
             this.formatter = formatter;
         }
 
         @Override
-        protected List<ICloud.MBSBackup> doApply(List<ICloud.MBSBackup> availableBackups) {
-            return Selector.builder(availableBackups)
+        protected List doApply(List<T> backups) {
+            return Selector.builder(backups)
                     .header("Listed backups:\n")
                     .footer("Select backup/s to download (leave blank to select all, q to quit):")
-                    .formatter(backup -> formatter.apply(backup))
-                    .onLineIsEmpty(() -> availableBackups)
+                    .formatter(backup -> mbsBackup.andThen(formatter).apply(backup))
+                    .onLineIsEmpty(() -> backups)
                     .onQuit(ArrayList::new)
+                    .input(in)
+                    .output(out)
                     .build()
-                    .printOptions(std)
-                    .selection();   // TODO inject in out
+                    .printOptions()
+                    .selection();
         }
     }
 }
