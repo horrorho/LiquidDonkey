@@ -79,7 +79,7 @@ public final class CommandLineConfigFactory {
             CommandLineOptions commandLineOptions = CommandLineOptions.from(properties);
             properties = CommandLinePropertiesFactory.create().from(properties, commandLineOptions, args);
 
-            if (properties.contains(Property.COMMAND_LINE_HELP.name())) {
+            if (properties.containsKey(Property.COMMAND_LINE_HELP.name())) {
                 HelpFormatter helpFormatter = new HelpFormatter();
                 helpFormatter.setOptionComparator(null);
                 helpFormatter.printHelp(properties.getProperty(Property.APP_NAME.name())
