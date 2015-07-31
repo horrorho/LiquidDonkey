@@ -84,7 +84,7 @@ public class Main {
 
         try (Looter looter = Looter.from(config)) {
             looter.loot();
-        } catch (BadDataException | InterruptedException | IOException | RuntimeException ex) {
+        } catch (InterruptedException | IOException | RuntimeException ex) {
             logger.warn("-- main() > exception", ex);
 
             StringWriter stringWriter = new StringWriter();

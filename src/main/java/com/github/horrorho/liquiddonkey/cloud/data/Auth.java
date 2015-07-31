@@ -43,6 +43,10 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Auth {
 
+    public static Auth from(Auth auth, String mmeAuthToken) {
+        return from(auth.dsPrsID, mmeAuthToken);
+    }
+
     public static Auth from(String dsPrsID, String mmeAuthToken) {
         logger.trace("<< from() < dsPrsID: {} mmeAuthToken: {}", dsPrsID, mmeAuthToken);
 

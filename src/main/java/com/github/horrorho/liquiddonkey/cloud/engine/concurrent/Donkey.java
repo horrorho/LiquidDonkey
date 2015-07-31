@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.engine.concurrent;
 
+import com.github.horrorho.liquiddonkey.cloud.HttpAgent;
 import com.github.horrorho.liquiddonkey.cloud.Outcome;
 import com.github.horrorho.liquiddonkey.cloud.SignatureManager;
 import com.github.horrorho.liquiddonkey.cloud.client.ChunksClient;
@@ -36,12 +37,11 @@ import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import net.jcip.annotations.NotThreadSafe;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.slf4j.Logger;
@@ -57,46 +57,40 @@ class Donkey implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(Donkey.class);
 
-    private final HttpClient client;
+    private final HttpAgent agent;
     private final ChunksClient chunksClient;
     private final SyncSupplier<ChunkServer.StorageHostChunkList> chunks;
     private final StoreManager storeManager;
     private final SignatureManager signatureManager;
     private final Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer;
-    private final int retryCount;
-    private final long retryDelayMs;
     private final AtomicReference<Exception> fatal;
     private volatile boolean isAlive;
     private volatile HttpUriRequest request;
 
     Donkey(
-            HttpClient client,
+            HttpAgent agent,
             ChunksClient chunksClient,
             SyncSupplier<ChunkServer.StorageHostChunkList> chunks,
             StoreManager storeManager,
             SignatureManager signatureManager,
             Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer,
-            int retryCount,
-            long retryDelayMs,
             AtomicReference<Exception> fatal,
             boolean isAlive,
             HttpUriRequest request) {
 
-        this.client = client;
-        this.chunksClient = chunksClient;
-        this.chunks = chunks;
-        this.storeManager = storeManager;
-        this.signatureManager = signatureManager;
-        this.outcomesConsumer = outcomesConsumer;
-        this.retryCount = retryCount;
-        this.retryDelayMs = retryDelayMs;
-        this.fatal = fatal;
+        this.agent = Objects.requireNonNull(agent);
+        this.chunksClient = Objects.requireNonNull(chunksClient);
+        this.chunks = Objects.requireNonNull(chunks);
+        this.storeManager = Objects.requireNonNull(storeManager);
+        this.signatureManager = Objects.requireNonNull(signatureManager);
+        this.outcomesConsumer = Objects.requireNonNull(outcomesConsumer);
+        this.fatal = Objects.requireNonNull(fatal);
         this.isAlive = isAlive;
-        this.request = request;
+        this.request = Objects.requireNonNull(request);
     }
 
     Donkey(
-            HttpClient client,
+            HttpAgent ioExecutor,
             ChunksClient chunksClient,
             SyncSupplier<ChunkServer.StorageHostChunkList> chunks,
             StoreManager storeManager,
@@ -107,14 +101,12 @@ class Donkey implements Runnable {
             AtomicReference<Exception> fatal) {
 
         this(
-                client,
+                ioExecutor,
                 chunksClient,
                 chunks,
                 storeManager,
                 signatureManager,
                 outcomesConsumer,
-                retryCount,
-                retryDelayMs,
                 fatal,
                 true,
                 null);
@@ -172,28 +164,23 @@ class Donkey implements Runnable {
     Map<ICloud.MBSFile, Outcome> doProcess(ChunkServer.StorageHostChunkList chunkList)
             throws IOException, InterruptedException {
 
-        // TODO test fatal in loop
-        for (int i = 0; i < retryCount && isAlive; i++) {
+        while (isAlive) {
             request = chunksClient.get(chunkList);
             byte[] data = fetch();
 
-            if (data == null) {
-                logger.warn("-- doProcess() > null data, attempt: {} sleeping (ms): {}", i, retryDelayMs);
-                TimeUnit.MILLISECONDS.sleep(retryDelayMs);
-                continue;
+            if (data == null || !isAlive) { 
+                break;
             }
 
             Map<ByteString, DataWriter> writers = decode(chunkList, data);
 
-            if (writers == null) {
-                logger.warn("-- doProcess() > null writers, attempt: {} sleeping (ms): {}", i, retryDelayMs);
-                TimeUnit.MILLISECONDS.sleep(retryDelayMs);
-                continue;
+            if (writers == null) { 
+                break;
             }
 
             return write(writers);
-        }
-
+        }        
+        
         Set<ByteString> failedSignatures = storeManager.fail(chunkList);
         return signatureManager.fail(failedSignatures);
     }
@@ -203,7 +190,7 @@ class Donkey implements Runnable {
 
         byte[] data;
         try {
-            data = client.execute(request, chunksClient.responseHandler());
+            data = agent.execute(client -> client.execute(request, chunksClient.responseHandler()));
 
         } catch (UnknownHostException ex) {
             logger.warn("-- fetch() > exception: {}", ex);
@@ -228,17 +215,17 @@ class Donkey implements Runnable {
 
         logger.trace("<< decode() < chunk list: {} data: {}", chunkList.getHostInfo().getUri(), data.length);
 
-        Map<ByteString, DataWriter> outcomes;
+        Map<ByteString, DataWriter> writers;
         try {
-            outcomes = storeManager.put(chunkList, data);
+            writers = storeManager.put(chunkList, data);
 
         } catch (BadDataException ex) {
             logger.warn("-- decodeWrite() > exception: ", ex);
-            outcomes = null;
+            writers = null;
         }
 
-        logger.trace(">> decode() > outcomes: {}", outcomes);
-        return outcomes;
+        logger.trace(">> decode() > outcomes: {}", writers);
+        return writers;
     }
 
     Map<ICloud.MBSFile, Outcome> write(Map<ByteString, DataWriter> writers) throws IOException, InterruptedException {

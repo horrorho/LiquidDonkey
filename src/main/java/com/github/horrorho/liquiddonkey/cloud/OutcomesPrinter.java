@@ -35,7 +35,7 @@ import java.util.function.Consumer;
  * @author Ahseya
  */
 public class OutcomesPrinter
-        implements Consumer<Map<ICloud.MBSFile, Outcome>>, BiConsumer<Double, Map<ICloud.MBSFile, Outcome>> {
+        implements Consumer<Map<ICloud.MBSFile, Outcome>>, BiConsumer<String, Map<ICloud.MBSFile, Outcome>> {
 
     public static OutcomesPrinter create() {
         return new OutcomesPrinter(System.out, System.err);
@@ -55,16 +55,11 @@ public class OutcomesPrinter
 
     @Override
     public void accept(Map<ICloud.MBSFile, Outcome> outcomes) {
-        print("\t", outcomes);
+        accept("\t", outcomes);
     }
 
     @Override
-    public void accept(Double progress, Map<ICloud.MBSFile, Outcome> outcomes) {
-        String percent = "   " + String.format("%4s", (int) (progress * 100.0) + "% ");
-        print(percent, outcomes);
-    }
-
-    public void print(String prefix, Map<ICloud.MBSFile, Outcome> outcomes) {
+    public void accept(String prefix, Map<ICloud.MBSFile, Outcome> outcomes) {
         if (outcomes != null) {
             outcomes.entrySet().stream()
                     .forEach(entry -> {

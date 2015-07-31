@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.engine.concurrent;
 
+import com.github.horrorho.liquiddonkey.cloud.HttpAgent;
 import com.github.horrorho.liquiddonkey.cloud.Outcome;
 import com.github.horrorho.liquiddonkey.cloud.SignatureManager;
 import com.github.horrorho.liquiddonkey.cloud.client.ChunksClient;
@@ -45,7 +46,7 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.http.client.HttpClient;
+import static org.bouncycastle.crypto.tls.ConnectionEnd.client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +89,7 @@ public class ConcurrentEngine {
     }
 
     public Exception execute(
-            HttpClient client,
+            HttpAgent agent,
             StoreManager storeManager,
             SignatureManager signatureManager,
             Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer
@@ -101,7 +102,7 @@ public class ConcurrentEngine {
         AtomicReference<Exception> fatal = new AtomicReference(null);
         Supplier<Donkey> donkies = ()
                 -> new Donkey(
-                        client,
+                        agent,
                         chunksClient,
                         syncSupplier,
                         storeManager,

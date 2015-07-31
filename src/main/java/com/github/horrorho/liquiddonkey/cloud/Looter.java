@@ -30,7 +30,6 @@ import com.github.horrorho.liquiddonkey.cloud.data.Auth;
 import com.github.horrorho.liquiddonkey.cloud.data.Backups;
 import com.github.horrorho.liquiddonkey.cloud.data.Core;
 import com.github.horrorho.liquiddonkey.cloud.data.Cores;
-import com.github.horrorho.liquiddonkey.cloud.data.Quota;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
@@ -47,10 +46,8 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
@@ -98,7 +95,7 @@ public class Looter implements Closeable {
             CloseableHttpClient client,
             PrintStream std,
             PrintStream err,
-            OutcomesPrinter  outcomesPrinter,
+            OutcomesPrinter outcomesPrinter,
             FileFilter filter) {
 
         this.config = Objects.requireNonNull(config);
@@ -115,8 +112,8 @@ public class Looter implements Closeable {
         std.println("Authenticating.");
 
         // Authenticate
-        Auth auth = config.authentication().hasAppleIdPassword()
-                ? Auth.from(client, config.authentication().appleId(), config.authentication().password())
+        Auth auth = config.authentication().hasIdPassword()
+                ? Auth.from(client, config.authentication().id(), config.authentication().password())
                 : Auth.from(config.authentication().dsPrsId(), config.authentication().mmeAuthToken());
 
         if (config.engine().toDumpToken()) {
@@ -127,17 +124,25 @@ public class Looter implements Closeable {
         // Core settings.
         Core core = Cores.from(client, auth);
 
-        // Use the new mmeAuthToken in case it's changed.
-        String mmeAuthToken = core.auth().mmeAuthToken();
+        // Use Core auth, it may have a newer mmeAuthToken. 
+        Authenticator authenticator = Authenticator.from(core.auth());
+
+        // HttpAgent        
+        HttpAgent agent
+                = HttpAgent.from(
+                        client,
+                        config.engine().retryCount(),
+                        config.engine().retryDelayMs(),
+                        authenticator);
 
         // Testing.
-        Quota.from(client, core, mmeAuthToken);
-
+        //Quota.from(client, core, auth.mmeAuthToken());
         // Account.
-        Account account = Accounts.from(client, core, mmeAuthToken);
+        Account account = agent.execute((c, mmeAuthToken) -> Accounts.from(c, core, mmeAuthToken));
 
         // Available backups.
-        List<Backup> backups = Backups.from(client, core, mmeAuthToken, account);
+        List<Backup> backups
+                = agent.execute((c, mmeAuthToken) -> Backups.from(c, core, mmeAuthToken, account));
 
         // Filter backups. 
         List<Backup> selected
@@ -147,16 +152,16 @@ public class Looter implements Closeable {
         // Fetch backups.
         for (Backup backup : selected) {
             if (logger.isDebugEnabled()) {
-                monitoredBackup(client, core, mmeAuthToken, backup);
+                monitoredBackup(client, core, agent, backup);
             } else {
-                backup(client, core, mmeAuthToken, backup);
+                backup(client, core, agent, backup);
             }
         }
 
         logger.trace(">> loot()");
     }
 
-    void monitoredBackup(HttpClient client, Core core, String mmeAuthToken, Backup backup)
+    void monitoredBackup(HttpClient client, Core core, HttpAgent agent, Backup backup)
             throws BadDataException, IOException, InterruptedException {
 
         // Potential for large scale memory leakage. Lightweight reporting on all debugged runs.
@@ -167,7 +172,7 @@ public class Looter implements Closeable {
             thread.start();
 
             // Fetch backup.
-            backup(client, core, mmeAuthToken, backup);
+            backup(client, core, agent, backup);
 
         } finally {
             memMonitor.kill();
@@ -175,7 +180,7 @@ public class Looter implements Closeable {
         }
     }
 
-    void backup(HttpClient client, Core core, String mmeAuthToken, Backup backup)
+    void backup(HttpClient client, Core core, HttpAgent agent, Backup backup)
             throws BadDataException, IOException, InterruptedException {
 
         logger.info("-- backup() > udid: {}", backup.backupUDID());
@@ -197,8 +202,8 @@ public class Looter implements Closeable {
         for (int id : resolved) {
             try {
                 logger.info("-- backup() > snapshot: {}", id);
-                snapshot(client, core, mmeAuthToken, backup, id);
-            } catch (BadDataException | IOException ex) {
+                snapshot(client, core, agent, backup, id);
+            } catch (IOException ex) {
                 if (isAggressive) {
                     logger.warn("-- backup() > exception: {}", ex);
                 } else {
@@ -208,11 +213,14 @@ public class Looter implements Closeable {
         }
     }
 
-    void snapshot(HttpClient client, Core core, String mmeAuthToken, Backup backup, int id)
+    void snapshot(HttpClient client, Core core, HttpAgent agent, Backup backup, int id)
             throws BadDataException, IOException, InterruptedException {
 
         // Retrieve file list.
-        Snapshot snapshot = Snapshots.from(client, core, mmeAuthToken, backup, id, config.client().listLimit());
+        int limit = config.client().listLimit();
+        Snapshot snapshot
+                = agent.execute((c, mmeAuthToken) -> Snapshots.from(c, core, mmeAuthToken, backup, id, limit));
+
         if (snapshot == null) {
             logger.warn("-- snapshot() > snapshot not found: {}", id);
             return;
@@ -224,21 +232,21 @@ public class Looter implements Closeable {
         snapshot = filterFiles(snapshot, backup.keyBagManager());
 
         // Fetch files
-        SnapshotDownloader.from(config.engine(), config.file(), outcomesPrinter)
-                .download(client, core, mmeAuthToken, snapshot);
+        SnapshotDownloader.from(config.engine(), config.file())
+                .download(agent, core, snapshot, outcomesPrinter);
     }
 
     Snapshot filterFiles(Snapshot snapshot, KeyBagManager keyBagManager) throws IOException {
-        snapshot = Snapshots.from(snapshot, file -> file.getSize() != 0);
-        logger.info("-- filter() > filtered, non empty: {}", snapshot.filesCount());
+        snapshot = Snapshots.from(snapshot, file -> file.getSize() != 0 && file.hasSignature());
+        logger.info("-- filter() > filtered non empty, remaining: {}", snapshot.filesCount());
 
         snapshot = Snapshots.from(snapshot, filter);
-        logger.info("-- filter() > filtered, configured: {}", snapshot.filesCount());
+        logger.info("-- filter() > filtered configured, remaining: {}", snapshot.filesCount());
 
         Predicate<ICloud.MBSFile> undecryptableFilter
                 = UndecryptableFilter.from(keyBagManager, outcomesPrinter);
         snapshot = Snapshots.from(snapshot, undecryptableFilter);
-        logger.info("-- filter() > filtered, undecryptable: {}", snapshot.filesCount());
+        logger.info("-- filter() > filtered undecryptable, remaining: {}", snapshot.filesCount());
 
         if (config.engine().toForceOverwrite()) {
             logger.debug("-- filter() > forced overwrite");
@@ -246,7 +254,7 @@ public class Looter implements Closeable {
             long a = System.currentTimeMillis();
             snapshot = LocalFileFilter.from(snapshot, config.file()).apply(snapshot);
             long b = System.currentTimeMillis();
-            logger.info("-- filter() > filtered, local: {} delay(ms): {}", snapshot.filesCount(), b - a);
+            logger.info("-- filter() > filtered local, remaining: {} delay(ms): {}", snapshot.filesCount(), b - a);
         }
 
         return snapshot;

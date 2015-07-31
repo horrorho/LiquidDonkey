@@ -40,11 +40,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,46 +52,46 @@ import org.slf4j.LoggerFactory;
  *
  * @author Ahseya
  */
+@Immutable
 @ThreadSafe
 public final class SnapshotDownloader {
 
     public static SnapshotDownloader from(
             EngineConfig engineConfig,
-            FileConfig fileConfig,
-            BiConsumer<Double, Map<ICloud.MBSFile, Outcome>> percentageOutcomes) {
+            FileConfig fileConfig) {
 
         ConcurrentEngine engine = ConcurrentEngine.from(engineConfig);
         Function<Snapshot, SignatureManager> signatureManagers = s -> SignatureManager.from(s, fileConfig);
 
-        return new SnapshotDownloader(engine, signatureManagers, percentageOutcomes);
+        return new SnapshotDownloader(engine, signatureManagers);
     }
 
     public static SnapshotDownloader from(
             ConcurrentEngine engine,
-            Function<Snapshot, SignatureManager> signatureWriters,
-            BiConsumer<Double, Map<ICloud.MBSFile, Outcome>> percentageOutcomes) {
+            Function<Snapshot, SignatureManager> signatureWriters) {
 
-        return new SnapshotDownloader(engine, signatureWriters, percentageOutcomes);
+        return new SnapshotDownloader(engine, signatureWriters);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(SnapshotDownloader.class);
 
     private final ConcurrentEngine engine;
     private final Function<Snapshot, SignatureManager> signatureManagers;
-    private final BiConsumer<Double, Map<ICloud.MBSFile, Outcome>> percentageOutcomes;
 
     SnapshotDownloader(
             ConcurrentEngine engine,
-            Function<Snapshot, SignatureManager> signatureWriters,
-            BiConsumer<Double, Map<ICloud.MBSFile, Outcome>> outcomes) {
+            Function<Snapshot, SignatureManager> signatureWriters) {
 
         this.engine = Objects.requireNonNull(engine);
         this.signatureManagers = Objects.requireNonNull(signatureWriters);
-        this.percentageOutcomes = Objects.requireNonNull(outcomes);
     }
 
-    public void download(HttpClient client, Core core, String mmeAuthToken, Snapshot snapshot)
-            throws BadDataException, IOException, InterruptedException {
+    public void download( 
+            HttpAgent agent,
+            Core core,
+            Snapshot snapshot,
+            Consumer<Map<ICloud.MBSFile, Outcome>> outcomes
+    ) throws BadDataException, IOException, InterruptedException {
 
         logger.trace("<< download() < dsPrsID: {} udid: {} snapshot: {}",
                 snapshot.dsPrsID(), snapshot.backupUDID(), snapshot.snapshotID());
@@ -103,8 +102,10 @@ public final class SnapshotDownloader {
         while (!isCompleted && !snapshot.files().isEmpty()) {
             logger.debug("-- download() > loop, files: {}", snapshot.files().size());
 
-            // Files to download.
-            ChunkServer.FileGroups fileGroups = FileGroups.from(client, core, mmeAuthToken, snapshot);
+            // FilesGroups
+            Snapshot get = snapshot;
+            ChunkServer.FileGroups fileGroups
+                    = agent.execute((client, mmeAuthToken) -> FileGroups.from(client, core, mmeAuthToken, get));
 
             // Store manager
             StoreManager storeManager = StoreManager.from(fileGroups);
@@ -117,18 +118,13 @@ public final class SnapshotDownloader {
             // Signature manager.
             SignatureManager signatureManager = signatureManagers.apply(snapshot);
 
-            // Outcome Consumer
-            Consumer<Map<ICloud.MBSFile, Outcome>> percentageOutcome = OutcomesPrinter.create();
-
             // Sanity check.
             logger.debug("-- download() > loaded signatures, StoreManager: {} SignatureManager: {}",
                     storeManager.remainingSignatures().size(), signatureManager.remainingSignatures().size());
 
-            // Percentage outcomes
-            Consumer<Map<ICloud.MBSFile, Outcome>> outcomes = outcomes(signatureManager);
             try {
                 // Execute.
-                fatal = engine.execute(client, storeManager, signatureManager, outcomes);
+                fatal = engine.execute(agent, storeManager, signatureManager, outcomes);
                 isCompleted = true;
                 // TODO rethrow or handle this exception, eg 401 status codes
             } catch (TimeoutException ex) {
@@ -153,12 +149,12 @@ public final class SnapshotDownloader {
         logger.trace(">> download()");
     }
 
-    Consumer<Map<ICloud.MBSFile, Outcome>> outcomes(SignatureManager signatureManager) {
-        return outcomes -> {
-            double completed = signatureManager.failedBytes() + signatureManager.outBytes();
-            double total = signatureManager.totalBytes();
-            double percentage = completed / total;
-            percentageOutcomes.accept(percentage, outcomes);
-        };
-    }
+//    Consumer<Map<ICloud.MBSFile, Outcome>> outcomes(SignatureManager signatureManager) {
+//        return outcomes -> {
+//            double completed = signatureManager.failedBytes() + signatureManager.outBytes();
+//            double total = signatureManager.totalBytes();
+//            double percentage = completed / total;
+//            percentageOutcomes.accept(percentage, outcomes);
+//        };
+//    }
 }

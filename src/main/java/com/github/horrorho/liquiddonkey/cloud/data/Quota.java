@@ -74,7 +74,7 @@ public final class Quota {
         try {
             // May throw a service unavailable exception
             return propertyListClient.get(client, dsPrsID, mmeAuthToken, url);
-        } catch (BadDataException | IOException ex) {
+        } catch (IOException ex) {
             logger.warn("--from() > exception: {}", ex.getMessage());
             return null;
         }
