@@ -73,9 +73,7 @@ public class HttpAgent {
         this.authenticator = Objects.requireNonNull(authenticator);
     }
 
-    public <T> T execute(IOBiFunction<HttpClient, String, T> function)
-            throws AuthenticationException, IOException, InterruptedException {
-
+    public <T> T execute(IOBiFunction<HttpClient, String, T> function) throws AuthenticationException, IOException {
         return execute(c -> {
             while (true) {
                 Authenticator.Token token = authenticator.get();

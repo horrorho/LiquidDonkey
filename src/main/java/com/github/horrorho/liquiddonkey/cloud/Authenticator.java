@@ -70,28 +70,29 @@ public final class Authenticator {
     @GuardedBy("lock")
     private volatile Token token;
     @GuardedBy("lock")
-    private volatile boolean isExpired;
+    private volatile String invalid;
 
-    Authenticator(String id, String password, Lock lock, Token token, boolean isExpired) {
+    Authenticator(String id, String password, Lock lock, Token token, String invalid) {
         this.id = id;
         this.password = password;
         this.token = token;
         this.lock = Objects.requireNonNull(lock);
-        this.isExpired = isExpired;
+        this.invalid = invalid;
     }
 
     Authenticator(String id, String password, Auth auth) {
-        this(id, password, new ReentrantLock(false), Token.from(auth), false);
+        this(id, password, new ReentrantLock(false), Token.from(auth), null);
     }
 
-    public Token get() {
+    public Token get() throws AuthenticationException {
+        testIsInvalid();
         return token;
     }
 
     public Token reauthenticate(HttpClient client, Token expired) throws AuthenticationException, IOException {
-
         logger.trace("<< reauthenticate() < dsPrsID: {} timestamp: {}", expired.auth().dsPrsID(), expired.timestamp());
 
+        testIsInvalid();
         lock.lock();
         try {
             if (expired.timestamp().isBefore(token.timestamp())) {
@@ -101,8 +102,7 @@ public final class Authenticator {
                 logger.debug("-- reauthenticate() > expired auth");
             }
 
-            logger.trace(">> reauthenticate() > dsPrsID: {} timestamp: {}",
-                    token.auth().dsPrsID(), token.timestamp());
+            logger.trace(">> reauthenticate() > dsPrsID: {} timestamp: {}", token.auth().dsPrsID(), token.timestamp());
             return token;
 
         } finally {
@@ -113,34 +113,39 @@ public final class Authenticator {
     @GuardedBy("lock")
     void authenticate(HttpClient client) throws AuthenticationException, IOException {
         if (id == null || id.isEmpty() || password == null || password.isEmpty()) {
-            throw new AuthenticationException("Missing id/ password.");
+            invalid = "Missing id/ password.";
+        } else {
+            try {
+                Auth auth = Auth.from(client, id, password);
+
+                if (auth.dsPrsID().equals(token.auth().dsPrsID())) {
+                    token = Token.from(auth);
+
+                } else {
+                    logger.error("-- reauthentication() > mismatched dsPrsID: {} > {}",
+                            token.auth().dsPrsID(), auth.dsPrsID());
+                    invalid = "Account mismatch for token and id/ password";
+                }
+            } catch (HttpResponseException ex) {
+                if (ex.getStatusCode() == 401) {
+                    invalid = "Authentication failed";
+                }
+            }
         }
 
-        if (isExpired) {
-            throw new AuthenticationException("Failed");
-        }
-
-        try {
-            Auth auth = Auth.from(client, id, password);
-
-            if (!auth.dsPrsID().equals(token.auth().dsPrsID())) {
-                logger.error("-- reauthentication() > mismatched dsPrsID: {} > {}",
-                        token.auth().dsPrsID(), auth.dsPrsID());
-                throw new AuthenticationException("Account mismatch for token and id/ password");
-            }
-
-            token = Token.from(auth);
-
-        } catch (HttpResponseException ex) {
-            if (ex.getStatusCode() == 401) {
-                isExpired = true;
-                throw new AuthenticationException("Failed");
-            }
+        if (invalid != null) {
+            throw new AuthenticationException(invalid);
         }
     }
 
-    public boolean isExpired() {
-        return isExpired;
+    void testIsInvalid() throws AuthenticationException {
+        if (invalid != null) {
+            throw new AuthenticationException(invalid);
+        }
+    }
+
+    public boolean isInvalid() {
+        return invalid != null;
     }
 
     public String dsPrsID() {
