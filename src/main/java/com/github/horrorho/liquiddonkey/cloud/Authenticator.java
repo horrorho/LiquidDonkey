@@ -24,7 +24,6 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.data.Auth;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Objects;
@@ -84,24 +83,24 @@ public final class Authenticator {
         this(id, password, new ReentrantLock(false), Token.from(auth), null);
     }
 
-    public Token get() throws AuthenticationException {
+    public Token get() throws HttpResponseException {
         testIsInvalid();
         return token;
     }
 
-    public Token reauthenticate(HttpClient client, Token expired) throws AuthenticationException, IOException {
+    public Token reauthenticate(HttpClient client, Token expired) throws IOException {
         logger.trace("<< reauthenticate() < dsPrsID: {} timestamp: {}", expired.auth().dsPrsID(), expired.timestamp());
 
         testIsInvalid();
         lock.lock();
         try {
-            if (expired.timestamp().isBefore(token.timestamp())) {
+            if (token.timestamp().isAfter(expired.timestamp())) {
+                logger.debug("-- reauthenticate() > expired token");
+            } else {
+
                 logger.debug("-- reauthenticate() > reauthenticating");
                 authenticate(client);
-            } else {
-                logger.debug("-- reauthenticate() > expired auth");
             }
-
             logger.trace(">> reauthenticate() > dsPrsID: {} timestamp: {}", token.auth().dsPrsID(), token.timestamp());
             return token;
 
@@ -111,9 +110,9 @@ public final class Authenticator {
     }
 
     @GuardedBy("lock")
-    void authenticate(HttpClient client) throws AuthenticationException, IOException {
+    void authenticate(HttpClient client) throws IOException {
         if (id == null || id.isEmpty() || password == null || password.isEmpty()) {
-            invalid = "Missing id/ password.";
+            invalid = "Unable to authenticate. Missing id/ password.";
         } else {
             try {
                 Auth auth = Auth.from(client, id, password);
@@ -134,13 +133,17 @@ public final class Authenticator {
         }
 
         if (invalid != null) {
-            throw new AuthenticationException(invalid);
+            logger.warn("-- authenticate() > invalid: {}", invalid);
+            throw new HttpResponseException(401, invalid);
         }
     }
 
-    void testIsInvalid() throws AuthenticationException {
-        if (invalid != null) {
-            throw new AuthenticationException(invalid);
+    void testIsInvalid() throws HttpResponseException {
+        boolean isInvalid = invalid != null;
+        logger.debug("-- testIsInvalid() > isInvalid: {}", isInvalid);
+
+        if (isInvalid) {
+            throw new HttpResponseException(401, invalid);
         }
     }
 
