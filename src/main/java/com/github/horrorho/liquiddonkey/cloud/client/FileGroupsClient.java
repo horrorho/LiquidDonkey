@@ -31,14 +31,10 @@ import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.ResponseHandlerFactory;
 import com.github.horrorho.liquiddonkey.settings.Markers;
 import com.github.horrorho.liquiddonkey.util.Bytes;
-import com.google.protobuf.ByteString;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -83,8 +79,6 @@ public final class FileGroupsClient {
     private final ResponseHandler<List<ICloud.MBSFileAuthToken>> mbsFileAuthTokenListHandler;
     private final Headers headers;
 
-    ;
-
     FileGroupsClient(
             ResponseHandler<ChunkServer.FileGroups> filesGroupsHandler,
             ResponseHandler<List<ICloud.MBSFileAuthToken>> mbsFileAuthTokenListHandler,
@@ -95,60 +89,7 @@ public final class FileGroupsClient {
         this.headers = Objects.requireNonNull(headers);
     }
 
-    /**
-     * Queries the server and returns ChunkServer.FileGroupsClient.
-     *
-     * @param client, not null
-     * @param dsPrsID, not null
-     * @param mmeAuthToken, not null
-     * @param contentUrl, not null
-     * @param mobileBackupUrl, not null
-     * @param udid, not null
-     * @param snapshot, not null
-     * @param files, not null
-     * @return ChunkServer.FileGroupsClient, may be null
-     * @throws BadDataException
-     * @throws IOException
-     */
-    public ChunkServer.FileGroups get(
-            HttpClient client,
-            String dsPrsID,
-            String mmeAuthToken,
-            String contentUrl,
-            String mobileBackupUrl,
-            String udid,
-            int snapshot,
-            Collection<ICloud.MBSFile> files
-    ) throws BadDataException, IOException {
-
-        logger.trace("<< get() < dsPrsID: {} udid: {} snapshot: {} files: {}", dsPrsID, udid, snapshot, files.size());
-        logger.debug(marker, "-- get() < files: {}", files);
-
-        // Rationalize signatures. Collisions ignored. Null signatures are empty files/ non-downloadables.
-        // TODO clean up somehow
-        Collection<ICloud.MBSFile> unique = files.stream()
-                .filter(ICloud.MBSFile::hasSignature)
-                .collect(Collectors.toMap(ICloud.MBSFile::getSignature, Function.identity(), (a, b) -> a))
-                .values();
-
-        logger.debug("-- get() > rationalized count: {}", unique.size());
-
-        List<ICloud.MBSFileAuthToken> authTokens = unique.isEmpty()
-                ? new ArrayList<>()
-                : getFiles(client, dsPrsID, mmeAuthToken, mobileBackupUrl, udid, Integer.toString(snapshot), unique);
-
-        ICloud.MBSFileAuthTokens tokens = fileIdToSignatureAuthTokens(unique, authTokens);
-
-        ChunkServer.FileGroups fileGroups = authTokens.isEmpty()
-                ? ChunkServer.FileGroups.getDefaultInstance()
-                : authorizeGet(client, dsPrsID, contentUrl, tokens);
-
-        logger.debug(marker, "-- get() > fileGroups: {}", fileGroups);
-        logger.trace(">> get() > {}", fileGroups.getFileGroupsCount());
-        return fileGroups;
-    }
-
-    List<ICloud.MBSFileAuthToken> getFiles(
+    public List<ICloud.MBSFileAuthToken> getFiles(
             HttpClient client,
             String dsPrsID,
             String mmeAuthToken,
@@ -173,7 +114,7 @@ public final class FileGroupsClient {
             throw new BadDataException(ex);
         }
 
-        String uri = path(mobileBackupUrl, "mbs",  dsPrsID, udid, snapshot, "getFiles");
+        String uri = path(mobileBackupUrl, "mbs", dsPrsID, udid, snapshot, "getFiles");
 
         HttpPost post = new HttpPost(uri);
         headers.mobileBackupHeaders(dsPrsID, mmeAuthToken).stream().forEach(post::addHeader);
@@ -185,9 +126,9 @@ public final class FileGroupsClient {
         return tokens;
     }
 
-    ChunkServer.FileGroups authorizeGet(
+    public ChunkServer.FileGroups authorizeGet(
             HttpClient client,
-            String dsPrsID, 
+            String dsPrsID,
             String contentUrl,
             ICloud.MBSFileAuthTokens authTokens
     ) throws IOException {
@@ -214,25 +155,5 @@ public final class FileGroupsClient {
         logger.debug(marker, "-- authorizeGet() > fileGroups: {}", fileGroups);
         logger.trace(">> authorizeGet() > {}", fileGroups.getFileGroupsCount());
         return fileGroups;
-    }
-
-    ICloud.MBSFileAuthTokens fileIdToSignatureAuthTokens(
-            Collection<ICloud.MBSFile> files,
-            Collection<ICloud.MBSFileAuthToken> fileIdAuthTokens) {
-
-        Map<ByteString, ByteString> fileIdToSignature = files.stream()
-                .collect(Collectors.toMap(ICloud.MBSFile::getFileID, ICloud.MBSFile::getSignature));
-
-        // Somewhat confusing proto definitions.
-        // Each file is requested by file signature/ checksum not by it's FileID
-        // Identical files share signatures and don't require multiple downloads.
-        // Collisions improbable.
-        ICloud.MBSFileAuthTokens.Builder builder = ICloud.MBSFileAuthTokens.newBuilder();
-        fileIdAuthTokens.stream().forEach(token -> builder.addTokens(
-                ICloud.MBSFileAuthToken.newBuilder()
-                .setFileID(fileIdToSignature.get(token.getFileID()))
-                .setAuthToken(token.getAuthToken())
-                .build()));
-        return builder.build();
     }
 }

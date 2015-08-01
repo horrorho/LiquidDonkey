@@ -25,8 +25,17 @@ package com.github.horrorho.liquiddonkey.cloud.data;
 
 import com.github.horrorho.liquiddonkey.cloud.client.FileGroupsClient;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
+import com.google.protobuf.ByteString;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
@@ -43,22 +52,63 @@ import org.slf4j.LoggerFactory;
 public final class FileGroups {
 
     public static ChunkServer.FileGroups from(HttpClient client, Core core, String mmeAuthToken, Snapshot snapshot)
-            throws IOException, BadDataException {
+            throws BadDataException, IOException {
+
+        logger.trace("<< get() < dsPrsID: {} udid: {} snapshot: {} files: {}",
+                snapshot.dsPrsID(), snapshot.backupUDID(), snapshot.snapshotID(), snapshot.filesCount());
 
         if (!core.dsPrsID().equals(snapshot.dsPrsID())) {
             logger.error("-- from() > dsPrsID mismatch, core: {} snapshot: {}", core.dsPrsID(), snapshot.dsPrsID());
         }
 
-        return FileGroupsClient.create().get(
-                client,
-                core.dsPrsID(),
-                mmeAuthToken,
-                core.contentUrl(),
-                core.mobileBackupUrl(),
-                snapshot.backupUDID(),
-                snapshot.snapshotID(),
-                snapshot.files());
+        // Signatures represent unique files hashes.
+        // Discard duplicate signatures. Collisions unlikely.
+        // Null signatures are empty files/ non-downloadables.        
+        Collection<ICloud.MBSFile> unique = snapshot.files().stream()
+                .filter(ICloud.MBSFile::hasSignature)
+                .collect(Collectors.toCollection(HashSet::new));
+        logger.debug("-- get() > rationalized count: {}", unique.size());
+
+        List<ICloud.MBSFileAuthToken> authTokens = unique.isEmpty()
+                ? new ArrayList<>()
+                : fileGroupsClient.getFiles(
+                        client,
+                        snapshot.dsPrsID(),
+                        mmeAuthToken,
+                        core.mobileBackupUrl(),
+                        snapshot.backupUDID(),
+                        Integer.toString(snapshot.snapshotID()),
+                        unique);
+
+        ICloud.MBSFileAuthTokens tokens = fileIdToSignatureAuthTokens(unique, authTokens);
+
+        ChunkServer.FileGroups fileGroups = authTokens.isEmpty()
+                ? ChunkServer.FileGroups.getDefaultInstance()
+                : fileGroupsClient.authorizeGet(client, snapshot.dsPrsID(), core.contentUrl(), tokens);
+
+        logger.trace(">> get() > fileGroups: {}", fileGroups.getFileGroupsCount());
+        return fileGroups;
+    }
+
+    static ICloud.MBSFileAuthTokens fileIdToSignatureAuthTokens(
+            Collection<ICloud.MBSFile> files,
+            Collection<ICloud.MBSFileAuthToken> fileIdAuthTokens) {
+
+        Map<ByteString, ByteString> fileIdToSignature = files.stream()
+                .collect(Collectors.toMap(ICloud.MBSFile::getFileID, ICloud.MBSFile::getSignature));
+
+        // Somewhat confusing proto definitions.
+        // Each file is requested by file signature/ checksum not by it's FileID
+        ICloud.MBSFileAuthTokens.Builder builder = ICloud.MBSFileAuthTokens.newBuilder();
+        fileIdAuthTokens.stream().forEach(token -> builder.addTokens(
+                ICloud.MBSFileAuthToken.newBuilder()
+                .setFileID(fileIdToSignature.get(token.getFileID()))
+                .setAuthToken(token.getAuthToken())
+                .build()));
+        return builder.build();
     }
 
     private static final Logger logger = LoggerFactory.getLogger(FileGroups.class);
+
+    private static final FileGroupsClient fileGroupsClient = FileGroupsClient.create();
 }

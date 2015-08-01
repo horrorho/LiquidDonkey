@@ -67,7 +67,7 @@ public class Backups {
     static Backup backup(HttpClient client, Core core, String mmeAuthToken, Account account, ByteString udid)
             throws IOException, BadDataException {
 
-        logger.trace("<< from() < dsPrsID: {} udid: {}", core.dsPrsID(), Bytes.hex(udid));
+        logger.trace("<< from() < dsPrsID: {} udid: {}", account.dsPrsID(), Bytes.hex(udid));
 
         if (!core.dsPrsID().equals(account.dsPrsID())) {
             logger.error("-- from() > dsPrsID mismatch, core: {} account: {}", core.dsPrsID(), account.dsPrsID());

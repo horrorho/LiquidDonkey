@@ -76,7 +76,7 @@ class PropertyLists {
         return object.toString();
     }
 
-    static String string(NSDictionary dictionary, String key, String defaultValue) throws BadDataException {
+    static String string(NSDictionary dictionary, String key, String defaultValue) {
         NSObject object = dictionary.get(key);
         return object == null
                 ? defaultValue
