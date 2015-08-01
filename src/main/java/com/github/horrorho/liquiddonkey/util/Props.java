@@ -41,9 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Props.
- *
- * Lightweight properties helper.
+ * Props. Lightweight properties helper.
  *
  * @author Ahseya
  * @param <E>
