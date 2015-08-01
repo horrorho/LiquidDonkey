@@ -25,7 +25,6 @@ package com.github.horrorho.liquiddonkey.cloud.client;
 
 import static com.github.horrorho.liquiddonkey.cloud.client.Util.path;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.http.ResponseHandlerFactory;
 import java.io.IOException;
 import java.util.Objects;
@@ -74,7 +73,6 @@ public final class AccountClient {
      * @param mobileBackupUrl, not null
      * @return ICloud.MBSAccount, not null
      * @throws IOException
-     * @throws AuthenticationException
      */
     public ICloud.MBSAccount get(HttpClient client, String dsPrsID, String mmeAuthToken, String mobileBackupUrl)
             throws IOException {

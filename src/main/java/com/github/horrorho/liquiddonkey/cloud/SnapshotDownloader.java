@@ -99,7 +99,7 @@ public final class SnapshotDownloader {
         Exception fatal = null;
         boolean isCompleted = false;
 
-        while (!isCompleted && !snapshot.files().isEmpty()) {
+        while (!isCompleted && !snapshot.files().isEmpty() && !agent.authenticatorIsInvalid()) {
             logger.debug("-- download() > loop, files: {}", snapshot.files().size());
 
             // FilesGroups

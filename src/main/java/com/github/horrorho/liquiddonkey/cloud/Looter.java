@@ -52,6 +52,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.HttpResponseException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -204,7 +205,14 @@ public class Looter implements Closeable {
                 logger.info("-- backup() > snapshot: {}", id);
                 snapshot(client, core, agent, backup, id);
             } catch (IOException ex) {
-                if (isAggressive) {
+                if (ex instanceof HttpResponseException) {
+                    if (((HttpResponseException) ex).getStatusCode() == 401) {
+                        // Authentication failure.
+                        throw ex;
+                    }
+                }
+
+                if (isAggressive && !agent.authenticatorIsInvalid()) {
                     logger.warn("-- backup() > exception: {}", ex);
                 } else {
                     throw ex;

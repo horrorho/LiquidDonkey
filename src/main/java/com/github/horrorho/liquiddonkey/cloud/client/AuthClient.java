@@ -24,7 +24,6 @@
 package com.github.horrorho.liquiddonkey.cloud.client;
 
 import com.github.horrorho.liquiddonkey.util.SimplePropertyList;
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.ResponseHandlerFactory;
 import java.io.IOException;
@@ -71,12 +70,10 @@ public final class AuthClient {
      * @param id
      * @param password
      * @return Authenticate property list, not null
-     * @throws AuthenticationException
      * @throws BadDataException
      * @throws IOException
      */
-    public SimplePropertyList get(HttpClient client, String id, String password)
-            throws AuthenticationException, BadDataException, IOException {
+    public SimplePropertyList get(HttpClient client, String id, String password) throws BadDataException, IOException {
 
         logger.trace("<< get() < id: {} password: {}", id, password);
 
@@ -96,7 +93,7 @@ public final class AuthClient {
 
         } catch (HttpResponseException ex) {
             if (ex.getStatusCode() == 401) {
-                throw new AuthenticationException("Bad appleId/ password or not an iCloud account");
+                throw new HttpResponseException(401, "Bad appleId/ password or not an iCloud account");
             }
             throw ex;
         }

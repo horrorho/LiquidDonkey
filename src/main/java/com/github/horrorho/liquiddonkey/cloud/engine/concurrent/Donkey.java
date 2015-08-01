@@ -86,11 +86,11 @@ class Donkey implements Runnable {
         this.outcomesConsumer = Objects.requireNonNull(outcomesConsumer);
         this.fatal = Objects.requireNonNull(fatal);
         this.isAlive = isAlive;
-        this.request = Objects.requireNonNull(request);
+        this.request = request;
     }
 
     Donkey(
-            HttpAgent ioExecutor,
+            HttpAgent agent,
             ChunksClient chunksClient,
             SyncSupplier<ChunkServer.StorageHostChunkList> chunks,
             StoreManager storeManager,
@@ -101,7 +101,7 @@ class Donkey implements Runnable {
             AtomicReference<Exception> fatal) {
 
         this(
-                ioExecutor,
+                agent,
                 chunksClient,
                 chunks,
                 storeManager,

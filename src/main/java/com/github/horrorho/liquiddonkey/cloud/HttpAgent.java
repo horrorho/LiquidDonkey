@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.exception.AuthenticationException;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.iofunction.IOBiFunction;
 import com.github.horrorho.liquiddonkey.iofunction.IOFunction;
@@ -73,7 +72,7 @@ public class HttpAgent {
         this.authenticator = Objects.requireNonNull(authenticator);
     }
 
-    public <T> T execute(IOBiFunction<HttpClient, String, T> function) throws AuthenticationException, IOException {
+    public <T> T execute(IOBiFunction<HttpClient, String, T> function) throws IOException {
         return execute(c -> {
             while (true) {
                 Authenticator.Token token = authenticator.get();
@@ -109,6 +108,10 @@ public class HttpAgent {
 
     public String dsPrsID() {
         return authenticator.dsPrsID();
+    }
+
+    public boolean authenticatorIsInvalid() {
+        return authenticator.isInvalid();
     }
 
     void delay() {
