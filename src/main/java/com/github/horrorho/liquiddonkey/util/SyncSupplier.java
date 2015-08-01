@@ -31,7 +31,7 @@ import net.jcip.annotations.GuardedBy;
 import net.jcip.annotations.ThreadSafe;
 
 /**
- * SyncSupplier.
+ * SyncSupplier. Synchronized supplier.
  *
  * @author Ahseya
  * @param <T> item type
@@ -39,10 +39,25 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class SyncSupplier<T> {
 
+    /**
+     * Creates and returns a new instance.
+     *
+     * @param <T> item type
+     * @param collection, not null
+     * @return new instance, not null
+     */
     public static <T> SyncSupplier<T> from(Collection<T> collection) {
         return from(collection, false);
     }
 
+    /**
+     * Creates and returns a new instance.
+     *
+     * @param <T> item type
+     * @param collection, not null
+     * @param fair, true for fair Lock
+     * @return new instance, not null
+     */
     public static <T> SyncSupplier<T> from(Collection<T> collection, boolean fair) {
         return new SyncSupplier(new ReentrantLock(fair), new ArrayList<>(collection), collection.size());
     }
@@ -59,6 +74,12 @@ public final class SyncSupplier<T> {
     @GuardedBy("lock")
     private int index;
 
+    /**
+     * Returns the next item or null if no items remain.
+     *
+     * @return next item or null if no items remain
+     * @throws InterruptedException
+     */
     public T get() throws InterruptedException {
         lock.lockInterruptibly();
         try {
