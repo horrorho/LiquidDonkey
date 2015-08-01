@@ -31,9 +31,7 @@ import net.jcip.annotations.ThreadSafe;
 import org.apache.commons.codec.binary.Hex;
 
 /**
- * Bytes.
- * <p>
- * Bytes utilities.
+ * Bytes. Bytes utilities.
  *
  * @author ahseya
  */
