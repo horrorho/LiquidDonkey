@@ -23,9 +23,12 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.data;
 
-import com.github.horrorho.liquiddonkey.cloud.client.PropertyListClient;
+import com.dd.plist.NSDictionary;
+import com.github.horrorho.liquiddonkey.cloud.client.DataClient;
+import static com.github.horrorho.liquiddonkey.cloud.data.PropertyLists.get;
+import static com.github.horrorho.liquiddonkey.cloud.data.PropertyLists.parse;
+import static com.github.horrorho.liquiddonkey.cloud.data.PropertyLists.string;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.util.SimplePropertyList;
 import java.io.IOException;
 import org.apache.http.client.HttpClient;
 import org.slf4j.Logger;
@@ -41,8 +44,8 @@ public class Cores {
     public static Core from(HttpClient client, Auth auth) throws BadDataException, IOException {
         logger.trace("<< from() < auth: {}", auth);
 
-        SimplePropertyList propertyList = propertyListClient.get(client, auth.dsPrsID(), auth.mmeAuthToken(), SETUP_URL);
-        Core instance = from(propertyList);
+        byte[] data = propertyListClient.get(client, auth.dsPrsID(), auth.mmeAuthToken(), SETUP_URL);
+        Core instance = from(data);
 
         if (!instance.dsPrsID().equals(auth.dsPrsID())) {
             logger.error("-- from() > dsPrsID mismatch, settings: {}, auth: {}", instance.dsPrsID(), auth.dsPrsID());
@@ -52,21 +55,32 @@ public class Cores {
         return instance;
     }
 
-    public static Core from(SimplePropertyList settings) throws BadDataException {
-        logger.trace("<< from() < property list : {}", settings);
+    public static Core from(byte[] data) throws BadDataException {
+        logger.trace("<< from() < bytes: {}", data.length);
 
-        // Core requirements
-        String dsPrsID = settings.value("appleAccountInfo", "dsPrsID");
-        String mmeAuthToken = settings.value("tokens", "mmeAuthToken");
-        String mobileBackupUrl = settings.value("com.apple.mobileme", "com.apple.Dataclass.Backup", "url");
-        String contentUrl = settings.value("com.apple.mobileme", "com.apple.Dataclass.Content", "url");
+        NSDictionary settings = parse(data);
+        logger.debug("-- from() > settings: {}", settings.toASCIIPropertyList());
 
-        // Optional        
-        String fullName = settings.defaultOr("Unknown", "appleAccountInfo", "fullName");
-        String appleId = settings.defaultOr("Unknown", "appleAccountInfo", "appleId");
-        String quotaInfoURL = settings.defaultOr("", "com.apple.mobileme", "com.apple.Dataclass.Quota", "quotaInfoURL");
-        String quotaUpdateURL = settings.defaultOr("", "com.apple.mobileme", "com.apple.Dataclass.Quota", "quotaUpdateURL");
-        String storageInfoURL = settings.defaultOr("", "com.apple.mobileme", "com.apple.Dataclass.Quota", "storageInfoURL");
+        NSDictionary appleAccountInfo = get(settings, "appleAccountInfo");
+        String dsPrsID = string(appleAccountInfo, "dsPrsID");
+        String fullName = string(appleAccountInfo, "fullName", "N/A");
+        String appleId = string(appleAccountInfo, "appleId", "N/A");
+
+        NSDictionary tokens = get(settings, "tokens");
+        String mmeAuthToken = string(tokens, "mmeAuthToken");
+
+        NSDictionary mobileMe = get(settings, "com.apple.mobileme");
+
+        NSDictionary dataClassBackup = get(mobileMe, "com.apple.Dataclass.Backup");
+        String mobileBackupUrl = string(dataClassBackup, "url");
+
+        NSDictionary dataClassContent = get(mobileMe, "com.apple.Dataclass.Content");
+        String contentUrl = string(dataClassContent, "url");
+
+        NSDictionary dataClassQuota = get(mobileMe, "com.apple.Dataclass.Quota");
+        String quotaInfoURL = string(dataClassQuota, "quotaInfoURL", "");
+        String quotaUpdateURL = string(dataClassQuota, "quotaUpdateURL", "");
+        String storageInfoURL = string(dataClassQuota, "storageInfoURL", "");
 
         Core instance = new Core(
                 dsPrsID,
@@ -85,6 +99,6 @@ public class Cores {
 
     private static final Logger logger = LoggerFactory.getLogger(Cores.class);
 
-    private static final PropertyListClient propertyListClient = PropertyListClient.create();    
+    private static final DataClient propertyListClient = DataClient.create();
     private static final String SETUP_URL = "https://setup.icloud.com/setup/get_account_settings"; // TODO inject
 }

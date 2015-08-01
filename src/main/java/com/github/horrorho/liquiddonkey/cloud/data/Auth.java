@@ -23,9 +23,12 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.data;
 
+import com.dd.plist.NSDictionary;
 import com.github.horrorho.liquiddonkey.cloud.client.AuthClient;
+import static com.github.horrorho.liquiddonkey.cloud.data.PropertyLists.get;
+import static com.github.horrorho.liquiddonkey.cloud.data.PropertyLists.parse;
+import static com.github.horrorho.liquiddonkey.cloud.data.PropertyLists.string;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.util.SimplePropertyList;
 import java.io.IOException;
 import java.util.Objects;
 import net.jcip.annotations.Immutable;
@@ -59,12 +62,18 @@ public final class Auth {
     public static Auth from(HttpClient client, String id, String password) throws BadDataException, IOException {
         logger.trace("<< from() < id: {} password: {}", id, password);
 
-        SimplePropertyList propertyList = authClient.get(client, id, password);
+        byte[] data = authClient.get(client, id, password);
 
-        String dsPrsID = propertyList.value("appleAccountInfo", "dsPrsID");
+        NSDictionary authentication = parse(data);
+        logger.debug("-- from() > authentication: {}", authentication.toASCIIPropertyList());
+        
+        NSDictionary appleAccountInfo = get(authentication, "appleAccountInfo");
+        String dsPrsID = string(appleAccountInfo, "dsPrsID");
+
+        NSDictionary tokens = get(authentication, "tokens");
+        String mmeAuthToken = string(tokens, "mmeAuthToken");
+        
         logger.debug("-- from() >  dsPrsID: {}", dsPrsID);
-
-        String mmeAuthToken = propertyList.value("tokens", "mmeAuthToken");
         logger.debug("-- from() >   mmeAuthToken: {}", mmeAuthToken);
 
         Auth auth = new Auth(dsPrsID, mmeAuthToken);

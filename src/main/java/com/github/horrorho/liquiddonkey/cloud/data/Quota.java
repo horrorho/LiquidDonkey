@@ -23,9 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.data;
 
-import com.github.horrorho.liquiddonkey.cloud.client.PropertyListClient;
-import com.github.horrorho.liquiddonkey.exception.BadDataException;
-import com.github.horrorho.liquiddonkey.util.SimplePropertyList;
+import com.github.horrorho.liquiddonkey.cloud.client.DataClient;
+import com.github.horrorho.liquiddonkey.exception.BadDataException; 
 import java.io.IOException;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -47,41 +46,41 @@ public final class Quota {
     public static void from(HttpClient client, Core core, String mmeAuthToken) throws BadDataException, IOException {
         logger.trace("<< from() < dsPrsID: {}", core.dsPrsID());
 
-        if (!core.quotaInfoURL().isEmpty()) {
-            SimplePropertyList quotaInfo = from(client, core.dsPrsID(), mmeAuthToken, core.quotaInfoURL());
-            logger.debug("<< from() > quotaInfo: {}", quotaInfo);
-        }
-
-        if (!core.quotaUpdateURL().isEmpty()) {
-            SimplePropertyList quotaUpdate = from(client, core.dsPrsID(), mmeAuthToken, core.quotaUpdateURL());
-            logger.debug("<< from() > quotaInfo: {}", quotaUpdate);
-
-        }
-
-        if (!core.storageInfoURL().isEmpty()) {
-            SimplePropertyList storageInfo = from(client, core.dsPrsID(), mmeAuthToken, core.storageInfoURL());
-            logger.debug("<< from() > storageInfo: {}", storageInfo);
-        }
+//        if (!core.quotaInfoURL().isEmpty()) {
+//            SimplePropertyList quotaInfo = from(client, core.dsPrsID(), mmeAuthToken, core.quotaInfoURL());
+//            logger.debug("<< from() > quotaInfo: {}", quotaInfo);
+//        }
+//
+//        if (!core.quotaUpdateURL().isEmpty()) {
+//            SimplePropertyList quotaUpdate = from(client, core.dsPrsID(), mmeAuthToken, core.quotaUpdateURL());
+//            logger.debug("<< from() > quotaInfo: {}", quotaUpdate);
+//
+//        }
+//
+//        if (!core.storageInfoURL().isEmpty()) {
+//            SimplePropertyList storageInfo = from(client, core.dsPrsID(), mmeAuthToken, core.storageInfoURL());
+//            logger.debug("<< from() > storageInfo: {}", storageInfo);
+//        }
 
         logger.trace("from()");
     }
 
-    static SimplePropertyList from(HttpClient client, String dsPrsID, String mmeAuthToken, String url) {
-        if (url.isEmpty()) {
-            return null;
-        }
-
-        try {
-            // May throw a service unavailable exception
-            return propertyListClient.get(client, dsPrsID, mmeAuthToken, url);
-        } catch (IOException ex) {
-            logger.warn("--from() > exception: {}", ex.getMessage());
-            return null;
-        }
-    }
+//    static SimplePropertyList from(HttpClient client, String dsPrsID, String mmeAuthToken, String url) {
+//        if (url.isEmpty()) {
+//            return null;
+//        }
+//
+//        try {
+//            // May throw a service unavailable exception
+//            return propertyListClient.get(client, dsPrsID, mmeAuthToken, url);
+//        } catch (IOException ex) {
+//            logger.warn("--from() > exception: {}", ex.getMessage());
+//            return null;
+//        }
+//    }
 
     private static final Logger logger = LoggerFactory.getLogger(Quota.class);
 
-    private static final PropertyListClient propertyListClient = PropertyListClient.create();
+    private static final DataClient propertyListClient = DataClient.create();
 
 }

@@ -23,7 +23,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.client;
 
-import com.github.horrorho.liquiddonkey.util.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.ResponseHandlerFactory;
 import java.io.IOException;
@@ -73,8 +72,7 @@ public final class AuthClient {
      * @throws BadDataException
      * @throws IOException
      */
-    public SimplePropertyList get(HttpClient client, String id, String password) throws BadDataException, IOException {
-
+    public byte[] get(HttpClient client, String id, String password) throws IOException {
         logger.trace("<< get() < id: {} password: {}", id, password);
 
         try {
@@ -86,10 +84,8 @@ public final class AuthClient {
             get.addHeader(headers.authorization(authBasic));
             byte[] data = client.execute(get, byteArrayResponseHandler);
 
-            SimplePropertyList propertyList = SimplePropertyList.from(data);
-
-            logger.trace(">> get() > {}", propertyList);
-            return propertyList;
+            logger.trace(">> get() > bytes: {}", data.length);
+            return data;
 
         } catch (HttpResponseException ex) {
             if (ex.getStatusCode() == 401) {

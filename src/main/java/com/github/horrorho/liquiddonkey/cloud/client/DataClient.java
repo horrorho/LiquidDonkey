@@ -24,7 +24,6 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.client;
 
-import com.github.horrorho.liquiddonkey.util.SimplePropertyList;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.ResponseHandlerFactory;
 import java.io.IOException;
@@ -44,39 +43,37 @@ import org.slf4j.LoggerFactory;
  */
 @Immutable
 @ThreadSafe
-public final class PropertyListClient {
+public final class DataClient {
 
-    public static PropertyListClient create() {
+    public static DataClient create() {
         return instance;
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(PropertyListClient.class);
+    private static final Logger logger = LoggerFactory.getLogger(DataClient.class);
 
-    private static final PropertyListClient instance
-            = new PropertyListClient(ResponseHandlerFactory.toByteArray(), Headers.create());
+    private static final DataClient instance
+            = new DataClient(ResponseHandlerFactory.toByteArray(), Headers.create());
 
     private final ResponseHandler<byte[]> byteArrayResponseHandler;
     private final Headers headers;
 
-    PropertyListClient(ResponseHandler<byte[]> byteArrayResponseHandler, Headers headers) {
+    DataClient(ResponseHandler<byte[]> byteArrayResponseHandler, Headers headers) {
         this.byteArrayResponseHandler = Objects.requireNonNull(byteArrayResponseHandler);
         this.headers = Objects.requireNonNull(headers);
     }
 
     /**
-     * Queries the server and returns a property list.
+     * Queries the server and returns a byte array.
      *
      * @param client, not null
      * @param dsPrsID, not null
      * @param mmeAuthToken, not null
      * @param url, not null
-     * @return property list, not null
+     * @return byte array, not null
      * @throws IOException
      * @throws BadDataException
      */
-    public SimplePropertyList get(HttpClient client, String dsPrsID, String mmeAuthToken, String url)
-            throws BadDataException, IOException {
-
+    public byte[] get(HttpClient client, String dsPrsID, String mmeAuthToken, String url) throws IOException {
         logger.trace("<< get() < dsPrsID: {} mmeAuthToken: {}", dsPrsID, mmeAuthToken);
 
         String authToken = headers.basicToken(dsPrsID, mmeAuthToken);
@@ -85,10 +82,8 @@ public final class PropertyListClient {
         get.addHeader(headers.mmeClientInfo());
         get.addHeader(headers.authorization(authToken));
         byte[] data = client.execute(get, byteArrayResponseHandler);
-        
-        SimplePropertyList propertyList = SimplePropertyList.from(data);
 
-        logger.trace(">> get() > propertyList bytes: {}", data.length);
-        return propertyList;
+        logger.trace(">> get() > bytes: {}", data.length);
+        return data;
     }
 }
