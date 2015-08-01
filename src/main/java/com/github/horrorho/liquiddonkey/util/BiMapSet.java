@@ -36,7 +36,7 @@ import net.jcip.annotations.ThreadSafe;
 /**
  * BiMapSet.
  * <p>
- * Lightweight set maps with common references. Remove only. No put methods. Null values not permitted. Thread safe.
+ * Lightweight bi-map sets with common references. Remove only. No put methods. Null values not permitted. Thread safe.
  *
  * @author Ahseya
  * @param <K> key type
