@@ -62,7 +62,7 @@ public final class TagValue {
     private final String tag;
     private final ByteString value;
 
-    public TagValue(String tag, ByteString value) {
+    TagValue(String tag, ByteString value) {
         this.tag = tag;
         this.value = value;
     }
