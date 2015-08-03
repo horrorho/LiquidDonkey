@@ -94,8 +94,8 @@ public final class Authenticator {
         try {
             if (token.timestamp().isAfter(expired.timestamp())) {
                 logger.debug("-- reauthenticate() > expired token");
+                
             } else {
-
                 logger.debug("-- reauthenticate() > reauthenticating");
                 authenticate(client);
             }
