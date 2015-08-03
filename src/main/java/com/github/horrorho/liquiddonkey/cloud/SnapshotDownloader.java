@@ -126,7 +126,7 @@ public final class SnapshotDownloader {
                 // Execute.
                 fatal = engine.execute(agent, storeManager, signatureManager, outcomes);
                 isCompleted = true;
-                // TODO rethrow or handle this exception, eg 401 status codes
+                
             } catch (TimeoutException ex) {
                 logger.warn("-- download() > exception: {}", ex);
                 isCompleted = false;
@@ -142,6 +142,7 @@ public final class SnapshotDownloader {
             snapshot = Snapshots.from(snapshot, file -> remaining.contains(file));
 
             // TODO checksum/ salvage completed chunks from the StoreManager in the case of timeout downloads.
+            
             logger.debug("-- download() > end loop, is completed: {} fatal: {} remaining files: {}",
                     isCompleted, fatal, snapshot.files().size());
         }

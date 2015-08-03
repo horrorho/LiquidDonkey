@@ -28,12 +28,14 @@ import java.io.PrintStream;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import net.jcip.annotations.ThreadSafe;
 
 /**
  * OutcomesPrinter.
  *
  * @author Ahseya
  */
+@ThreadSafe
 public class OutcomesPrinter
         implements Consumer<Map<ICloud.MBSFile, Outcome>>, BiConsumer<String, Map<ICloud.MBSFile, Outcome>> {
 
