@@ -148,13 +148,4 @@ public final class SnapshotDownloader {
 
         logger.trace(">> download()");
     }
-
-//    Consumer<Map<ICloud.MBSFile, Outcome>> outcomes(SignatureManager signatureManager) {
-//        return outcomes -> {
-//            double completed = signatureManager.failedBytes() + signatureManager.outBytes();
-//            double total = signatureManager.totalBytes();
-//            double percentage = completed / total;
-//            percentageOutcomes.accept(percentage, outcomes);
-//        };
-//    }
 }
