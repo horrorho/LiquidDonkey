@@ -38,9 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Authenticator.
- * <p>
- * Request helper.
+ * Authenticator. Thread-safe authenticator.
  *
  * @author Ahseya
  */
@@ -113,6 +111,7 @@ public final class Authenticator {
     void authenticate(HttpClient client) throws IOException {
         if (id == null || id.isEmpty() || password == null || password.isEmpty()) {
             invalid = "Unable to authenticate. Missing id/ password.";
+
         } else {
             try {
                 Auth auth = Auth.from(client, id, password);
@@ -132,17 +131,11 @@ public final class Authenticator {
             }
         }
 
-        if (invalid != null) {
-            logger.warn("-- authenticate() > invalid: {}", invalid);
-            throw new HttpResponseException(401, invalid);
-        }
+        testIsInvalid();
     }
 
     void testIsInvalid() throws HttpResponseException {
-        boolean isInvalid = invalid != null;
-        logger.debug("-- testIsInvalid() > isInvalid: {}", isInvalid);
-
-        if (isInvalid) {
+        if (isInvalid()) {
             throw new HttpResponseException(401, invalid);
         }
     }

@@ -30,17 +30,13 @@ import java.io.StringWriter;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
 /**
- * Backup.
- * <p>
- * Describes {@link com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud.MBSBackup}.
+ * Backup. Output formatter.
  *
  * @author Ahseya
  */
@@ -75,7 +71,6 @@ public final class BackupFormatter implements Function<ICloud.MBSBackup, String>
 
     @Override
     public String apply(ICloud.MBSBackup backup) {
-
         StringWriter stringWriter = new StringWriter();
         PrintWriter writer = new PrintWriter(stringWriter);
 
