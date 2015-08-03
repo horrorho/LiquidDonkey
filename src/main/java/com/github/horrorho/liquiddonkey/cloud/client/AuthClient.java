@@ -91,6 +91,11 @@ public final class AuthClient {
             if (ex.getStatusCode() == 401) {
                 throw new HttpResponseException(401, "Bad appleId/ password or not an iCloud account");
             }
+            
+            if (ex.getStatusCode() == 409) {
+                throw new HttpResponseException(401, "Is two-step authentication enabled?");
+            }
+            
             throw ex;
         }
     }
