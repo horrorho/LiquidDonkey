@@ -50,8 +50,6 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Signature Manager.
- * <p>
- * Manages signatures.
  *
  * @author ahseya
  */
