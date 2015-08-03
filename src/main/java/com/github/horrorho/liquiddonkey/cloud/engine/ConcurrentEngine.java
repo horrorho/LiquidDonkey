@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.github.horrorho.liquiddonkey.cloud.engine.concurrent;
+package com.github.horrorho.liquiddonkey.cloud.engine;
 
 import com.github.horrorho.liquiddonkey.cloud.HttpAgent;
 import com.github.horrorho.liquiddonkey.cloud.Outcome;
@@ -46,7 +46,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
-import static org.bouncycastle.crypto.tls.ConnectionEnd.client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +77,6 @@ public class ConcurrentEngine {
     private final int staggerMs;
     private final int retryCount;
     private final long executorTimeoutMs;
-    private final long retryDelayMs = 1000;
     private final ChunksClient chunksClient = ChunksClient.create();
 
     ConcurrentEngine(int threads, int staggerMs, int retryCount, long executorTimeoutMs) {
@@ -100,38 +98,33 @@ public class ConcurrentEngine {
 
         SyncSupplier<ChunkServer.StorageHostChunkList> syncSupplier = SyncSupplier.from(chunks);
         AtomicReference<Exception> fatal = new AtomicReference(null);
-        Supplier<Donkey> donkies = ()
-                -> new Donkey(
-                        agent,
-                        chunksClient,
-                        syncSupplier,
-                        storeManager,
-                        signatureManager,
-                        outcomesConsumer,
-                        retryCount,
-                        retryDelayMs,
-                        fatal);
 
-        return execute(donkies, fatal);
+        Supplier<Donkey> donkeys
+                = () -> new Donkey(agent, chunksClient, storeManager, signatureManager, retryCount);
+
+        Supplier<Runner> runners = ()
+                -> new Runner(syncSupplier, outcomesConsumer, fatal, donkeys.get());
+
+        return execute(runners, fatal);
     }
 
-    Exception execute(Supplier<Donkey> donkeySupplier, AtomicReference<Exception> fatal)
+    Exception execute(Supplier<Runner> runnersSupplier, AtomicReference<Exception> fatal)
             throws InterruptedException, TimeoutException {
 
         logger.trace("<< execute()");
 
         boolean isTimedOut;
         List<Future<?>> futures = new ArrayList<>();
-        List<Donkey> donkies = new ArrayList<>();
+        List<Runner> runners = new ArrayList<>();
 
         ExecutorService executor = Executors.newCachedThreadPool();
         logger.debug("-- execute() > executor created");
 
         try {
             for (int i = 0; i < threads; i++) {
-                Donkey donkey = donkeySupplier.get();
-                donkies.add(donkey);
-                futures.add(executor.submit(donkey));
+                Runner runner = runnersSupplier.get();
+                runners.add(runner);
+                futures.add(executor.submit(runner));
 
                 logger.debug("-- execute() > donkey submitted: {}", i);
                 TimeUnit.MILLISECONDS.sleep(staggerMs);
@@ -160,8 +153,8 @@ public class ConcurrentEngine {
             logger.debug("-- execute() > shutting down");
             executor.shutdownNow();
 
-            // Kill donkies (aborting any http requests in progress).
-            donkies.stream().forEach(Donkey::kill);
+            // Kill Runners (aborting any http requests in progress).
+            runners.stream().forEach(Runner::kill);
 
             long finished = futures.stream().filter(Future::isDone).count();
             long pending = threads - finished;

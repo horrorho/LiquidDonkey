@@ -24,7 +24,7 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.data.Core;
-import com.github.horrorho.liquiddonkey.cloud.engine.concurrent.ConcurrentEngine;
+import com.github.horrorho.liquiddonkey.cloud.engine.ConcurrentEngine;
 import com.github.horrorho.liquiddonkey.cloud.data.FileGroups;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;

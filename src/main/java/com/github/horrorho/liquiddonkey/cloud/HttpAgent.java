@@ -37,9 +37,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * HttpAgent.
- * <p>
- * Request helper.
+ * HttpAgent. Request helper.
  *
  * @author Ahseya
  */
@@ -47,11 +45,7 @@ import org.slf4j.LoggerFactory;
 public class HttpAgent {
 
     public static HttpAgent from(HttpClient client, HttpAgent executor) {
-        return from(
-                client,
-                executor.retryCount,
-                executor.retryDelayMs,
-                executor.authenticator);
+        return from(client, executor.retryCount, executor.retryDelayMs, executor.authenticator);
     }
 
     public static HttpAgent from(HttpClient client, int retryCount, int retryDelayMs, Authenticator authenticator) {
@@ -118,7 +112,7 @@ public class HttpAgent {
         try {
             TimeUnit.MILLISECONDS.sleep(retryDelayMs);
         } catch (InterruptedException ex) {
-            logger.warn("-- delay() > interrupted: ", ex);
+            logger.warn("-- delay() > re-interrupted: ", ex);
             Thread.currentThread().interrupt();
         }
     }
