@@ -27,7 +27,7 @@ import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
 /**
- * Writer result.
+ * Outcome.
  *
  * @author Ahseya
  */
