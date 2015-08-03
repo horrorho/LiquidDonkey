@@ -36,7 +36,7 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import net.jcip.annotations.ThreadSafe;
+import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * @author Ahseya
  * @param <T> backup container
  */
-@ThreadSafe
+@NotThreadSafe
 public abstract class BackupSelector<T> implements UnaryOperator<List<T>> {
 
     /**
@@ -123,6 +123,7 @@ public abstract class BackupSelector<T> implements UnaryOperator<List<T>> {
 
     protected abstract List<T> doApply(List<T> backups);
 
+    @NotThreadSafe
     static final class Udid<T> extends BackupSelector<T> {
 
         private final List<String> commandLineUdids;
@@ -150,6 +151,7 @@ public abstract class BackupSelector<T> implements UnaryOperator<List<T>> {
         }
     }
 
+    @NotThreadSafe
     static final class User<T> extends BackupSelector<T> {
 
         private final Function<ICloud.MBSBackup, String> formatter;
