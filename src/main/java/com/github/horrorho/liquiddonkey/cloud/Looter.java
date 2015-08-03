@@ -136,8 +136,6 @@ public class Looter implements Closeable {
                         config.engine().retryDelayMs(),
                         authenticator);
 
-        // Testing.
-        //Quota.from(client, core, auth.mmeAuthToken());
         // Account.
         Account account = agent.execute((c, mmeAuthToken) -> Accounts.from(c, core, mmeAuthToken));
 
