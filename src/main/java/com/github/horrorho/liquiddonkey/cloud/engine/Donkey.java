@@ -93,9 +93,10 @@ class Donkey {
 
         request.set(chunksClient.get(chunkList));
         int count = 0;
-        Map<ByteString, DataWriter> writers;
 
         while (true) {
+            Map<ByteString, DataWriter> writers;
+
             if (request.get() == null || Thread.currentThread().isInterrupted()) {
                 throw new InterruptedException("Interrupted");
             }
@@ -126,24 +127,31 @@ class Donkey {
 
             Map<ICloud.MBSFile, Outcome> outcomes;
 
-            try {
-                outcomes = signatureManager.write(writers);
+            outcomes = write(chunkList, writers);
+            logger.trace(">> process() >  outcomes: {}", outcomes.size());
+            return outcomes;
+        }
+    }
 
-            } catch (IOException ex) {
-                outcomes = signatureManager.fail(
-                        storeManager.fail(chunkList));
-                throw ex;
+    Map<ICloud.MBSFile, Outcome> write(ChunkServer.StorageHostChunkList chunkList, Map<ByteString, DataWriter> writers)
+            throws InterruptedException, IOException {
 
-            } finally {
-                writers.values().forEach(writer -> {
-                    try {
-                        writer.close();
-                    } catch (IOException ex) {
-                        logger.warn("-- writer() > exception on close: {}", ex);
-                    }
-                });
-            }
-            logger.trace(">> process() >  outcomes: {}", outcomes == null ? null : outcomes.size());
+        try {
+            return signatureManager.write(writers);
+
+        } catch (IOException ex) {
+            logger.error("-- writer() > exception: ", ex);
+            fail(ex, chunkList);
+            throw ex;
+
+        } finally {
+            writers.values().forEach(writer -> {
+                try {
+                    writer.close();
+                } catch (IOException ex) {
+                    logger.warn("-- writer() > exception on close: {}", ex);
+                }
+            });
         }
     }
 
