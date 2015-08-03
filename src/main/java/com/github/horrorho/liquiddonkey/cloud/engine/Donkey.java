@@ -165,13 +165,14 @@ class Donkey {
         HttpUriRequest local = request.getAndSet(null);
 
         if (local != null) {
+            logger.debug("-- kill() > killing");
             try {
                 local.abort();
             } catch (UnsupportedOperationException ex) {
                 logger.warn("-- kill() > exception: {}", ex);
             }
         } else {
-            logger.warn("-- kill() > null request");
+            logger.debug("-- kill() > already killed");
         }
     }
 }
