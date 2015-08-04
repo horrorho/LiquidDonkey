@@ -24,8 +24,6 @@
 package com.github.horrorho.liquiddonkey.settings;
 
 import net.jcip.annotations.ThreadSafe;
-import org.slf4j.Marker;
-import org.slf4j.MarkerFactory;
 
 /**
  *
@@ -34,15 +32,11 @@ import org.slf4j.MarkerFactory;
 @ThreadSafe
 public final class Markers {
 
-    //  public static final Marker client = MarkerFactory.getMarker("CLIENT");
-    public static final Marker host = MarkerFactory.getMarker("HOST");
-    public static final Marker http = MarkerFactory.getMarker("HTTP");
-    public static final Marker props = MarkerFactory.getMarker("PROPS");
-
-    // TODO redo to String
+    public static final String HOST = "HOST";
+    public static final String HTTP = "HTTP";
+    public static final String PROPS = "PROPS";
     public static final String CLIENT = "CLIENT";
     public static final String KEYBAG = "KEYBAG";
     public static final String POOL = "POOL";
     public static final String STORE = "STORE";
-
 }
