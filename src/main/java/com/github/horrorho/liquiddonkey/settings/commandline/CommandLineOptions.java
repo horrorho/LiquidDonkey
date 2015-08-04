@@ -155,7 +155,7 @@ public final class CommandLineOptions {
 
         options.put(ENGINE_DUMP_TOKEN,
                 new Option(null, "token", false,
-                        "Authenticate appleId/ password, display authorization token and exit."));
+                        "Output authentication token and exit."));
 
         options.put(COMMAND_LINE_HELP,
                 new Option(null, "help", false, "Display this help and exit."));
