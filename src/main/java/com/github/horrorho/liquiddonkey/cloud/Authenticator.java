@@ -38,7 +38,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Authenticator. Thread-safe authenticator.
+ * Authenticator.
+ * <p>
+ * Thread-safe authenticator.
  *
  * @author Ahseya
  */
@@ -94,7 +96,7 @@ public final class Authenticator {
         try {
             if (token.timestamp().isAfter(expired.timestamp())) {
                 logger.debug("-- reauthenticate() > expired token");
-                
+
             } else {
                 logger.debug("-- reauthenticate() > reauthenticating");
                 authenticate(client);

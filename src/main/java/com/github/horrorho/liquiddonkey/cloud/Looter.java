@@ -132,18 +132,13 @@ public final class Looter implements Closeable {
 
         // HttpAgent        
         HttpAgent agent
-                = HttpAgent.from(
-                        client,
-                        config.engine().retryCount(),
-                        config.engine().retryDelayMs(),
-                        authenticator);
+                = HttpAgent.from(client, config.engine().retryCount(), config.engine().retryDelayMs(), authenticator);
 
         // Account.
         Account account = agent.execute((c, mmeAuthToken) -> Accounts.from(c, core, mmeAuthToken));
 
         // Available backups.
-        List<Backup> backups
-                = agent.execute((c, mmeAuthToken) -> Backups.from(c, core, mmeAuthToken, account));
+        List<Backup> backups = agent.execute((c, mmeAuthToken) -> Backups.from(c, core, mmeAuthToken, account));
 
         // Filter backups. 
         List<Backup> selected

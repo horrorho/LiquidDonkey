@@ -37,7 +37,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * HttpAgent. Request helper.
+ * HttpAgent.
+ * <p>
+ * Request helper.
  *
  * @author Ahseya
  */
