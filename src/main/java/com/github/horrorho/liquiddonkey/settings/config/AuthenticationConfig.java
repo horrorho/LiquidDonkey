@@ -24,25 +24,29 @@
 package com.github.horrorho.liquiddonkey.settings.config;
 
 import com.github.horrorho.liquiddonkey.util.Props;
-import com.github.horrorho.liquiddonkey.settings.Property; 
+import com.github.horrorho.liquiddonkey.settings.Property;
 import java.util.Properties;
+import net.jcip.annotations.Immutable;
+import net.jcip.annotations.ThreadSafe;
 
 /**
  * Authentication configuration.
  *
  * @author Ahseya
  */
-public class AuthenticationConfig {
+@Immutable
+@ThreadSafe
+public final class AuthenticationConfig {
 
     public static AuthenticationConfig from(Properties properties) {
         Props<Property> props = Props.from(properties);
-        
+
         String appleId = props.getProperty(Property.AUTHENTICATION_APPLEID);
         String password = props.getProperty(Property.AUTHENTICATION_PASSWORD);
         String token = props.getProperty(Property.AUTHENTICATION_TOKEN);
 
         if (appleId != null && password != null && token != null) {
-            throw new IllegalStateException("Expected authorization token or appleid/ password only.");
+            throw new IllegalArgumentException("Expected authorization token or appleid/ password only.");
         }
 
         String dsPrsID;
@@ -59,7 +63,11 @@ public class AuthenticationConfig {
             mmeAuthToken = null;
         }
 
-        return new AuthenticationConfig(appleId, password, dsPrsID, mmeAuthToken);
+        return from(appleId, password, dsPrsID, mmeAuthToken);
+    }
+
+    public static AuthenticationConfig from(String id, String password, String dsPrsId, String mmeAuthToken) {
+        return new AuthenticationConfig(id, password, dsPrsId, mmeAuthToken);
     }
 
     private final String id;

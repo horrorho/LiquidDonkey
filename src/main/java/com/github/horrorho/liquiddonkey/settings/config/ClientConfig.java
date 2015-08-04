@@ -36,7 +36,7 @@ import net.jcip.annotations.ThreadSafe;
  */
 @Immutable
 @ThreadSafe
-public class ClientConfig {
+public final class ClientConfig {
 
     public static ClientConfig from(Properties properties) { 
         Props<Property> props = Props.from(properties);

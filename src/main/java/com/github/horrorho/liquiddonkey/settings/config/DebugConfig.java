@@ -28,6 +28,8 @@ import com.github.horrorho.liquiddonkey.settings.Property;
 import java.util.Properties;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Printer configuration.
@@ -41,25 +43,33 @@ public class DebugConfig {
     public static DebugConfig from(Properties properties) {
         Props<Property> props = Props.from(properties);
 
-        return from(props.getProperty(Property.DEBUG_PRINT_STACK_TRACE, props::asBoolean));
+        return from(props.getProperty(Property.DEBUG_PRINT_STACK_TRACE, props::asBoolean), logger.isDebugEnabled());
     }
 
-    public static DebugConfig from(boolean toPrintStackTrace) {
-        return new DebugConfig(toPrintStackTrace);
+    public static DebugConfig from(boolean toPrintStackTrace, boolean toMonitorMemory) {
+        return new DebugConfig(toPrintStackTrace, toMonitorMemory);
     }
+
+    private static final Logger logger = LoggerFactory.getLogger(DebugConfig.class);
 
     private final boolean toPrintStackTrace;
+    private final boolean toMonitorMemory;
 
-    DebugConfig(boolean toPrintStackTrace) {
+    DebugConfig(boolean toPrintStackTrace, boolean toMonitorMemory) {
         this.toPrintStackTrace = toPrintStackTrace;
+        this.toMonitorMemory = toMonitorMemory;
     }
 
     public boolean toPrintStackTrace() {
         return toPrintStackTrace;
     }
 
+    public boolean toMonitorMemory() {
+        return toMonitorMemory;
+    }
+
     @Override
     public String toString() {
-        return "PrintConfig{" + "toPrintStackTrace=" + toPrintStackTrace + '}';
+        return "DebugConfig{" + "toPrintStackTrace=" + toPrintStackTrace + ", toMonitorMemory=" + toMonitorMemory + '}';
     }
 }
