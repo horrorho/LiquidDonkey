@@ -63,18 +63,18 @@ import org.slf4j.LoggerFactory;
  * @author ahseya
  */
 @ThreadSafe
-public class Looter implements Closeable {
+public final class Looter implements Closeable {
 
     public static Looter from(Config config) {
-        return from(config, System.out, System.err);
+        return from(config, System.out, System.err, System.in);
     }
 
-    public static Looter from(Config config, PrintStream std, PrintStream err) {
+    public static Looter from(Config config, PrintStream std, PrintStream err, InputStream in) {
         logger.trace("<< from()");
 
         CloseableHttpClient client = HttpClientFactory.from(config.http()).client(std);
         FileFilter fileFilter = FileFilter.from(config.fileFilter());
-        Looter looter = new Looter(config, client, std, err, OutcomesPrinter.from(std, err), fileFilter);
+        Looter looter = new Looter(config, client, std, err, in, OutcomesPrinter.from(std, err), fileFilter);
 
         logger.trace(">> from()");
         return looter;
@@ -86,7 +86,7 @@ public class Looter implements Closeable {
     private final CloseableHttpClient client;
     private final PrintStream std;
     private final PrintStream err;
-    private final InputStream in = System.in;
+    private final InputStream in;
     private final OutcomesPrinter outcomesPrinter;
     private final FileFilter filter;
     private final boolean isAggressive = true;
@@ -96,6 +96,7 @@ public class Looter implements Closeable {
             CloseableHttpClient client,
             PrintStream std,
             PrintStream err,
+            InputStream in,
             OutcomesPrinter outcomesPrinter,
             FileFilter filter) {
 
@@ -103,7 +104,8 @@ public class Looter implements Closeable {
         this.client = Objects.requireNonNull(client);
         this.std = Objects.requireNonNull(std);
         this.err = Objects.requireNonNull(err);
-        this.outcomesPrinter = outcomesPrinter;
+        this.in = Objects.requireNonNull(in);
+        this.outcomesPrinter = Objects.requireNonNull(outcomesPrinter);
         this.filter = Objects.requireNonNull(filter);
     }
 
@@ -115,7 +117,7 @@ public class Looter implements Closeable {
         // Authenticate
         Auth auth = config.authentication().hasIdPassword()
                 ? Auth.from(client, config.authentication().id(), config.authentication().password())
-                : Auth.from(config.authentication().dsPrsId(), config.authentication().mmeAuthToken());
+                : Auth.from(config.authentication().dsPrsID(), config.authentication().mmeAuthToken());
 
         if (config.engine().toDumpToken()) {
             std.println("Authorization token: " + auth.dsPrsID() + ":" + auth.mmeAuthToken());
@@ -232,7 +234,7 @@ public class Looter implements Closeable {
             return;
         }
         logger.info("-- snapshot() > files: {}", snapshot.filesCount());
-        std.println("Retrieving snapshot: " + id + ", (" + snapshot.mbsSnapshot().getAttributes().getDeviceName() + ")");
+        std.println("Retrieving snapshot: " + id + " (" + snapshot.mbsSnapshot().getAttributes().getDeviceName() + ")");
 
         // Filter files
         snapshot = filterFiles(snapshot, backup.keyBagManager());

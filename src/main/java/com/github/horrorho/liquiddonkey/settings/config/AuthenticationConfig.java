@@ -72,13 +72,13 @@ public final class AuthenticationConfig {
 
     private final String id;
     private final String password;
-    private final String dsPrsId;
+    private final String dsPrsID;
     private final String mmeAuthToken;
 
     AuthenticationConfig(String id, String password, String dsPrsId, String mmeAuthToken) {
         this.id = id;
         this.password = password;
-        this.dsPrsId = dsPrsId;
+        this.dsPrsID = dsPrsId;
         this.mmeAuthToken = mmeAuthToken;
     }
 
@@ -87,7 +87,7 @@ public final class AuthenticationConfig {
     }
 
     public boolean hasAuthToken() {
-        return dsPrsId != null && mmeAuthToken != null;
+        return dsPrsID != null && mmeAuthToken != null;
     }
 
     public boolean isNull() {
@@ -102,8 +102,8 @@ public final class AuthenticationConfig {
         return password;
     }
 
-    public String dsPrsId() {
-        return dsPrsId;
+    public String dsPrsID() {
+        return dsPrsID;
     }
 
     public String mmeAuthToken() {
@@ -115,7 +115,7 @@ public final class AuthenticationConfig {
         return "AuthenticationConfig{"
                 + "appleId=" + id
                 + ", password=" + password
-                + ", dsPrsID=" + dsPrsId
+                + ", dsPrsID=" + dsPrsID
                 + ", mmeAuthToken=" + mmeAuthToken
                 + '}';
     }

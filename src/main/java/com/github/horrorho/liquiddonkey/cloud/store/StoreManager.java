@@ -134,14 +134,10 @@ public final class StoreManager {
 
         Set<ByteString> signatures = references.keys(chunkList);
 
-        if (signatures == null) {
-            writers = new HashMap<>();
-        } else {
-            writers = signatures.stream()
-                    .map(signature -> new SimpleEntry<>(signature, process(signature)))
-                    .filter(entry -> entry.getValue() != null)
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        }
+        writers = signatures.stream()
+                .map(signature -> new SimpleEntry<>(signature, process(signature)))
+                .filter(entry -> entry.getValue() != null)
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         return writers;
     }
@@ -171,11 +167,7 @@ public final class StoreManager {
         logger.trace("<< fail() < uri: {}", chunkList.getHostInfo().getUri());
 
         Set<ByteString> signatures = references.keys(chunkList);
-        if (signatures == null) {
-            signatures = new HashSet<>();
-        } else {
-            signatures.forEach(this::purge);
-        }
+        signatures.forEach(this::purge);
 
         logger.trace(">> put() > signatures: {}", signatures);
         return signatures;
@@ -183,14 +175,10 @@ public final class StoreManager {
 
     void purge(ByteString signature) {
         Set<ChunkServer.StorageHostChunkList> list = references.removeKey(signature);
-
-        if (list != null) {
-            list.forEach(store::remove);
-        }
-        
+        list.forEach(store::remove);
         signatureToChunkListReferenceList.remove(signature);
     }
-    
+
     public Set<ByteString> remainingSignatures() {
         return new HashSet<>(signatureToChunkListReferenceList.keySet());
     }
