@@ -24,7 +24,6 @@
 package com.github.horrorho.liquiddonkey.settings.commandline;
 
 import com.github.horrorho.liquiddonkey.iofunction.IOSupplier;
-import static com.github.horrorho.liquiddonkey.settings.Markers.props;
 import com.github.horrorho.liquiddonkey.settings.PropertiesFactory;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
@@ -87,7 +86,7 @@ public final class CommandLineConfigFactory {
                 return null;
             }
 
-            if (props.contains(Property.COMMAND_LINE_VERSION.name())) {
+            if (properties.containsKey(Property.COMMAND_LINE_VERSION.name())) {
                 System.out.println(properties.getProperty(Property.PROJECT_VERSION.name()));
                 return null;
             }
@@ -106,4 +105,3 @@ public final class CommandLineConfigFactory {
         }
     }
 }
-// TODO use debug?
