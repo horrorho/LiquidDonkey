@@ -81,7 +81,6 @@ public class Snapshots {
         return snapshot;
     }
 
-    // TODO simplify/ refactor
     public static List<Snapshot> from(HttpClient client, Core core, String mmeAuthToken, Backup backup, int listLimit)
             throws IOException {
 

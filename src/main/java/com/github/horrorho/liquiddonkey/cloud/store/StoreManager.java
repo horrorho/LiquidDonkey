@@ -187,4 +187,3 @@ public final class StoreManager {
         return new ArrayList<>(references.valueSet());
     }
 }
-// TODO test possible nulls checks

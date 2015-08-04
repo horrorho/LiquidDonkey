@@ -65,11 +65,7 @@ public final class CloudFileWriter {
      * @param fileConfig not null
      * @return a new instance, not null
      */
-    // TODO rework this
-    public static CloudFileWriter from(
-            Snapshot snapshot,
-            FileConfig fileConfig) {
-
+    public static CloudFileWriter from(Snapshot snapshot, FileConfig fileConfig) {
         return new CloudFileWriter(
                 FileDecrypter.create(),
                 snapshot.keyBagManager(),

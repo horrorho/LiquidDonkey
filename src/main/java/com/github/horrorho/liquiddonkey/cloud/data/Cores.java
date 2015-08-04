@@ -100,5 +100,5 @@ public class Cores {
     private static final Logger logger = LoggerFactory.getLogger(Cores.class);
 
     private static final DataClient propertyListClient = DataClient.create();
-    private static final String SETUP_URL = "https://setup.icloud.com/setup/get_account_settings"; // TODO inject
+    private static final String SETUP_URL = "https://setup.icloud.com/setup/get_account_settings";
 }
