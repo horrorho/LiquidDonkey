@@ -74,7 +74,6 @@ public final class FileFilterConfig {
 
         if (props.containsProperty(Property.FILTER_EXTENSION)) {
             extensions.addAll(props.getProperty(Property.FILTER_EXTENSION, props::asList).stream()
-                    .map(ext -> ext.startsWith(".") || ext.isEmpty() ? ext : "." + ext)
                     .collect(Collectors.toSet()));
         }
 
