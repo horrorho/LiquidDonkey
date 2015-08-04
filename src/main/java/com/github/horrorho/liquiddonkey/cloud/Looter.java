@@ -152,7 +152,7 @@ public final class Looter implements Closeable {
 
         // Fetch backups.
         for (Backup backup : selected) {
-            if (logger.isDebugEnabled()) {
+            if (config.debug().toMonitorMemory()) {
                 monitoredBackup(client, core, agent, backup);
             } else {
                 backup(client, core, agent, backup);
