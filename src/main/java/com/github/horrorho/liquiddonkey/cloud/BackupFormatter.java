@@ -81,6 +81,7 @@ public final class BackupFormatter implements Function<ICloud.MBSBackup, String>
         writer.println(indent + "SN:\t" + attributes.getSerialNumber());
         writer.println(indent + "UDID:\t" + Bytes.hex(backup.getBackupUDID()));
         writer.println(indent + "Size:\t" + Bytes.humanize(backup.getQuotaUsed()));
+        writer.println(indent + "Snapshots:");
 
         backup.getSnapshotList().stream().forEach(snapshot -> {
             ICloud.MBSSnapshotAttributes attr = snapshot.getAttributes();
@@ -91,7 +92,7 @@ public final class BackupFormatter implements Function<ICloud.MBSBackup, String>
 
             writer.println(
                     indent
-                    + String.format("%4s", snapshot.getSnapshotID()) + ":\t"
+                    + String.format("%5s", snapshot.getSnapshotID()) + " >\t"
                     + attr.getDeviceName() + " " + attr.getProductVersion() + "  "
                     + String.format("%8s", size) + "  "
                     + lastModifiedStr
