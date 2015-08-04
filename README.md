@@ -20,13 +20,13 @@ Requires [Java 8 JRE/ JDK](http://www.oracle.com/technetwork/java/javase/downloa
 
 [Download](https://github.com/horrorho/LiquidDonkey/archive/master.zip), extract and navigate to the LiquidDonkey folder:
 
-```bash
+```
 ~/LiquidDonkey $ mvn package
 ```
 The executable Jar is located at /target/LiquidDonkey.jar
 
 ### Usage
-```bash
+```
 ~/LiquidDonkey/target $ java -jar LiquidDonkey.jar --help
 usage: LiquidDonkey [OPTION]... (<token> | <appleid> <password>)
  -o,--output <arg>             Output folder.
@@ -76,7 +76,7 @@ usage: LiquidDonkey [OPTION]... (<token> | <appleid> <password>)
 ```
 Download all files:
 
-```bash
+```
 ~/LiquidDonkey/target $ java -jar LiquidDonkey/target/LiquidDonkey.jar me@icloud.com password
 Authenticating.
 Listed backups:
@@ -109,22 +109,22 @@ Retrieving snapshot: 15 (James's iPad)
 ```
 Download photos only to the specified output folder:
 
-```bash
+```
 ~/LiquidDonkey/target $ java -jar LiquidDonkey/target/LiquidDonkey.jar me@icloud.com password --item-types photos --output ~/backups/iCloud
 ```
 Download photos over an unstable internet connection, e.g. bad Wi-Fi reception:
 
-```bash
+```
 ~/LiquidDonkey/target $ java -jar LiquidDonkey/target/LiquidDonkey.jar me@icloud.com password --item-types photos --persistent
 ```
 By default if you're saving to the same directory, DonkeyLooter will carry on where it left off. It will not download those files again unless forced to:
 
-```bash
+```
 ~/LiquidDonkey/target $ java -jar LiquidDonkey/target/LiquidDonkey.jar me@icloud.com password --output ~/backups/iCloud --force
 ```
 By default DonkeyLooter will separate out snapshots into their respective sub-folders, unless combining is specified:
 
-```bash
+```
 ~/LiquidDonkey/target $ java -jar LiquidDonkey/target/LiquidDonkey.jar me@icloud.com password --output ~/backups/iCloud --combined
 ```
 ### Addendum
