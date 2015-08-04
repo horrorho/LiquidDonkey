@@ -86,19 +86,21 @@ public class Main {
         } catch (InterruptedException | IOException | RuntimeException ex) {
             logger.warn("-- main() > exception", ex);
 
-            StringWriter stringWriter = new StringWriter();
-            PrintWriter printWriter = new PrintWriter(stringWriter);
-            ex.printStackTrace(printWriter);
+            if (config.debug().toPrintStackTrace()) {
+                StringWriter stringWriter = new StringWriter();
+                PrintWriter printWriter = new PrintWriter(stringWriter);
+                ex.printStackTrace(printWriter);
+                System.err.println("FATAL: " + stringWriter.toString());
 
-            // TODO tie in with print stack trace option
-            System.err.println("FATAL: " + stringWriter.toString());
+            } else {
+                System.err.println("FATAL: " + ex.getMessage());
+            }
         }
 
         if (config.debug().toPrintStackTrace()) {
             DumpStackTraceHook.remove();
         }
 
-        // TODO run with finally block
         logger.trace(">> main()");
     }
 }
