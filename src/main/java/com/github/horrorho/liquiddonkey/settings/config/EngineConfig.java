@@ -22,9 +22,9 @@
  * THE SOFTWARE.
  */
 package com.github.horrorho.liquiddonkey.settings.config;
- 
+
 import com.github.horrorho.liquiddonkey.util.Props;
-import com.github.horrorho.liquiddonkey.settings.Property; 
+import com.github.horrorho.liquiddonkey.settings.Property;
 import java.util.Properties;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -38,82 +38,83 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class EngineConfig {
 
-    public static EngineConfig from(Properties properties) { 
+    public static EngineConfig from(Properties properties) {
         Props<Property> props = Props.from(properties);
-        
+
         boolean isAggressive = props.getProperty(Property.ENGINE_AGGRESSIVE, props::asBoolean);
 
         return EngineConfig.from(
-                isAggressive,
-                props.getProperty(Property.ENGINE_BATCH_SIZE_MINIMUM_BYTES, props::asLong),
-                isAggressive ? props.getProperty(Property.ENGINE_RETRY_AGGRESSIVE, props::asInteger)
+                isAggressive ? props.getProperty(Property.ENGINE_DOWNLOAD_RETRY_AGGRESSIVE, props::asInteger)
                         : props.getProperty(Property.ENGINE_DOWNLOAD_RETRY, props::asInteger),
-                props.getProperty(Property.ENGINE_PERSISTENT, props::asBoolean),
                 props.getProperty(Property.ENGINE_RETRY_DELAY_MS, props::asInteger),
                 props.getProperty(Property.ENGINE_THREAD_STAGGER_DELAY_MS, props::asInteger),
                 props.getProperty(Property.ENGINE_THREAD_COUNT, props::asInteger),
+                props.getProperty(Property.ENGINE_TIMEOUT_MS, props::asInteger),
+                isAggressive,
                 props.getProperty(Property.ENGINE_FORCE_OVERWRITE, props::asBoolean),
                 props.getProperty(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, props::asBoolean),
-                props.getProperty(Property.ENGINE_DUMP_TOKEN, props::asBoolean));
+                props.getProperty(Property.ENGINE_DUMP_TOKEN, props::asBoolean),
+                props.getProperty(Property.ENGINE_BATCH_SIZE_MINIMUM_BYTES, props::asLong)
+        );
     }
 
     public static EngineConfig from(
-            boolean isAggressive,
-            long batchSizeMinimumBytes,
             int retryCount,
-            boolean isPersistent,
             int retryDelayMs,
             int threadStaggerDelayMs,
             int threadCount,
+            int timeoutMs,
+            boolean isAggressive,
             boolean toForceOverwrite,
             boolean toSetLastModifiedTimestamp,
-            boolean toDumpToken) {
+            boolean toDumpToken,
+            long batchSizeMinimumBytes) {
 
-        return new EngineConfig(isAggressive,
-                batchSizeMinimumBytes,
-                retryCount,
-                isPersistent,
+        return new EngineConfig(retryCount,
                 retryDelayMs,
                 threadStaggerDelayMs,
                 threadCount,
+                timeoutMs,
+                isAggressive,
                 toForceOverwrite,
                 toSetLastModifiedTimestamp,
-                toDumpToken);
+                toDumpToken,
+                batchSizeMinimumBytes);
     }
 
-    private final boolean isAggressive;
-    private final long batchSizeMinimumBytes;
     private final int retryCount;
-    private final boolean isPersistent;
     private final int retryDelayMs;
     private final int threadStaggerDelayMs;
     private final int threadCount;
+    private final int timeoutMs;
+    private final boolean isAggressive;
     private final boolean toForceOverwrite;
     private final boolean toSetLastModifiedTimestamp;
     private final boolean toDumpToken;
+    private final long batchSizeMinimumBytes;
 
     EngineConfig(
-            boolean isAggressive,
-            long batchSizeMinimumBytes,
             int retryCount,
-            boolean isPersistent,
             int retryDelayMs,
             int threadStaggerDelayMs,
             int threadCount,
+            int timeoutMs,
+            boolean isAggressive,
             boolean toForceOverwrite,
             boolean toSetLastModifiedTimestamp,
-            boolean toDumpToken) {
+            boolean toDumpToken,
+            long batchSizeMinimumBytes) {
 
-        this.isAggressive = isAggressive;
-        this.batchSizeMinimumBytes = batchSizeMinimumBytes;
         this.retryCount = retryCount;
-        this.isPersistent = isPersistent;
         this.retryDelayMs = retryDelayMs;
         this.threadStaggerDelayMs = threadStaggerDelayMs;
         this.threadCount = threadCount;
+        this.timeoutMs = timeoutMs;
+        this.isAggressive = isAggressive;
         this.toForceOverwrite = toForceOverwrite;
         this.toSetLastModifiedTimestamp = toSetLastModifiedTimestamp;
         this.toDumpToken = toDumpToken;
+        this.batchSizeMinimumBytes = batchSizeMinimumBytes;
     }
 
     public boolean isAggressive() {
@@ -128,8 +129,8 @@ public final class EngineConfig {
         return retryCount;
     }
 
-    public boolean isPersistent() {
-        return isPersistent;
+    public int timeoutMs() {
+        return timeoutMs;
     }
 
     public int retryDelayMs() {
@@ -159,15 +160,16 @@ public final class EngineConfig {
     @Override
     public String toString() {
         return "EngineConfig{"
-                + "isAggressive=" + isAggressive
-                + ", batchSizeMinimumBytes=" + batchSizeMinimumBytes
-                + ", chunkListDownloadRetry=" + retryCount
-                + ", isPersistent=" + isPersistent
-                + ", retryDelay=" + retryDelayMs
-                + ", threadStaggerDelay=" + threadStaggerDelayMs
+                + "retryCount=" + retryCount
+                + ", retryDelayMs=" + retryDelayMs
+                + ", threadStaggerDelayMs=" + threadStaggerDelayMs
                 + ", threadCount=" + threadCount
+                + ", timeoutMs=" + timeoutMs
+                + ", isAggressive=" + isAggressive
                 + ", toForceOverwrite=" + toForceOverwrite
                 + ", toSetLastModifiedTimestamp=" + toSetLastModifiedTimestamp
+                + ", toDumpToken=" + toDumpToken
+                + ", batchSizeMinimumBytes=" + batchSizeMinimumBytes
                 + '}';
     }
 }
