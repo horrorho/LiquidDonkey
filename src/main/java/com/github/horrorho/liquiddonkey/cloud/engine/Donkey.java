@@ -35,6 +35,7 @@ import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import net.jcip.annotations.NotThreadSafe;
@@ -68,10 +69,10 @@ class Donkey {
             int retryCount,
             AtomicReference<HttpUriRequest> request) {
 
-        this.agent = agent;
-        this.chunksClient = chunksClient;
-        this.storeManager = storeManager;
-        this.signatureManager = signatureManager;
+        this.agent = Objects.requireNonNull(agent);
+        this.chunksClient = Objects.requireNonNull(chunksClient);
+        this.storeManager = Objects.requireNonNull(storeManager);
+        this.signatureManager = Objects.requireNonNull(signatureManager);
         this.retryCount = retryCount;
         this.request = request;
     }
@@ -142,6 +143,7 @@ class Donkey {
         } catch (IOException ex) {
             logger.error("-- writer() > exception: ", ex);
             fail(ex, chunkList);
+            // File IOError, considered unrecoverable.
             throw ex;
 
         } finally {
@@ -176,4 +178,3 @@ class Donkey {
         }
     }
 }
-// TODO aggression

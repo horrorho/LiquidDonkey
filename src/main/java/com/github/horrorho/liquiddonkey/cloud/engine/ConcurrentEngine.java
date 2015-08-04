@@ -59,12 +59,7 @@ import org.slf4j.LoggerFactory;
 public class ConcurrentEngine {
 
     public static ConcurrentEngine from(EngineConfig config) {
-        return from(
-                config.threadCount(),
-                config.threadStaggerDelayMs(),
-                config.retryCount(),
-                1800000 // TODO
-        );
+        return from(config.threadCount(), config.threadStaggerDelayMs(), config.retryCount(), config.timeoutMs());
     }
 
     public static ConcurrentEngine from(int threads, int staggerMs, int retryCount, long executorTimeoutMs) {

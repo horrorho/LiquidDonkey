@@ -29,6 +29,7 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.util.SyncSupplier;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import net.jcip.annotations.NotThreadSafe;
@@ -58,10 +59,10 @@ class Runner implements Runnable {
             Donkey donkey,
             boolean isAlive) {
 
-        this.chunks = chunks;
-        this.outcomesConsumer = outcomesConsumer;
-        this.fatal = fatal;
-        this.donkey = donkey;
+        this.chunks = Objects.requireNonNull(chunks);
+        this.outcomesConsumer = Objects.requireNonNull(outcomesConsumer);
+        this.fatal = Objects.requireNonNull(fatal);
+        this.donkey = Objects.requireNonNull(donkey);
         this.isAlive = isAlive;
     }
 
@@ -108,4 +109,3 @@ class Runner implements Runnable {
         donkey.kill();
     }
 }
-// TODO aggression
