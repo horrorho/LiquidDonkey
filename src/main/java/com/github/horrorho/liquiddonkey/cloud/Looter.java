@@ -126,11 +126,14 @@ public final class Looter implements Closeable {
 
         // Core settings.
         Core core = Cores.from(client, auth);
+        std.println("AppleId: " + core.appleId());
+        std.println("Full name: " + core.fullName());
+        std.println();
 
         // Use Core auth, it may have a newer mmeAuthToken. 
         Authenticator authenticator = Authenticator.from(core.auth());
 
-        // HttpAgent        
+        // HttpAgent.
         HttpAgent agent
                 = HttpAgent.from(client, config.engine().retryCount(), config.engine().retryDelayMs(), authenticator);
 
@@ -160,7 +163,7 @@ public final class Looter implements Closeable {
     void monitoredBackup(HttpClient client, Core core, HttpAgent agent, Backup backup)
             throws BadDataException, IOException, InterruptedException {
 
-        // Potential for large scale memory leakage. Lightweight reporting on all debugged runs.
+        // Potential for large scale memory leakage. Lightweight memory usage reporting.
         MemMonitor memMonitor = MemMonitor.from(5000);
         try {
             Thread thread = new Thread(memMonitor);
@@ -229,27 +232,35 @@ public final class Looter implements Closeable {
             return;
         }
         logger.info("-- snapshot() > files: {}", snapshot.filesCount());
-        std.println("Retrieving snapshot: " + id + " (" + snapshot.mbsSnapshot().getAttributes().getDeviceName() + ")");
+        ICloud.MBSSnapshotAttributes attr = snapshot.mbsSnapshot().getAttributes();
+        std.println("Retrieving snapshot: " + id + " (" + attr.getDeviceName() + " " + attr.getProductVersion() + ")");
 
         // Filter files
         snapshot = filterFiles(snapshot, backup.keyBagManager());
+        std.println("Retrieving files: " + snapshot.filesCount());
 
         // Fetch files
         SnapshotDownloader.from(config.engine(), config.file())
                 .download(agent, core, snapshot, outcomesPrinter);
+
+        std.println("Completed.");
+        std.println();
     }
 
     Snapshot filterFiles(Snapshot snapshot, KeyBagManager keyBagManager) throws IOException {
         snapshot = Snapshots.from(snapshot, file -> file.getSize() != 0 && file.hasSignature());
         logger.info("-- filter() > filtered non empty, remaining: {}", snapshot.filesCount());
+        std.println("Files(non-empty): " + snapshot.filesCount());
 
         snapshot = Snapshots.from(snapshot, filter);
         logger.info("-- filter() > filtered configured, remaining: {}", snapshot.filesCount());
+        std.println("Files(filtered): " + snapshot.filesCount());
 
         Predicate<ICloud.MBSFile> undecryptableFilter
                 = UndecryptableFilter.from(keyBagManager, outcomesPrinter);
         snapshot = Snapshots.from(snapshot, undecryptableFilter);
         logger.info("-- filter() > filtered undecryptable, remaining: {}", snapshot.filesCount());
+        std.println("Files(non-undecryptable): " + snapshot.filesCount());
 
         if (config.engine().toForceOverwrite()) {
             logger.debug("-- filter() > forced overwrite");
@@ -258,8 +269,8 @@ public final class Looter implements Closeable {
             snapshot = LocalFileFilter.from(snapshot, config.file()).apply(snapshot);
             long b = System.currentTimeMillis();
             logger.info("-- filter() > filtered local, remaining: {} delay(ms): {}", snapshot.filesCount(), b - a);
+            std.println("Files(non-local): " + snapshot.filesCount());
         }
-
         return snapshot;
     }
 
