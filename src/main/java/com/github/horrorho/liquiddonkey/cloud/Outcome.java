@@ -35,7 +35,7 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public enum Outcome {
 
-    WRITTEN("Written", true),
+    WRITTEN("Written(unencrypted)", true),
     WRITTEN_DECRYPT("Written(decrypted)", true),
     FAILED_DOWNLOAD("Failed(download)", false),
     FAILED_DECRYPT_ERROR("Failed(decrypt)", false),
