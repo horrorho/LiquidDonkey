@@ -24,8 +24,9 @@
 package com.github.horrorho.liquiddonkey.cloud.data;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 
@@ -39,17 +40,17 @@ import net.jcip.annotations.ThreadSafe;
 public class Snapshot extends Backup {
 
     private final ICloud.MBSSnapshot mbsSnapshot;
-    private final List<ICloud.MBSFile> files;
+    private final Set<ICloud.MBSFile> files;
     private final Backup backup;
 
-    Snapshot(Backup backup, ICloud.MBSSnapshot mbsSnapshot, List<ICloud.MBSFile> files) {
+    Snapshot(Backup backup, ICloud.MBSSnapshot mbsSnapshot, Collection<ICloud.MBSFile> files) {
         super(backup);
         this.mbsSnapshot = mbsSnapshot;
-        this.files = files;
+        this.files = new HashSet<>(files);
         this.backup = backup;
     }
 
-    Snapshot(Snapshot snapshot, List<ICloud.MBSFile> files) {
+    Snapshot(Snapshot snapshot, Collection<ICloud.MBSFile> files) {
         this(snapshot.backup, snapshot.mbsSnapshot, files);
     }
 
@@ -65,8 +66,8 @@ public class Snapshot extends Backup {
         return mbsSnapshot;
     }
 
-    public final List<ICloud.MBSFile> files() {
-        return new ArrayList<>(files);
+    public final Set<ICloud.MBSFile> files() {
+        return new HashSet<>(files);
     }
 
     public final int filesCount() {
