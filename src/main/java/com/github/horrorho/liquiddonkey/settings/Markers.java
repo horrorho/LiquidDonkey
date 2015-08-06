@@ -32,11 +32,7 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class Markers {
 
-    public static final String HOST = "HOST";
-    public static final String HTTP = "HTTP";
-    public static final String PROPS = "PROPS";
     public static final String CLIENT = "CLIENT";
     public static final String KEYBAG = "KEYBAG";
-    public static final String POOL = "POOL";
     public static final String STORE = "STORE";
 }
