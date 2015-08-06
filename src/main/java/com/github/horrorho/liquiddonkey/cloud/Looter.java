@@ -248,6 +248,8 @@ public final class Looter implements Closeable {
     }
 
     Snapshot filterFiles(Snapshot snapshot, KeyBagManager keyBagManager) throws IOException {
+        std.println("Files(total): " + snapshot.filesCount());
+
         snapshot = Snapshots.from(snapshot, file -> file.getSize() != 0 && file.hasSignature());
         logger.info("-- filter() > filtered non empty, remaining: {}", snapshot.filesCount());
         std.println("Files(non-empty): " + snapshot.filesCount());
