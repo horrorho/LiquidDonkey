@@ -36,7 +36,7 @@ import net.jcip.annotations.ThreadSafe;
  * @author Ahseya
  */
 @ThreadSafe
-public class OutcomesPrinter
+public final class OutcomesPrinter
         implements Consumer<Map<ICloud.MBSFile, Outcome>>, BiConsumer<String, Map<ICloud.MBSFile, Outcome>> {
 
     public static OutcomesPrinter create() {
