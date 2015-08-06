@@ -25,10 +25,7 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -42,31 +39,19 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class UndecryptableFilter implements Predicate<ICloud.MBSFile> {
 
-    public static UndecryptableFilter from(
-            KeyBagManager keyBagManager,
-            Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer) {
+    public static UndecryptableFilter from(KeyBagManager keyBagManager) {
 
-        return new UndecryptableFilter(keyBagManager, outcomesConsumer);
+        return new UndecryptableFilter(keyBagManager);
     }
 
     private final KeyBagManager keyBagManager;
-    private final Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer;
 
-    UndecryptableFilter(KeyBagManager keyBagManager, Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer) {
+    UndecryptableFilter(KeyBagManager keyBagManager) {
         this.keyBagManager = Objects.requireNonNull(keyBagManager);
-        this.outcomesConsumer = Objects.requireNonNull(outcomesConsumer);
     }
 
     @Override
     public boolean test(ICloud.MBSFile file) {
-        boolean test = !file.getAttributes().hasEncryptionKey() || keyBagManager.fileKey(file) != null;
-
-        if (!test) {
-            Map<ICloud.MBSFile, Outcome> outcomes = new HashMap();
-            outcomes.put(file, Outcome.FAILED_DECRYPT_NO_KEY);
-            outcomesConsumer.accept(outcomes);
-        }
-
-        return test;
+        return !file.getAttributes().hasEncryptionKey() || keyBagManager.fileKey(file) != null;
     }
 }
