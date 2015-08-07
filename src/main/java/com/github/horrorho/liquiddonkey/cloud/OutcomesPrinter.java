@@ -24,7 +24,7 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import java.io.PrintStream;
+import com.github.horrorho.liquiddonkey.util.Printer;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -40,17 +40,17 @@ public final class OutcomesPrinter
         implements Consumer<Map<ICloud.MBSFile, Outcome>>, BiConsumer<String, Map<ICloud.MBSFile, Outcome>> {
 
     public static OutcomesPrinter create() {
-        return new OutcomesPrinter(System.out, System.err);
+        return new OutcomesPrinter(System.out::print, System.err::print);
     }
 
-    public static OutcomesPrinter from(PrintStream out, PrintStream err) {
+    public static OutcomesPrinter from(Printer out, Printer err) {
         return new OutcomesPrinter(out, err);
     }
 
-    private final PrintStream out;
-    private final PrintStream err;
+    private final Printer out;
+    private final Printer err;
 
-    OutcomesPrinter(PrintStream out, PrintStream err) {
+    OutcomesPrinter(Printer out, Printer err) {
         this.out = out;
         this.err = err;
     }
@@ -67,7 +67,7 @@ public final class OutcomesPrinter
                     .forEach(entry -> {
                         ICloud.MBSFile file = entry.getKey();
                         Outcome outcome = entry.getValue();
-                        PrintStream printStream = outcome.isSuccess() ? out : err;
+                        Printer printStream = outcome.isSuccess() ? out : err;
                         printStream.println(prefix + file.getDomain() + " " + file.getRelativePath() + " " + outcome);
                     });
         }
