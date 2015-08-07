@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.engine;
 
-import com.github.horrorho.liquiddonkey.cloud.Outcome;
+import com.github.horrorho.liquiddonkey.cloud.outcome.Outcome;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.util.SyncSupplier;

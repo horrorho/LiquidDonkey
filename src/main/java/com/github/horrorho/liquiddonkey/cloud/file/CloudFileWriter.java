@@ -23,7 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.file;
 
-import com.github.horrorho.liquiddonkey.cloud.Outcome;
+import com.github.horrorho.liquiddonkey.cloud.outcome.Outcome;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;

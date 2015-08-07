@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.outcome.Outcome;
 import com.github.horrorho.liquiddonkey.cloud.data.Core;
 import com.github.horrorho.liquiddonkey.cloud.engine.ConcurrentEngine;
 import com.github.horrorho.liquiddonkey.cloud.data.FileGroups;

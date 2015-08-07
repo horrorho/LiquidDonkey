@@ -23,6 +23,10 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
+import com.github.horrorho.liquiddonkey.cloud.outcome.Outcomes;
+import com.github.horrorho.liquiddonkey.cloud.outcome.OutcomesProgress;
+import com.github.horrorho.liquiddonkey.cloud.outcome.OutcomesPrinter;
+import com.github.horrorho.liquiddonkey.cloud.outcome.Outcome;
 import com.github.horrorho.liquiddonkey.cloud.data.Backup;
 import com.github.horrorho.liquiddonkey.cloud.data.Account;
 import com.github.horrorho.liquiddonkey.cloud.data.Accounts;
@@ -125,6 +129,7 @@ public final class Looter implements Closeable {
 
         // Core settings.
         Core core = Cores.from(client, auth);
+        std.println();
         std.println("AppleId: " + core.appleId());
         std.println("Full name: " + core.fullName());
         std.println();
