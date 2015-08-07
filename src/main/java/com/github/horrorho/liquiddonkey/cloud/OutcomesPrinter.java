@@ -67,8 +67,8 @@ public final class OutcomesPrinter
                     .forEach(entry -> {
                         ICloud.MBSFile file = entry.getKey();
                         Outcome outcome = entry.getValue();
-                        Printer printStream = outcome.isSuccess() ? out : err;
-                        printStream.println(prefix + file.getDomain() + " " + file.getRelativePath() + " " + outcome);
+                        Printer printer = outcome.isSuccess() ? out : err;
+                        printer.println(prefix + file.getDomain() + " " + file.getRelativePath() + " " + outcome);
                     });
         }
     }
