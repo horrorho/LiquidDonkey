@@ -34,20 +34,21 @@ import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
-import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.HttpClientFactory;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import com.github.horrorho.liquiddonkey.util.MemMonitor;
+import com.github.horrorho.liquiddonkey.util.Printer;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
@@ -65,15 +66,12 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class Looter implements Closeable {
 
-    public static Looter from(Config config) {
-        return from(config, System.out, System.err, System.in);
-    }
-
-    public static Looter from(Config config, PrintStream std, PrintStream err, InputStream in) {
+    public static Looter from(Config config, Printer std, Printer err, InputStream in) {
         logger.trace("<< from()");
 
-        CloseableHttpClient client = HttpClientFactory.from(config.http()).client(std);
+        CloseableHttpClient client = HttpClientFactory.from(config.http()).client();
         FileFilter fileFilter = FileFilter.from(config.fileFilter());
+
         Looter looter = new Looter(config, client, std, err, in, OutcomesPrinter.from(std, err), fileFilter);
 
         logger.trace(">> from()");
@@ -84,8 +82,8 @@ public final class Looter implements Closeable {
 
     private final Config config;
     private final CloseableHttpClient client;
-    private final PrintStream std;
-    private final PrintStream err;
+    private final Printer std;
+    private final Printer err;
     private final InputStream in;
     private final OutcomesPrinter outcomesPrinter;
     private final FileFilter filter;
@@ -94,8 +92,8 @@ public final class Looter implements Closeable {
     Looter(
             Config config,
             CloseableHttpClient client,
-            PrintStream std,
-            PrintStream err,
+            Printer std,
+            Printer err,
             InputStream in,
             OutcomesPrinter outcomesPrinter,
             FileFilter filter) {
@@ -231,39 +229,33 @@ public final class Looter implements Closeable {
             logger.warn("-- snapshot() > snapshot not found: {}", id);
             return;
         }
-        logger.info("-- snapshot() > files: {}", snapshot.filesCount());
         ICloud.MBSSnapshotAttributes attr = snapshot.mbsSnapshot().getAttributes();
+        logger.info("-- snapshot() > files: {}", snapshot.filesCount());
         std.println("Retrieving snapshot: " + id + " (" + attr.getDeviceName() + " " + attr.getProductVersion() + ")");
 
-        // Filter files
-        snapshot = filterFiles(snapshot, backup.keyBagManager());
-        std.println("Retrieving files: " + snapshot.filesCount());
-
-        // Fetch files
-        SnapshotDownloader.from(config.engine(), config.file())
-                .download(agent, core, snapshot, outcomesPrinter);
-
-        std.println("Completed.");
-        std.println();
-    }
-
-    Snapshot filterFiles(Snapshot snapshot, KeyBagManager keyBagManager) throws IOException {
+        // Total files
         std.println("Files(total): " + snapshot.filesCount());
 
+        // Non-empty files
         snapshot = Snapshots.from(snapshot, file -> file.getSize() != 0 && file.hasSignature());
         logger.info("-- filter() > filtered non empty, remaining: {}", snapshot.filesCount());
         std.println("Files(non-empty): " + snapshot.filesCount());
 
+        // User filter
         snapshot = Snapshots.from(snapshot, filter);
         logger.info("-- filter() > filtered configured, remaining: {}", snapshot.filesCount());
         std.println("Files(filtered): " + snapshot.filesCount());
 
-        Predicate<ICloud.MBSFile> undecryptableFilter
-                = UndecryptableFilter.from(keyBagManager, outcomesPrinter);
+        // Undecryptable filter
+        Snapshot filtered = snapshot;
+        Predicate<ICloud.MBSFile> undecryptableFilter = UndecryptableFilter.from(backup.keyBagManager());
         snapshot = Snapshots.from(snapshot, undecryptableFilter);
+        Set<ICloud.MBSFile> undecryptables = filtered.files();
+        undecryptables.removeAll(snapshot.files());
         logger.info("-- filter() > filtered undecryptable, remaining: {}", snapshot.filesCount());
         std.println("Files(non-undecryptable): " + snapshot.filesCount());
 
+        // Local filter
         if (config.engine().toForceOverwrite()) {
             logger.debug("-- filter() > forced overwrite");
         } else {
@@ -273,7 +265,24 @@ public final class Looter implements Closeable {
             logger.info("-- filter() > filtered local, remaining: {} delay(ms): {}", snapshot.filesCount(), b - a);
             std.println("Files(non-local): " + snapshot.filesCount());
         }
-        return snapshot;
+
+        // Retrieve
+        Outcomes outcomes = Outcomes.create();
+        OutcomesProgress progress = OutcomesProgress.from(snapshot, std);
+        Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer = outcomes.andThen(progress);
+        std.println("Retrieving files: " + snapshot.filesCount());
+
+        // Dump undecryptables
+//        Map<ICloud.MBSFile, Outcome> undecryptableOutcomes = undecryptables.stream()
+//                .collect(Collectors.toMap(Function.identity(), file -> Outcome.FAILED_DECRYPT_NO_KEY));
+//        outcomesConsumer.accept(undecryptableOutcomes);
+        // Fetch files
+        SnapshotDownloader.from(config.engine(), config.file())
+                .download(agent, core, snapshot, outcomesConsumer);
+
+        std.println("Completed:");
+        outcomes.print(std);
+        std.println();
     }
 
     @Override
