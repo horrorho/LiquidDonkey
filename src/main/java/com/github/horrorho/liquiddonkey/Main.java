@@ -29,6 +29,7 @@ import com.github.horrorho.liquiddonkey.settings.config.Config;
 import com.github.horrorho.liquiddonkey.util.PadStream;
 import com.github.horrorho.liquiddonkey.util.StackTraceHook;
 import com.github.horrorho.liquiddonkey.util.Printer;
+import com.github.horrorho.liquiddonkey.util.StackTrace;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -100,16 +101,7 @@ public class Main {
             looter.loot();
         } catch (InterruptedException | IOException | RuntimeException ex) {
             logger.warn("-- main() > exception", ex);
-
-            if (config.debug().toPrintStackTrace()) {
-                StringWriter stringWriter = new StringWriter();
-                PrintWriter printWriter = new PrintWriter(stringWriter);
-                ex.printStackTrace(printWriter);
-                err.println("FATAL: " + stringWriter.toString());
-
-            } else {
-                err.println("FATAL: " + ex.getMessage());
-            }
+            err.println("FATAL: " + StackTrace.stackTrace(ex, config.debug().toPrintStackTrace()));
         }
 
         if (stackTraceHook != null) {

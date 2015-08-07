@@ -35,6 +35,7 @@ import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
+import com.github.horrorho.liquiddonkey.util.StackTrace;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.Map;
@@ -146,7 +147,7 @@ public final class SnapshotDownloader {
             
             logger.debug("-- download() > end loop, is completed: {} fatal: {} remaining files: {}",
                     isCompleted, fatal, snapshot.filesCount());
-        }
+        } 
 
         logger.trace(">> download()");
     }

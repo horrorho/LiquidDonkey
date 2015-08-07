@@ -46,6 +46,7 @@ import com.github.horrorho.liquiddonkey.settings.config.Config;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.github.horrorho.liquiddonkey.util.MemMonitor;
 import com.github.horrorho.liquiddonkey.util.Printer;
+import com.github.horrorho.liquiddonkey.util.StackTrace;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
