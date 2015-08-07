@@ -101,7 +101,7 @@ public final class SnapshotDownloader {
         boolean isCompleted = false;
 
         while (!isCompleted && !snapshot.files().isEmpty() && !agent.authenticatorIsInvalid()) {
-            logger.debug("-- download() > loop, files: {}", snapshot.files().size());
+            logger.debug("-- download() > loop, files: {}", snapshot.filesCount());
 
             // FilesGroups
             Snapshot get = snapshot;
@@ -145,7 +145,7 @@ public final class SnapshotDownloader {
             // TODO checksum/ salvage completed chunks from the StoreManager in the case of timeout downloads.
             
             logger.debug("-- download() > end loop, is completed: {} fatal: {} remaining files: {}",
-                    isCompleted, fatal, snapshot.files().size());
+                    isCompleted, fatal, snapshot.filesCount());
         }
 
         logger.trace(">> download()");
