@@ -8,7 +8,7 @@ Java command-line tool to download iCloud backups, reworked from [iLoot](https:/
 **This tool is for educational purposes only. Make sure it's not illegal in your country before use.**
 ### Why LiquidDonkey?
 - Speed. Python crytographical functions may bottleneck backups with slow staggered downloads.
-- Multi-threading. More consistent bandwidth utilization. Optimized for smaller file groups across multiple threads.
+- Multi-threading. More consistent bandwidth utilization.
 - Tolerance. Options for persistent retrieval algorithms, tested over a lamentable Wi-Fi connection.
 - Resume backups. Interrupted downloads to the same folder continue where they left off, unless specified otherwise.
 - Filtering. More options to download the files you want to.
