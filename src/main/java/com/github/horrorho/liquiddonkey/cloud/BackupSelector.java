@@ -169,7 +169,7 @@ public abstract class BackupSelector<T> implements UnaryOperator<List<T>> {
         @Override
         protected List doApply(List<T> backups) {
             return Selector.builder(backups)
-                    .header("Listed backups:\n")
+                    .header("Backup/s:")
                     .footer("Select backup/s to download (leave blank to select all, q to quit):")
                     .formatter(backup -> mbsBackup.andThen(formatter).apply(backup))
                     .onLineIsEmpty(() -> backups)
