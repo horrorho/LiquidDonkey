@@ -220,24 +220,9 @@ public final class Looter implements Closeable {
 
         // Fetch snapshots
         for (int id : resolved) {
-            try {
-                logger.info("-- backup() > snapshot: {}", id);
-                snapshot(client, core, agent, backup, id);
-            } catch (IOException ex) {
-                // TODO needs reworking
-                if (ex instanceof HttpResponseException) {
-                    if (((HttpResponseException) ex).getStatusCode() == 401) {
-                        // Authentication failure.
-                        throw ex;
-                    }
-                }
+            logger.info("-- backup() > snapshot: {}", id);
+            snapshot(client, core, agent, backup, id);
 
-                if (isAggressive && !agent.authenticatorIsInvalid()) {
-                    logger.warn("-- backup() > exception: {}", ex);
-                } else {
-                    throw ex;
-                }
-            }
         }
     }
 
@@ -304,7 +289,7 @@ public final class Looter implements Closeable {
             logger.info("-- snapshot() > filtered local, remaining: {} delay(ms): {}", snapshot.filesCount(), b - a);
             std.println("Files(non-local): " + snapshot.filesCount());
         }
-        
+
         if (snapshot.filesCount() == 0) {
             return;
         }
