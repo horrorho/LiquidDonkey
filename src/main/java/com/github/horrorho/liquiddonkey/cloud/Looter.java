@@ -232,6 +232,7 @@ public final class Looter implements Closeable {
         }
         ICloud.MBSSnapshotAttributes attr = snapshot.mbsSnapshot().getAttributes();
         logger.info("-- snapshot() > files: {}", snapshot.filesCount());
+        std.println();
         std.println("Retrieving snapshot: " + id + " (" + attr.getDeviceName() + " " + attr.getProductVersion() + ")");
 
         // Total files
@@ -289,8 +290,7 @@ public final class Looter implements Closeable {
         OutcomesProgress progress = OutcomesProgress.from(snapshot, std);
         Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer = outcomes.andThen(progress);
         std.println();
-        std.println("Retrieving files: " + snapshot.filesCount());
-        std.println();
+        std.println("Retrieving:");
         // Dump undecryptables
 
         // Fetch files

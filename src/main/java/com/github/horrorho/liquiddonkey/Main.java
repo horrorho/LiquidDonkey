@@ -80,11 +80,13 @@ public class Main {
             return;
         }
 
-        PrintStream psStd = new PrintStream(PadStream.from(System.out, 80));
+        PrintStream psStd = new PrintStream(PadStream.from(System.out, 80), true);
         Printer std = psStd::print;
-        
-        PrintStream psErr = new PrintStream(PadStream.from(System.err, 80)); 
-        Printer err = x -> psErr.print("\r" + x);
+
+        PrintStream psErr = new PrintStream(PadStream.from(System.err, 80), true);
+        Printer err = x -> {
+            psErr.print("\r" + x);
+        };
 
         final StackTraceHook stackTraceHook;
         if (config.debug().toPrintStackTrace()) {
