@@ -25,9 +25,9 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.util.Bytes;
+import com.github.horrorho.liquiddonkey.util.Printer;
 import com.github.horrorho.liquiddonkey.util.Selector;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.InputStream; 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -67,7 +67,7 @@ public abstract class BackupSelector<T> implements UnaryOperator<List<T>> {
             Collection<String> commandLineUdids,
             Function<T, ICloud.MBSBackup> mbsBackup,
             Function<ICloud.MBSBackup, String> formatter,
-            PrintStream out,
+            Printer out,
             InputStream in) {
 
         return commandLineUdids.isEmpty()
@@ -78,10 +78,10 @@ public abstract class BackupSelector<T> implements UnaryOperator<List<T>> {
     private static final Logger logger = LoggerFactory.getLogger(BackupSelector.class);
 
     protected final Function<T, ICloud.MBSBackup> mbsBackup;
-    protected final PrintStream out;
+    protected final Printer out;
     protected final InputStream in;
 
-    public BackupSelector(Function<T, ICloud.MBSBackup> mbsBackup, PrintStream out, InputStream in) {
+    public BackupSelector(Function<T, ICloud.MBSBackup> mbsBackup, Printer out, InputStream in) {
         this.mbsBackup = Objects.requireNonNull(mbsBackup);
         this.out = Objects.requireNonNull(out);
         this.in = Objects.requireNonNull(in);
@@ -130,7 +130,7 @@ public abstract class BackupSelector<T> implements UnaryOperator<List<T>> {
 
         Udid(
                 Function<T, ICloud.MBSBackup> mbsBackup,
-                PrintStream out,
+                Printer out,
                 InputStream in,
                 List<String> commandLineUdids) {
 
@@ -158,7 +158,7 @@ public abstract class BackupSelector<T> implements UnaryOperator<List<T>> {
 
         User(
                 Function<T, ICloud.MBSBackup> mbsBackup,
-                PrintStream out,
+                Printer out,
                 InputStream in,
                 Function<ICloud.MBSBackup, String> formatter) {
 
