@@ -37,11 +37,24 @@ public interface Printer {
         print("");
     }
 
+    default void print(Object object) {
+        print(object == null ? "null" : object.toString());
+    }
+
     default void println(String x) {
         print(x + System.getProperty("line.separator"));
     }
 
     default void println() {
         println("");
+    }
+
+    default void println(Object object) {
+        println(object == null ? "null" : object.toString());
+    }
+
+    default Printer padding(int width) {
+        String format = "%-" + width + "s";
+        return x -> this.println(String.format(format, x));
     }
 }
