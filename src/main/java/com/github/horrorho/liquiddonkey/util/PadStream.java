@@ -77,4 +77,14 @@ public class PadStream extends OutputStream {
                 out.write(b);
         }
     }
+
+    @Override
+    public void flush() throws IOException {
+        out.flush();
+    }
+
+    @Override
+    public void close() throws IOException {
+        out.close();
+    }
 }
