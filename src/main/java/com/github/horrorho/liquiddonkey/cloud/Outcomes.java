@@ -23,8 +23,8 @@
  */
 package com.github.horrorho.liquiddonkey.cloud;
 
-import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import java.io.PrintStream;
+import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud; 
+import com.github.horrorho.liquiddonkey.util.Printer;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -98,7 +98,7 @@ public final class Outcomes implements Consumer<Map<ICloud.MBSFile, Outcome>> {
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> new HashSet<>(entry.getValue())));
     }
 
-    public void print(PrintStream out) {
+    public void print(Printer out) {
         outcomeToFiles.entrySet().stream().forEach(entry -> {
             Outcome outcome = entry.getKey();
             Set<ICloud.MBSFile> files = entry.getValue();
