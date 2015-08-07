@@ -67,7 +67,7 @@ public class Selector<T> {
     private final Supplier<List<T>> onLineIsEmpty;
     private final Supplier<List<T>> onQuit;
     private final String delimiter;
-    private final PrintStream out;
+    private final Printer out;
     private final InputStream in;
 
     Selector(
@@ -80,7 +80,7 @@ public class Selector<T> {
             Supplier<List<T>> onLineIsEmpty,
             Supplier<List<T>> onQuit,
             String delimiter,
-            PrintStream out,
+            Printer out,
             InputStream in) {
 
         this.prompt = prompt;
@@ -183,7 +183,7 @@ public class Selector<T> {
         private String footer = null;
         private Supplier<List<T>> onLineIsEmpty = ArrayList::new;
         private Supplier<List<T>> onQuit = ArrayList::new;
-        private PrintStream out = System.out;
+        private Printer out = System.out::print;
         private InputStream in = System.in;
 
         /**
@@ -241,6 +241,11 @@ public class Selector<T> {
         }
 
         public Builder<T> output(PrintStream out) {
+            this.out = out::print;
+            return this;
+        }
+
+        public Builder<T> output(Printer out) {
             this.out = out;
             return this;
         }
