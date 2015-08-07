@@ -34,6 +34,7 @@ import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
+import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.HttpClientFactory;
@@ -248,7 +249,9 @@ public final class Looter implements Closeable {
 
         // Undecryptable filter
         Snapshot filtered = snapshot;
-        Predicate<ICloud.MBSFile> undecryptableFilter = UndecryptableFilter.from(backup.keyBagManager());
+        KeyBagManager keyBagManager = backup.keyBagManager();
+        Predicate<ICloud.MBSFile> undecryptableFilter
+                = file -> !file.getAttributes().hasEncryptionKey() || keyBagManager.fileKey(file) != null;
         snapshot = Snapshots.from(snapshot, undecryptableFilter);
         Set<ICloud.MBSFile> undecryptables = filtered.files();
         undecryptables.removeAll(snapshot.files());
