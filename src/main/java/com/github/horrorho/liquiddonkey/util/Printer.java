@@ -33,7 +33,15 @@ public interface Printer {
 
     void print(String x);
 
+    default void print() {
+        print("");
+    }
+
     default void println(String x) {
         print(x + System.getProperty("line.separator"));
+    }
+
+    default void println() {
+        println("");
     }
 }
