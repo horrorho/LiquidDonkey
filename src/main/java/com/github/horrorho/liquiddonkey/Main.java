@@ -26,7 +26,8 @@ package com.github.horrorho.liquiddonkey;
 import com.github.horrorho.liquiddonkey.cloud.Looter;
 import com.github.horrorho.liquiddonkey.settings.commandline.CommandLineConfigFactory;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
-import com.github.horrorho.liquiddonkey.util.DumpStackTraceHook;
+import com.github.horrorho.liquiddonkey.util.StackTraceHook;
+import com.github.horrorho.liquiddonkey.util.Printer;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -77,11 +78,21 @@ public class Main {
             return;
         }
 
+        Printer std = System.out::print;
+        std = std.padding(80);
+
+        Printer err = x -> System.err.print("\r" + x);
+        err = err.padding(80);
+
+        final StackTraceHook stackTraceHook;
         if (config.debug().toPrintStackTrace()) {
-            DumpStackTraceHook.add();
+            stackTraceHook = StackTraceHook.from(err);
+            stackTraceHook.add();
+        } else {
+            stackTraceHook = null;
         }
 
-        try (Looter looter = Looter.from(config)) {
+        try (Looter looter = Looter.from(config, std, err, System.in)) {
             looter.loot();
         } catch (InterruptedException | IOException | RuntimeException ex) {
             logger.warn("-- main() > exception", ex);
@@ -97,8 +108,8 @@ public class Main {
             }
         }
 
-        if (config.debug().toPrintStackTrace()) {
-            DumpStackTraceHook.remove();
+        if (stackTraceHook != null) {
+            stackTraceHook.remove();
         }
 
         logger.trace(">> main()");
