@@ -241,22 +241,34 @@ public final class Looter implements Closeable {
         snapshot = Snapshots.from(snapshot, file -> file.getSize() != 0 && file.hasSignature());
         logger.info("-- filter() > filtered non empty, remaining: {}", snapshot.filesCount());
         std.println("Files(non-empty): " + snapshot.filesCount());
+        if (snapshot.filesCount() == 0) {
+            return;
+        }
 
         // User filter
         snapshot = Snapshots.from(snapshot, filter);
         logger.info("-- filter() > filtered configured, remaining: {}", snapshot.filesCount());
         std.println("Files(filtered): " + snapshot.filesCount());
+        if (snapshot.filesCount() == 0) {
+            return;
+        }
 
         // Undecryptable filter
         Snapshot filtered = snapshot;
         KeyBagManager keyBagManager = backup.keyBagManager();
-        Predicate<ICloud.MBSFile> undecryptableFilter
+        Predicate<ICloud.MBSFile> nonUndecryptableFilter
                 = file -> !file.getAttributes().hasEncryptionKey() || keyBagManager.fileKey(file) != null;
-        snapshot = Snapshots.from(snapshot, undecryptableFilter);
+        snapshot = Snapshots.from(snapshot, nonUndecryptableFilter);
         Set<ICloud.MBSFile> undecryptables = filtered.files();
         undecryptables.removeAll(snapshot.files());
+//        Map<ICloud.MBSFile, Outcome> undecryptableOutcomes = undecryptables.stream()
+//                .collect(Collectors.toMap(Function.identity(), file -> Outcome.FAILED_DECRYPT_NO_KEY));
+//        outcomesConsumer.accept(undecryptableOutcomes);
         logger.info("-- filter() > filtered undecryptable, remaining: {}", snapshot.filesCount());
         std.println("Files(non-undecryptable): " + snapshot.filesCount());
+        if (snapshot.filesCount() == 0) {
+            return;
+        }
 
         // Local filter
         if (config.engine().toForceOverwrite()) {
@@ -268,21 +280,24 @@ public final class Looter implements Closeable {
             logger.info("-- filter() > filtered local, remaining: {} delay(ms): {}", snapshot.filesCount(), b - a);
             std.println("Files(non-local): " + snapshot.filesCount());
         }
+        if (snapshot.filesCount() == 0) {
+            return;
+        }
 
         // Retrieve
         Outcomes outcomes = Outcomes.create();
         OutcomesProgress progress = OutcomesProgress.from(snapshot, std);
         Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer = outcomes.andThen(progress);
+        std.println();
         std.println("Retrieving files: " + snapshot.filesCount());
-
+        std.println();
         // Dump undecryptables
-//        Map<ICloud.MBSFile, Outcome> undecryptableOutcomes = undecryptables.stream()
-//                .collect(Collectors.toMap(Function.identity(), file -> Outcome.FAILED_DECRYPT_NO_KEY));
-//        outcomesConsumer.accept(undecryptableOutcomes);
+
         // Fetch files
         SnapshotDownloader.from(config.engine(), config.file())
                 .download(agent, core, snapshot, outcomesConsumer);
 
+        std.println();
         std.println("Completed:");
         outcomes.print(std);
         std.println();
