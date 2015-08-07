@@ -51,11 +51,12 @@ public final class OutcomesProgress implements Consumer<Map<ICloud.MBSFile, Outc
         long tickDelta = totalBytes / 1000;
 
         logger.debug("-- from() > totalBytes: {}", totalBytes);
-        return new OutcomesProgress(tickDelta, out, false);
+        return new OutcomesProgress(totalBytes, tickDelta, out, false);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(OutcomesProgress.class);
 
+    private final long totalBytes;
     private final long tickDelta;
     private final Printer out;
     private final Lock lock;
@@ -71,7 +72,8 @@ public final class OutcomesProgress implements Consumer<Map<ICloud.MBSFile, Outc
     @GuardedBy("lock")
     private final StringBuffer sb = new StringBuffer();
 
-    OutcomesProgress(long tickDelta, Printer out, Lock lock, long bytes, int tick, int percentage, long ms) {
+    OutcomesProgress(long totalBytes, long tickDelta, Printer out, Lock lock, long bytes, int tick, int percentage, long ms) {
+        this.totalBytes = totalBytes;
         this.tickDelta = tickDelta;
         this.out = Objects.requireNonNull(out);
         this.lock = Objects.requireNonNull(lock);
@@ -81,8 +83,8 @@ public final class OutcomesProgress implements Consumer<Map<ICloud.MBSFile, Outc
         this.ms = ms;
     }
 
-    public OutcomesProgress(long tickDelta, Printer out, boolean fair) {
-        this(tickDelta, out, new ReentrantLock(fair), 0, 0, 0, System.currentTimeMillis());
+    public OutcomesProgress(long totalBytes, long tickDelta, Printer out, boolean fair) {
+        this(totalBytes, tickDelta, out, new ReentrantLock(fair), 0, 0, 0, System.currentTimeMillis());
     }
 
     @Override
@@ -99,21 +101,33 @@ public final class OutcomesProgress implements Consumer<Map<ICloud.MBSFile, Outc
         }
     }
 
+    public long totalBytes() {
+        return totalBytes;
+    }
+
     void process(long delta) throws InterruptedException {
         lock.lockInterruptibly();
         try {
             bytes += delta;
-            while (bytes >= tickDelta) {
-                bytes -= tickDelta;
-                tick();
+            long ticks = bytes / tickDelta;
+            bytes %= tickDelta;
+
+            long currentMs = System.currentTimeMillis();
+            long deltaMs = currentMs - ms;
+            ms = currentMs;
+            long tickDeltaMs = deltaMs / ticks;
+
+            for (int i = 0; i < ticks; i++) {
+                tick(tickDeltaMs);
             }
+
         } finally {
             lock.unlock();
         }
     }
 
     @GuardedBy("lock")
-    void tick() {
+    void tick(long deltaMs) {
         if (percentage > 100) {
             return;
         }
@@ -125,10 +139,6 @@ public final class OutcomesProgress implements Consumer<Map<ICloud.MBSFile, Outc
             tick++;
 
         } else if (tick == 39) {
-            long currentMs = System.currentTimeMillis();
-            long deltaMs = currentMs - ms;
-            ms = currentMs;
-
             long rate = deltaMs == 0
                     ? -1
                     : tickDelta * 40000 / (deltaMs * 1024);
