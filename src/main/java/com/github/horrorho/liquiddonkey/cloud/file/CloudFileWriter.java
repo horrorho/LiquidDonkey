@@ -135,7 +135,7 @@ public final class CloudFileWriter {
             result = decrypt(path, file);
         } else {
             logger.debug("-- write() > success: {}", file.getRelativePath());
-            result = Outcome.SUCCESS;
+            result = Outcome.WRITTEN;
         }
 
         if (setLastModifiedTime) {
@@ -162,7 +162,7 @@ public final class CloudFileWriter {
         try {
             decrypter.decrypt(path, key, file.getAttributes().getDecryptedSize());
             logger.debug("-- decrypt() > success: {}", file.getRelativePath());
-            return Outcome.SUCCESS_DECRYPT;
+            return Outcome.WRITTEN_DECRYPT;
 
         } catch (BadDataException ex) {
             logger.warn("-- decrypt() > failed: {} exception: {}", file.getRelativePath(), ex);
