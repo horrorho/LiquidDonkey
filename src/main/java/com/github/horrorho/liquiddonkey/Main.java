@@ -101,10 +101,10 @@ public class Main {
                 StringWriter stringWriter = new StringWriter();
                 PrintWriter printWriter = new PrintWriter(stringWriter);
                 ex.printStackTrace(printWriter);
-                System.err.println("FATAL: " + stringWriter.toString());
+                err.println("FATAL: " + stringWriter.toString());
 
             } else {
-                System.err.println("FATAL: " + ex.getMessage());
+                err.println("FATAL: " + ex.getMessage());
             }
         }
 
