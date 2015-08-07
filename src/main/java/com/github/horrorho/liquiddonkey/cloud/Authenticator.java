@@ -112,7 +112,7 @@ public final class Authenticator {
     @GuardedBy("lock")
     void authenticate(HttpClient client) throws IOException {
         if (id == null || id.isEmpty() || password == null || password.isEmpty()) {
-            invalid = "Unable to authenticate. Missing id/ password.";
+            invalid = "Unable to re-authenticate expired token: missing appleId/ password.";
 
         } else {
             try {
@@ -124,11 +124,11 @@ public final class Authenticator {
                 } else {
                     logger.error("-- reauthentication() > mismatched dsPrsID: {} > {}",
                             token.auth().dsPrsID(), auth.dsPrsID());
-                    invalid = "Account mismatch for token and id/ password";
+                    invalid = "Unable to re-authenticate expired token: account mismatch.";
                 }
             } catch (HttpResponseException ex) {
                 if (ex.getStatusCode() == 401) {
-                    invalid = "Authentication failed";
+                    invalid = "Unable to re-authenticate expired token: invalid appleId/ password.";
                 }
             }
         }

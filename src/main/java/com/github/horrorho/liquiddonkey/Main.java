@@ -26,9 +26,11 @@ package com.github.horrorho.liquiddonkey;
 import com.github.horrorho.liquiddonkey.cloud.Looter;
 import com.github.horrorho.liquiddonkey.settings.commandline.CommandLineConfigFactory;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
+import com.github.horrorho.liquiddonkey.util.PadStream;
 import com.github.horrorho.liquiddonkey.util.StackTraceHook;
 import com.github.horrorho.liquiddonkey.util.Printer;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import org.slf4j.Logger;
@@ -78,11 +80,11 @@ public class Main {
             return;
         }
 
-        Printer std = System.out::print;
-        std = std.padding(80);
-
-        Printer err = x -> System.err.print("\r" + x);
-        err = err.padding(80);
+        PrintStream psStd = new PrintStream(PadStream.from(System.out, 80));
+        Printer std = psStd::print;
+        
+        PrintStream psErr = new PrintStream(PadStream.from(System.err, 80)); 
+        Printer err = x -> psErr.print("\r" + x);
 
         final StackTraceHook stackTraceHook;
         if (config.debug().toPrintStackTrace()) {

@@ -69,7 +69,7 @@ public final class OutcomesProgress implements Consumer<Map<ICloud.MBSFile, Outc
     @GuardedBy("lock")
     private long ms;
     @GuardedBy("lock")
-    private StringBuffer sb = new StringBuffer();
+    private final StringBuffer sb = new StringBuffer();
 
     OutcomesProgress(long tickDelta, Printer out, Lock lock, long bytes, int tick, int percentage, long ms) {
         this.tickDelta = tickDelta;
@@ -133,7 +133,7 @@ public final class OutcomesProgress implements Consumer<Map<ICloud.MBSFile, Outc
                     ? -1
                     : tickDelta * 40000 / (deltaMs * 1024);
 
-            sb.append(String.format("%6s", rate)).append(" KiB/s");
+            sb.append('.').append(String.format("%6s", rate)).append(" KiB/s");
             out.print("\r" + sb.toString());
             sb.setLength(0);
             out.println();

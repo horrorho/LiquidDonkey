@@ -52,9 +52,4 @@ public interface Printer {
     default void println(Object object) {
         println(object == null ? "null" : object.toString());
     }
-
-    default Printer padding(int width) {
-        String format = "%-" + width + "s";
-        return x -> this.print(String.format(format, x));
-    }
 }
