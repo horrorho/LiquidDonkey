@@ -32,6 +32,7 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.github.horrorho.liquiddonkey.util.SyncSupplier;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -81,12 +82,12 @@ public class ConcurrentEngine {
         this.executorTimeoutMs = executorTimeoutMs;
     }
 
-    public Exception execute(
+    public void execute(
             HttpAgent agent,
             StoreManager storeManager,
             SignatureManager signatureManager,
             Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer
-    ) throws InterruptedException, TimeoutException {
+    ) throws InterruptedException, IOException, TimeoutException {
 
         List<ChunkServer.StorageHostChunkList> chunks = storeManager.chunkListList().stream().collect(Collectors.toList());
         logger.debug("-- execute() > chunks count: {}", chunks.size());
@@ -100,7 +101,22 @@ public class ConcurrentEngine {
         Supplier<Runner> runners = ()
                 -> new Runner(syncSupplier, outcomesConsumer, fatal, donkeys.get());
 
-        return execute(runners, fatal);
+        Exception ex = fatal.get();
+        logger.debug("-- excute() > fatal: {}", ex);
+        
+        if (ex != null) {
+            if (ex instanceof IOException) {
+                throw (IOException) ex;
+            }
+
+            if (ex instanceof InterruptedException) {
+                throw (InterruptedException) ex;
+            }
+
+            if (ex instanceof RuntimeException) {
+                throw (RuntimeException) ex;
+            }
+        }
     }
 
     Exception execute(Supplier<Runner> runnersSupplier, AtomicReference<Exception> fatal)

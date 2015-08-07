@@ -35,7 +35,6 @@ import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
-import com.github.horrorho.liquiddonkey.util.StackTrace;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
 import java.util.Map;
@@ -98,7 +97,6 @@ public final class SnapshotDownloader {
         logger.trace("<< download() < dsPrsID: {} udid: {} snapshot: {}",
                 snapshot.dsPrsID(), snapshot.backupUDID(), snapshot.snapshotID());
 
-        Exception fatal = null;
         boolean isCompleted = false;
 
         while (!isCompleted && !snapshot.files().isEmpty() && !agent.authenticatorIsInvalid()) {
@@ -126,7 +124,7 @@ public final class SnapshotDownloader {
 
             try {
                 // Execute.
-                fatal = engine.execute(agent, storeManager, signatureManager, outcomes);
+                engine.execute(agent, storeManager, signatureManager, outcomes);
                 isCompleted = true;
                 
             } catch (TimeoutException ex) {
@@ -145,8 +143,8 @@ public final class SnapshotDownloader {
 
             // TODO checksum/ salvage completed chunks from the StoreManager in the case of timeout downloads.
             
-            logger.debug("-- download() > end loop, is completed: {} fatal: {} remaining files: {}",
-                    isCompleted, fatal, snapshot.filesCount());
+            logger.debug("-- download() > end loop, is completed: {} remaining files: {}",
+                    isCompleted,  snapshot.filesCount());
         } 
 
         logger.trace(">> download()");
