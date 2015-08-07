@@ -24,7 +24,6 @@
 package com.github.horrorho.liquiddonkey.util;
 
 import java.util.Arrays;
-import net.jcip.annotations.Immutable;
 import net.jcip.annotations.NotThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,20 +33,37 @@ import org.slf4j.LoggerFactory;
  *
  * @author Ahseya
  */
-@Immutable
 @NotThreadSafe
 public final class DumpStackTraceHook extends Thread {
 
+    public static DumpStackTraceHook from(Printer printer) {
+        return new DumpStackTraceHook(printer);
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(DumpStackTraceHook.class);
 
-    private static final DumpStackTraceHook instance = new DumpStackTraceHook();
+    private final Printer printer;
+    private boolean isAdded;
+
+    DumpStackTraceHook(Printer printer, boolean isAdded) {
+        this.printer = printer;
+        this.isAdded = isAdded;
+    }
+
+    DumpStackTraceHook(Printer printer) {
+        this(printer, false);
+    }
 
     /**
      * Add virtual-machine hook.
      */
-    public static void add() {
+    public void add() {
+        if (isAdded) {
+            logger.warn("-- add() > already added");
+        }
         try {
-            Runtime.getRuntime().addShutdownHook(instance);
+            Runtime.getRuntime().addShutdownHook(this);
+            isAdded = true;
         } catch (IllegalStateException | IllegalArgumentException | SecurityException ex) {
             logger.warn("-- add() > exception: ", ex);
         }
@@ -56,15 +72,16 @@ public final class DumpStackTraceHook extends Thread {
     /**
      * Remove virtual-machine hook.
      */
-    public static void remove() {
+    public void remove() {
+        if (!isAdded) {
+            logger.warn("-- add() > already removed");
+        }
         try {
-            Runtime.getRuntime().removeShutdownHook(instance);
+            Runtime.getRuntime().removeShutdownHook(this);
+            isAdded = false;
         } catch (IllegalStateException | SecurityException ex) {
             logger.warn("-- remove() > exception: ", ex);
         }
-    }
-
-    private DumpStackTraceHook() {
     }
 
     @Override
@@ -73,8 +90,8 @@ public final class DumpStackTraceHook extends Thread {
             Thread thread = stackTrace.getKey();
             ThreadGroup threadGroup = thread.getThreadGroup();
             if (threadGroup != null && "main".equals(threadGroup.getName())) {
-                System.out.println(thread);
-                Arrays.asList(stackTrace.getValue()).forEach(trace -> System.out.println("\t" + trace));
+                printer.println(thread);
+                Arrays.asList(stackTrace.getValue()).forEach(trace -> printer.println("\t" + trace));
             }
         });
     }
