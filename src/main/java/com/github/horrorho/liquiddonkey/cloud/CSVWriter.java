@@ -26,6 +26,7 @@ package com.github.horrorho.liquiddonkey.cloud;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import net.jcip.annotations.Immutable;
@@ -64,7 +65,9 @@ public final class CSVWriter {
 
     public void files(Collection<ICloud.MBSFile> files, Path path) throws IOException {
         logger.trace("<< write() < files: {} path: {}", files.size(), path);
-
+ 
+        Files.createDirectories(path.getParent());
+        
         try (CSVPrinter printer = new CSVPrinter(new FileWriter(path.toFile()), csvFormat)) {
             printer.printRecord(HEADER);
 
