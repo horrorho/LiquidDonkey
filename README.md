@@ -128,7 +128,7 @@ By default DonkeyLooter will separate out snapshots into their respective sub-fo
 ~/LiquidDonkey/target $ java -jar LiquidDonkey/target/LiquidDonkey.jar me@icloud.com password --output ~/backups/iCloud --combined
 ```
 ### Addendum
-Although it works wonderfully, consider this project to be in the alpha state. I will introduce, amend and test features as time permits. Please report any bugs. I currently only have access to a Linux box with VM Windows 7, therefore I'm unable to test on Mac OS X.
+Although it works wonderfully, consider this project to be in the alpha state. I will introduce, amend and test features as time permits. Please report any bugs. Developed on an Ubuntu Linux box. Functional on VM Windows 7 and VM OS X Yosemite 10.10.
 
 ### Help!
 I would be grateful if any knowledgeable persons would be able to assist with:
