@@ -101,8 +101,8 @@ public class ConcurrentEngine {
         Supplier<Runner> runners = ()
                 -> new Runner(syncSupplier, outcomesConsumer, fatal, donkeys.get());
 
-        Exception ex = fatal.get();
-        logger.debug("-- excute() > fatal: {}", ex);
+        Exception ex = execute(runners, fatal);
+        logger.debug("-- execute() > fatal: {}", ex);
         
         if (ex != null) {
             if (ex instanceof IOException) {
