@@ -47,34 +47,34 @@ public class PadStream extends OutputStream {
     public synchronized void write(int b) throws IOException {
         switch (b) {
             case '\b':
-                column--;
                 out.write(b);
+                column--;
                 break;
 
             case '\r':
-                column = 0;
                 out.write(b);
+                column = 0;
                 break;
 
             case '\t':
-                int length = ((column / tabWidth) + 1) * tabWidth;
-                for (int i = column; i < column + length; i++) {
+                int tab = ((column / tabWidth) + 1) * tabWidth;
+                for (int i = column; i <  tab; i++) {
                     out.write(pad);
                 }
-                column += length;
+                column = tab;
                 break;
 
             case '\n':
                 for (int i = column; i < width; i++) {
                     out.write(pad);
                 }
-                column = 0;
                 out.write('\n');
+                column = 0;
                 break;
 
             default:
-                column++;
                 out.write(b);
+                column++;
         }
     }
 
