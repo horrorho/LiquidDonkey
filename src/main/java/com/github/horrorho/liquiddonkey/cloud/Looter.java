@@ -247,7 +247,7 @@ public final class Looter implements Closeable {
 
         // Non-empty files
         snapshot = Snapshots.from(snapshot, file -> file.getSize() != 0 && file.hasSignature());
-        logger.info("-- filter() > filtered non empty, remaining: {}", snapshot.filesCount());
+        logger.info("-- snapshot() > filtered non empty, remaining: {}", snapshot.filesCount());
         std.println("Files(non-empty): " + snapshot.filesCount());
         if (snapshot.filesCount() == 0) {
             return;
@@ -255,7 +255,7 @@ public final class Looter implements Closeable {
 
         // User filter
         snapshot = Snapshots.from(snapshot, filter);
-        logger.info("-- filter() > filtered configured, remaining: {}", snapshot.filesCount());
+        logger.info("-- snapshot() > filtered configured, remaining: {}", snapshot.filesCount());
         std.println("Files(filtered): " + snapshot.filesCount());
         if (snapshot.filesCount() == 0) {
             return;
@@ -273,7 +273,7 @@ public final class Looter implements Closeable {
 //        Map<ICloud.MBSFile, Outcome> undecryptableOutcomes = undecryptables.stream()
 //                .collect(Collectors.toMap(Function.identity(), file -> Outcome.FAILED_DECRYPT_NO_KEY));
 //        outcomesConsumer.accept(undecryptableOutcomes);
-        logger.info("-- filter() > filtered undecryptable, remaining: {}", snapshot.filesCount());
+        logger.info("-- snapshot() > filtered undecryptable, remaining: {}", snapshot.filesCount());
         std.println("Files(non-undecryptable): " + snapshot.filesCount());
         if (snapshot.filesCount() == 0) {
             return;
@@ -281,12 +281,12 @@ public final class Looter implements Closeable {
 
         // Local filter
         if (config.engine().toForceOverwrite()) {
-            logger.debug("-- filter() > forced overwrite");
+            logger.debug("-- snapshot() > forced overwrite");
         } else {
             long a = System.currentTimeMillis();
             snapshot = LocalFileFilter.from(snapshot, config.file()).apply(snapshot);
             long b = System.currentTimeMillis();
-            logger.info("-- filter() > filtered local, remaining: {} delay(ms): {}", snapshot.filesCount(), b - a);
+            logger.info("-- snapshot() > filtered local, remaining: {} delay(ms): {}", snapshot.filesCount(), b - a);
             std.println("Files(non-local): " + snapshot.filesCount());
         }
         if (snapshot.filesCount() == 0) {
