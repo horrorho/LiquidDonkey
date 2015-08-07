@@ -55,13 +55,14 @@ public class SnapshotDirectoryTest {
             ICloud.MBSFile file,
             boolean isFlat,
             boolean isCombined,
+            String combinedDirectory,
             String expected) {
 
         Path baseBath = Paths.get(base);
         Path expectedPath = Paths.get(expected);
 
         SnapshotDirectory snapshotDirectory
-                = SnapshotDirectory.from(baseBath, udid, snapshotId, isFlat, isCombined);
+                = SnapshotDirectory.from(baseBath, udid, snapshotId, isFlat, isCombined, combinedDirectory);
 
         Path result = snapshotDirectory.apply(file);
         assertThat(result, is(expectedPath));
@@ -70,14 +71,16 @@ public class SnapshotDirectoryTest {
 
     public static Object[] parametersForTestNewInstance() {
         return new Object[]{
-            $("base", "udid", "1", one, false, false, "base/udid/1/domain/one.txt"),
-            $("base", "udid", "2", two, false, false, "base/udid/2/domain/one/two.db"),
-            $("base", "udid", "3", one, false, true, "base/udid/domain/one.txt"),
-            $("base", "udid", "4", two, false, true, "base/udid/domain/one/two.db"),
-            $("base", "udid", "1", one, true, false, "base/udid/1/8b28fc3a3e71ee69369a06822d400babc5c850b4"),
-            $("base", "udid", "2", two, true, false, "base/udid/2/5119a6cfa5210717a5597cb0f7298aac437f5ad0"),
-            $("base", "udid", "3", one, true, true, "base/udid/8b28fc3a3e71ee69369a06822d400babc5c850b4"),
-            $("base", "udid", "4", two, true, true, "base/udid/5119a6cfa5210717a5597cb0f7298aac437f5ad0")
+            $("base", "udid", "1", one, false, false, "", "base/udid/1/domain/one.txt"),
+            $("base", "udid", "2", two, false, false, "", "base/udid/2/domain/one/two.db"),
+            $("base", "udid", "3", one, false, true, "c", "base/udid/c/domain/one.txt"),
+            $("base", "udid", "4", two, false, true, "c", "base/udid/c/domain/one/two.db"),
+            $("base", "udid", "3", one, false, true, "d", "base/udid/d/domain/one.txt"),
+            $("base", "udid", "4", two, false, true, "d", "base/udid/d/domain/one/two.db"),
+            $("base", "udid", "1", one, true, false, "", "base/udid/1/8b28fc3a3e71ee69369a06822d400babc5c850b4"),
+            $("base", "udid", "2", two, true, false, "", "base/udid/2/5119a6cfa5210717a5597cb0f7298aac437f5ad0"),
+            $("base", "udid", "3", one, true, true, "c", "base/udid/c/8b28fc3a3e71ee69369a06822d400babc5c850b4"),
+            $("base", "udid", "4", two, true, true, "c", "base/udid/c/5119a6cfa5210717a5597cb0f7298aac437f5ad0")
         };
     }
 }

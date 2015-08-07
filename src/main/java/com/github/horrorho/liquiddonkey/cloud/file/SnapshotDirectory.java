@@ -57,7 +57,8 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
                 snapshot.backupUDID(),
                 Integer.toString(snapshot.snapshotID()),
                 config.isFlat(),
-                config.isCombined());
+                config.isCombined(),
+                config.combinedDirectory());
     }
 
     static SnapshotDirectory from(
@@ -65,12 +66,13 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
             String udidStr,
             String snapshotIdStr,
             boolean isFlat,
-            boolean isCombined) {
+            boolean isCombined,
+            String combinedDirectory) {
 
         SHA1Digest sha1 = new SHA1Digest();
 
         Path folder = isCombined
-                ? base.resolve(udidStr)
+                ? base.resolve(udidStr).resolve(combinedDirectory)
                 : base.resolve(udidStr).resolve(snapshotIdStr);
 
         return isFlat

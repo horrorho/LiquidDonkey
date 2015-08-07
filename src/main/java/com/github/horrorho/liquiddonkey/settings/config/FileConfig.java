@@ -22,11 +22,12 @@
  * THE SOFTWARE.
  */
 package com.github.horrorho.liquiddonkey.settings.config;
- 
+
 import com.github.horrorho.liquiddonkey.util.Props;
-import com.github.horrorho.liquiddonkey.settings.Property; 
+import com.github.horrorho.liquiddonkey.settings.Property;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.Properties;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
@@ -40,43 +41,49 @@ import net.jcip.annotations.ThreadSafe;
 @ThreadSafe
 public final class FileConfig {
 
-    public static FileConfig from(Properties properties) { 
+    public static FileConfig from(Properties properties) {
         Props<Property> props = Props.from(properties);
-        
+
         return from(
                 Paths.get(props.getProperty(Property.FILE_OUTPUT_DIRECTORY)).toAbsolutePath(),
                 props.getProperty(Property.FILE_COMBINED, props::asBoolean),
                 props.getProperty(Property.FILE_FLAT, props::asBoolean),
-                props.getProperty(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, props::asBoolean));
+                props.getProperty(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, props::asBoolean),
+                props.getProperty(Property.FILE_COMBINED_DIRECTORY));
     }
 
     public static FileConfig from(
             Path base,
             boolean isCombined,
             boolean isFlat,
-            boolean setLastModifiedTimestamp) {
+            boolean setLastModifiedTimestamp,
+            String combinedDirectory) {
 
         return new FileConfig(base,
                 isCombined,
                 isFlat,
-                setLastModifiedTimestamp);
+                setLastModifiedTimestamp,
+                combinedDirectory);
     }
 
     private final Path base;
     private final boolean isCombined;
     private final boolean isFlat;
     private final boolean setLastModifiedTimestamp;
+    private final String combinedDirectory;
 
     FileConfig(
             Path base,
             boolean isCombined,
             boolean isFlat,
-            boolean setLastModifiedTimestamp) {
+            boolean setLastModifiedTimestamp,
+            String combinedDirectory) {
 
-        this.base = base;
+        this.base = Objects.requireNonNull(base);
         this.isCombined = isCombined;
         this.isFlat = isFlat;
         this.setLastModifiedTimestamp = setLastModifiedTimestamp;
+        this.combinedDirectory = Objects.requireNonNull(combinedDirectory);
     }
 
     public Path base() {
@@ -95,6 +102,10 @@ public final class FileConfig {
         return setLastModifiedTimestamp;
     }
 
+    public String combinedDirectory() {
+        return combinedDirectory;
+    }
+
     @Override
     public String toString() {
         return "FileConfig{"
@@ -102,6 +113,7 @@ public final class FileConfig {
                 + ", isCombined=" + isCombined
                 + ", isFlat=" + isFlat
                 + ", setLastModifiedTimestamp=" + setLastModifiedTimestamp
+                + ", combinedDirectory=" + combinedDirectory
                 + '}';
     }
 }
