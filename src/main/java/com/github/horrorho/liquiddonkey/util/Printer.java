@@ -55,6 +55,6 @@ public interface Printer {
 
     default Printer padding(int width) {
         String format = "%-" + width + "s";
-        return x -> this.println(String.format(format, x));
+        return x -> this.print(String.format(format, x));
     }
 }
