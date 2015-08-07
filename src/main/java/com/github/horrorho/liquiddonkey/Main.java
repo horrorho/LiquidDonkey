@@ -32,8 +32,6 @@ import com.github.horrorho.liquiddonkey.util.Printer;
 import com.github.horrorho.liquiddonkey.util.StackTrace;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
