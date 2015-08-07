@@ -24,9 +24,7 @@
 package com.github.horrorho.liquiddonkey.http;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.UnknownHostException;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLException;
 import net.jcip.annotations.Immutable;
@@ -40,7 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Aggressive HttpRequestRetryHandler implementation.
+ * Aggressive HttpRequestRetryHandler.
  *
  * @author cain
  */
@@ -54,33 +52,9 @@ public final class PersistentHttpRequestRetryHandler implements HttpRequestRetry
     private final int retryDelayMs;
     private final int timeOutMs;
     private final boolean requestSentRetryEnabled;
-    private final PrintStream err;
 
     /**
      * Returns a new instance.
-     *
-     * @param retryCount maximum retry count
-     * @param retryDelayMs retry in milliseconds
-     * @param timeOutMs timeout in milliseconds
-     * @param requestSentRetryEnabled true to retry requests that have been sent
-     * @param err, synchronized output for warnings, not null
-     */
-    public PersistentHttpRequestRetryHandler(
-            int retryCount,
-            int retryDelayMs,
-            int timeOutMs,
-            boolean requestSentRetryEnabled,
-            PrintStream err) {
-
-        this.retryCount = retryCount;
-        this.retryDelayMs = retryDelayMs;
-        this.timeOutMs = timeOutMs;
-        this.requestSentRetryEnabled = requestSentRetryEnabled;
-        this.err = Objects.requireNonNull(err);
-    }
-
-    /**
-     * Returns a new instance with System.err PrintStream.
      *
      * @param retryCount maximum retry count
      * @param retryDelayMs retry in milliseconds
@@ -93,7 +67,10 @@ public final class PersistentHttpRequestRetryHandler implements HttpRequestRetry
             int timeOutMs,
             boolean requestSentRetryEnabled) {
 
-        this(retryCount, retryDelayMs, timeOutMs, requestSentRetryEnabled, System.err);
+        this.retryCount = retryCount;
+        this.retryDelayMs = retryDelayMs;
+        this.timeOutMs = timeOutMs;
+        this.requestSentRetryEnabled = requestSentRetryEnabled;
     }
 
     @Override
@@ -103,16 +80,11 @@ public final class PersistentHttpRequestRetryHandler implements HttpRequestRetry
 
         boolean toRetry = doRetryRequest(exception, executionCount, context);
 
-        err.println("IOError" + (toRetry ? "(retrying): " : "(failed): ") + exception.getMessage());
-
         logger.trace(">> retryRequest() > {}", toRetry);
         return toRetry;
     }
 
-    boolean doRetryRequest(
-            final IOException exception,
-            final int executionCount,
-            final HttpContext context) {
+    boolean doRetryRequest(final IOException exception, final int executionCount, final HttpContext context) {
 
         HttpClientContext clientContext = HttpClientContext.adapt(context);
         HttpRequest request = clientContext.getRequest();

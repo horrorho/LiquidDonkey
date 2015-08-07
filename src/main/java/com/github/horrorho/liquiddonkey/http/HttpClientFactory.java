@@ -73,10 +73,6 @@ public final class HttpClientFactory {
     }
 
     public CloseableHttpClient client() {
-        return client(System.err);
-    }
-
-    public CloseableHttpClient client(PrintStream err) {
         logger.trace("<< client()");
 
         PoolingHttpClientConnectionManager connectionManager = config.isRelaxedSSL()
@@ -98,8 +94,7 @@ public final class HttpClientFactory {
                         config.retryCount(),
                         config.retryDelayMs(),
                         config.timeoutMs(),
-                        true,
-                        err)
+                        true )
                 : new DefaultHttpRequestRetryHandler(
                         config.retryCount(),
                         false);
@@ -111,7 +106,7 @@ public final class HttpClientFactory {
                 .setUserAgent(config.userAgent())
                 .build();
 
-        logger.trace(">> client() > ", client);
+        logger.trace(">> client()", client);
         return client;
     }
 
