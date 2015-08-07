@@ -112,13 +112,15 @@ public final class OutcomesProgress implements Consumer<Map<ICloud.MBSFile, Outc
             long ticks = bytes / tickDelta;
             bytes %= tickDelta;
 
-            long currentMs = System.currentTimeMillis();
-            long deltaMs = currentMs - ms;
-            ms = currentMs;
-            long tickDeltaMs = deltaMs / ticks;
+            if (ticks > 0) {
+                long currentMs = System.currentTimeMillis();
+                long deltaMs = currentMs - ms;
+                ms = currentMs;
+                long tickDeltaMs = deltaMs / ticks;
 
-            for (int i = 0; i < ticks; i++) {
-                tick(tickDeltaMs);
+                for (int i = 0; i < ticks; i++) {
+                    tick(tickDeltaMs);
+                }
             }
 
         } finally {
