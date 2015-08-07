@@ -24,7 +24,6 @@
 package com.github.horrorho.liquiddonkey.http;
 
 import com.github.horrorho.liquiddonkey.settings.config.HttpConfig;
-import java.io.PrintStream;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
