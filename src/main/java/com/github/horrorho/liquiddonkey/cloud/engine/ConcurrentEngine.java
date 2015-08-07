@@ -116,6 +116,8 @@ public class ConcurrentEngine {
             if (ex instanceof RuntimeException) {
                 throw (RuntimeException) ex;
             }
+            
+            throw new IllegalStateException(ex);
         }
     }
 
