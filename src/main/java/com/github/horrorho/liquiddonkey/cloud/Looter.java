@@ -43,6 +43,7 @@ import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.HttpClientFactory;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
+import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.github.horrorho.liquiddonkey.util.MemMonitor;
 import com.github.horrorho.liquiddonkey.util.Printer;
 import java.io.Closeable;
@@ -267,6 +268,7 @@ public final class Looter implements Closeable {
         snapshot = Snapshots.from(snapshot, nonUndecryptableFilter);
         Set<ICloud.MBSFile> undecryptables = filtered.files();
         undecryptables.removeAll(snapshot.files());
+        // Dump undecryptables
 //        Map<ICloud.MBSFile, Outcome> undecryptableOutcomes = undecryptables.stream()
 //                .collect(Collectors.toMap(Function.identity(), file -> Outcome.FAILED_DECRYPT_NO_KEY));
 //        outcomesConsumer.accept(undecryptableOutcomes);
@@ -295,8 +297,7 @@ public final class Looter implements Closeable {
         OutcomesProgress progress = OutcomesProgress.from(snapshot, std);
         Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer = outcomes.andThen(progress);
         std.println();
-        std.println("Retrieving:");
-        // Dump undecryptables
+        std.println("Retrieving: " + Bytes.humanize(progress.totalBytes()));
 
         // Fetch files
         SnapshotDownloader.from(config.engine(), config.file())
