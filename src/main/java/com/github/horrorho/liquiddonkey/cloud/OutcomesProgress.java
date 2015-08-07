@@ -25,7 +25,7 @@ package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import java.io.PrintStream;
+import com.github.horrorho.liquiddonkey.util.Printer;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.locks.Lock;
@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 @ThreadSafe
 public final class OutcomesProgress implements Consumer<Map<ICloud.MBSFile, Outcome>> {
 
-    public static OutcomesProgress from(Snapshot snapshot, PrintStream out) {
+    public static OutcomesProgress from(Snapshot snapshot, Printer out) {
         long totalBytes = snapshot.files().stream()
                 .mapToLong(ICloud.MBSFile::getSize)
                 .sum();
@@ -57,7 +57,7 @@ public final class OutcomesProgress implements Consumer<Map<ICloud.MBSFile, Outc
     private static final Logger logger = LoggerFactory.getLogger(OutcomesProgress.class);
 
     private final long tickDelta;
-    private final PrintStream out;
+    private final Printer out;
     private final Lock lock;
 
     @GuardedBy("lock")
@@ -68,8 +68,10 @@ public final class OutcomesProgress implements Consumer<Map<ICloud.MBSFile, Outc
     private int percentage;
     @GuardedBy("lock")
     private long ms;
+    @GuardedBy("lock")
+    private StringBuffer sb = new StringBuffer();
 
-    OutcomesProgress(long tickDelta, PrintStream out, Lock lock, long bytes, int tick, int percentage, long ms) {
+    OutcomesProgress(long tickDelta, Printer out, Lock lock, long bytes, int tick, int percentage, long ms) {
         this.tickDelta = tickDelta;
         this.out = Objects.requireNonNull(out);
         this.lock = Objects.requireNonNull(lock);
@@ -79,7 +81,7 @@ public final class OutcomesProgress implements Consumer<Map<ICloud.MBSFile, Outc
         this.ms = ms;
     }
 
-    public OutcomesProgress(long tickDelta, PrintStream out, boolean fair) {
+    public OutcomesProgress(long tickDelta, Printer out, boolean fair) {
         this(tickDelta, out, new ReentrantLock(fair), 0, 0, 0, System.currentTimeMillis());
     }
 
@@ -112,8 +114,13 @@ public final class OutcomesProgress implements Consumer<Map<ICloud.MBSFile, Outc
 
     @GuardedBy("lock")
     void tick() {
+        if (percentage > 100) {
+            return;
+        }
+
         if (tick == 0) {
-            out.print(String.format("%2s", percentage) + "% .");
+            sb.append(String.format("%2s", percentage)).append("% .");
+            out.print("\r" + sb.toString());
             percentage += 4;
             tick++;
 
@@ -126,15 +133,19 @@ public final class OutcomesProgress implements Consumer<Map<ICloud.MBSFile, Outc
                     ? -1
                     : tickDelta * 40000 / (deltaMs * 1024);
 
-            out.println(String.format("%6s", rate) + " KBps");
+            sb.append(String.format("%6s", rate)).append(" KiB/s");
+            out.print("\r" + sb.toString());
+            sb.setLength(0);
+            out.println();
             tick = 0;
 
         } else {
             if (tick % 5 == 0) {
-                out.print(" .");
+                sb.append(" .");
             } else {
-                out.print(".");
+                sb.append(".");
             }
+            out.print("\r" + sb.toString());
             tick++;
         }
     }
