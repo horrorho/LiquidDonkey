@@ -38,6 +38,7 @@ import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
+import com.github.horrorho.liquiddonkey.cloud.file.Mode;
 import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
@@ -46,10 +47,13 @@ import com.github.horrorho.liquiddonkey.settings.config.Config;
 import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.github.horrorho.liquiddonkey.util.MemMonitor;
 import com.github.horrorho.liquiddonkey.util.Printer;
-import com.github.horrorho.liquiddonkey.util.StackTrace;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +83,15 @@ public final class Looter implements Closeable {
         CloseableHttpClient client = HttpClientFactory.from(config.http()).client();
         FileFilter fileFilter = FileFilter.from(config.fileFilter());
 
-        Looter looter = new Looter(config, client, std, err, in, OutcomesPrinter.from(std, err), fileFilter);
+        Looter looter = new Looter(
+                config,
+                client,
+                std,
+                err,
+                in,
+                OutcomesPrinter.from(std, err),
+                fileFilter,
+                CSVWriter.create());
 
         logger.trace(">> from()");
         return looter;
@@ -94,6 +106,7 @@ public final class Looter implements Closeable {
     private final InputStream in;
     private final OutcomesPrinter outcomesPrinter;
     private final FileFilter filter;
+    private final CSVWriter csvWriter;
     private final boolean isAggressive = true;
 
     Looter(
@@ -103,7 +116,8 @@ public final class Looter implements Closeable {
             Printer err,
             InputStream in,
             OutcomesPrinter outcomesPrinter,
-            FileFilter filter) {
+            FileFilter filter,
+            CSVWriter csvWriter) {
 
         this.config = Objects.requireNonNull(config);
         this.client = Objects.requireNonNull(client);
@@ -112,6 +126,7 @@ public final class Looter implements Closeable {
         this.in = Objects.requireNonNull(in);
         this.outcomesPrinter = Objects.requireNonNull(outcomesPrinter);
         this.filter = Objects.requireNonNull(filter);
+        this.csvWriter = Objects.requireNonNull(csvWriter);
     }
 
     public void loot() throws BadDataException, IOException, InterruptedException {
@@ -209,6 +224,7 @@ public final class Looter implements Closeable {
                 logger.info("-- backup() > snapshot: {}", id);
                 snapshot(client, core, agent, backup, id);
             } catch (IOException ex) {
+                // TODO needs reworking
                 if (ex instanceof HttpResponseException) {
                     if (((HttpResponseException) ex).getStatusCode() == 401) {
                         // Authentication failure.
@@ -228,6 +244,10 @@ public final class Looter implements Closeable {
     void snapshot(HttpClient client, Core core, HttpAgent agent, Backup backup, int id)
             throws BadDataException, IOException, InterruptedException {
 
+        Path path = config.file().base().resolve(backup.backupUDID());
+        Predicate<ICloud.MBSFile> nonUndecryptableFilter
+                = file -> !file.getAttributes().hasEncryptionKey() || backup.keyBagManager().fileKey(file) != null;
+
         // Retrieve file list.
         int limit = config.client().listLimit();
         Snapshot snapshot
@@ -242,42 +262,37 @@ public final class Looter implements Closeable {
         std.println();
         std.println("Retrieving snapshot: " + id + " (" + attr.getDeviceName() + " " + attr.getProductVersion() + ")");
 
-        // Total files
+        // Total files.
         std.println("Files(total): " + snapshot.filesCount());
+        csvWriter.files(sorted(snapshot), path.resolve("snapshot_" + id + "_files.csv"));
 
-        // Non-empty files
+        // Mode summary.
+        Map<Mode, Long> modes = snapshot.files().stream()
+                .collect(Collectors.groupingBy(Mode::mode, Collectors.counting()));
+        logger.info("-- snapshot() > modes: {}", modes);
+
+        // Non-empty files filter.
         snapshot = Snapshots.from(snapshot, file -> file.getSize() != 0 && file.hasSignature());
         logger.info("-- snapshot() > filtered non empty, remaining: {}", snapshot.filesCount());
         std.println("Files(non-empty): " + snapshot.filesCount());
-        if (snapshot.filesCount() == 0) {
-            return;
-        }
 
         // User filter
         snapshot = Snapshots.from(snapshot, filter);
         logger.info("-- snapshot() > filtered configured, remaining: {}", snapshot.filesCount());
         std.println("Files(filtered): " + snapshot.filesCount());
-        if (snapshot.filesCount() == 0) {
-            return;
-        }
+        csvWriter.files(sorted(snapshot), path.resolve("snapshot_" + id + "_filtered.csv"));
 
         // Undecryptable filter
-        Snapshot filtered = snapshot;
-        KeyBagManager keyBagManager = backup.keyBagManager();
-        Predicate<ICloud.MBSFile> nonUndecryptableFilter
-                = file -> !file.getAttributes().hasEncryptionKey() || keyBagManager.fileKey(file) != null;
+        Snapshot undecryptable = Snapshots.from(snapshot, nonUndecryptableFilter.negate());
         snapshot = Snapshots.from(snapshot, nonUndecryptableFilter);
-        Set<ICloud.MBSFile> undecryptables = filtered.files();
-        undecryptables.removeAll(snapshot.files());
+        logger.info("-- snapshot() > filtered undecryptable, remaining: {}", snapshot.filesCount());
+        std.println("Files(non-undecryptable): " + snapshot.filesCount());
+
         // Dump undecryptables
 //        Map<ICloud.MBSFile, Outcome> undecryptableOutcomes = undecryptables.stream()
 //                .collect(Collectors.toMap(Function.identity(), file -> Outcome.FAILED_DECRYPT_NO_KEY));
 //        outcomesConsumer.accept(undecryptableOutcomes);
-        logger.info("-- snapshot() > filtered undecryptable, remaining: {}", snapshot.filesCount());
-        std.println("Files(non-undecryptable): " + snapshot.filesCount());
-        if (snapshot.filesCount() == 0) {
-            return;
-        }
+        csvWriter.files(sorted(undecryptable), path.resolve("snapshot_" + id + "_undecryptable.csv"));
 
         // Local filter
         if (config.engine().toForceOverwrite()) {
@@ -289,6 +304,7 @@ public final class Looter implements Closeable {
             logger.info("-- snapshot() > filtered local, remaining: {} delay(ms): {}", snapshot.filesCount(), b - a);
             std.println("Files(non-local): " + snapshot.filesCount());
         }
+        
         if (snapshot.filesCount() == 0) {
             return;
         }
@@ -308,6 +324,12 @@ public final class Looter implements Closeable {
         std.println("Completed:");
         outcomes.print(std);
         std.println();
+    }
+
+    List<ICloud.MBSFile> sorted(Snapshot snapshot) {
+        List<ICloud.MBSFile> files = new ArrayList<>(snapshot.files());
+        Collections.sort(files, Comparator.comparing(file -> file.getDomain() + file.getRelativePath()));
+        return files;
     }
 
     @Override
