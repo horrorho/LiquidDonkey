@@ -24,7 +24,7 @@
 package com.github.horrorho.liquiddonkey.settings.commandline;
 
 import com.github.horrorho.liquiddonkey.settings.PropertiesFactory;
-import com.github.horrorho.liquiddonkey.settings.Property; 
+import com.github.horrorho.liquiddonkey.settings.Property;
 import java.util.Properties;
 import junitparams.JUnitParamsRunner;
 import static junitparams.JUnitParamsRunner.$;
@@ -71,6 +71,9 @@ public class CommandLinePropertiesFactoryTest {
             $(Property.DEBUG_PRINT_STACK_TRACE, "u p", null),
             $(Property.DEBUG_PRINT_STACK_TRACE, "u p -x", "true"),
             $(Property.DEBUG_PRINT_STACK_TRACE, "u p --stack-trace", "true"),
+            $(Property.DEBUG_REPORT, "u p", null),
+            $(Property.DEBUG_REPORT, "u p --report", "true"),
+            $(Property.DEBUG_REPORT, "u p -w", "true"),
             $(Property.ENGINE_THREAD_COUNT, "u p", null),
             $(Property.ENGINE_THREAD_COUNT, "u p -t 4", "4"),
             $(Property.ENGINE_THREAD_COUNT, "u p --threads 4", "4"),

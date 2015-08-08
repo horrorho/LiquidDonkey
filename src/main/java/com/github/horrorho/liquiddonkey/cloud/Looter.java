@@ -227,6 +227,7 @@ public final class Looter implements Closeable {
     void snapshot(HttpClient client, Core core, HttpAgent agent, Backup backup, int id)
             throws BadDataException, IOException, InterruptedException {
 
+        boolean toReport = config.debug().toReport();
         Path path = config.file().base().resolve(backup.backupUDID()).resolve(config.file().reportsDirectory());
         Predicate<ICloud.MBSFile> nonUndecryptableFilter
                 = file -> !file.getAttributes().hasEncryptionKey() || backup.keyBagManager().fileKey(file) != null;
@@ -247,7 +248,9 @@ public final class Looter implements Closeable {
 
         // Total files.
         std.println("Files(total): " + snapshot.filesCount());
-        csvWriter.files(sorted(snapshot), path.resolve("snapshot_" + id + "_files.csv"));
+        if (toReport) {
+            csvWriter.files(sorted(snapshot), path.resolve("snapshot_" + id + "_files.csv"));
+        }
 
         // Mode summary.
         Map<Mode, Long> modes = snapshot.files().stream()
@@ -263,7 +266,9 @@ public final class Looter implements Closeable {
         snapshot = Snapshots.from(snapshot, filter);
         logger.info("-- snapshot() > filtered configured, remaining: {}", snapshot.filesCount());
         std.println("Files(filtered): " + snapshot.filesCount());
-        csvWriter.files(sorted(snapshot), path.resolve("snapshot_" + id + "_filtered.csv"));
+        if (toReport) {
+            csvWriter.files(sorted(snapshot), path.resolve("snapshot_" + id + "_filtered.csv"));
+        }
 
         // Undecryptable filter
         Snapshot undecryptable = Snapshots.from(snapshot, nonUndecryptableFilter.negate());
@@ -275,7 +280,9 @@ public final class Looter implements Closeable {
 //        Map<ICloud.MBSFile, Outcome> undecryptableOutcomes = undecryptables.stream()
 //                .collect(Collectors.toMap(Function.identity(), file -> Outcome.FAILED_DECRYPT_NO_KEY));
 //        outcomesConsumer.accept(undecryptableOutcomes);
-        csvWriter.files(sorted(undecryptable), path.resolve("snapshot_" + id + "_undecryptable.csv"));
+        if (toReport) {
+            csvWriter.files(sorted(undecryptable), path.resolve("snapshot_" + id + "_undecryptable.csv"));
+        }
 
         // Local filter
         if (config.engine().toForceOverwrite()) {

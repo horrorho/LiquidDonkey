@@ -46,35 +46,35 @@ public class DebugConfig {
         return from(
                 props.getProperty(Property.DEBUG_PRINT_STACK_TRACE, props::asBoolean),
                 props.getProperty(Property.DEBUG_MONITOR_MEMORY, props::asBoolean) || logger.isDebugEnabled(),
-                props.getProperty(Property.DEBUG_WRITE_CSV_REPORTS, props::asBoolean),
+                props.getProperty(Property.DEBUG_REPORT, props::asBoolean),
                 props.getProperty(Property.DEBUG_MEMORY_MONITOR_INTERVAL_MS, props::asLong));
     }
 
     static DebugConfig from(
             boolean toPrintStackTrace,
             boolean toMonitorMemory,
-            boolean toReportCsv,
+            boolean toReport,
             long memoryMonitorIntervalMs) {
 
-        return new DebugConfig(toPrintStackTrace, toMonitorMemory, toReportCsv, memoryMonitorIntervalMs);
+        return new DebugConfig(toPrintStackTrace, toMonitorMemory, toReport, memoryMonitorIntervalMs);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(DebugConfig.class);
 
     private final boolean toPrintStackTrace;
     private final boolean toMonitorMemory;
-    private final boolean toReportCsv;
+    private final boolean toReport;
     private final long memoryMonitorIntervalMs;
 
     private DebugConfig(
             boolean toPrintStackTrace,
             boolean toMonitorMemory,
-            boolean toReportCsv,
+            boolean toReport,
             long memoryMonitorIntervalMs) {
 
         this.toPrintStackTrace = toPrintStackTrace;
         this.toMonitorMemory = toMonitorMemory;
-        this.toReportCsv = toReportCsv;
+        this.toReport = toReport;
         this.memoryMonitorIntervalMs = memoryMonitorIntervalMs;
     }
 
@@ -86,8 +86,8 @@ public class DebugConfig {
         return toMonitorMemory;
     }
 
-    public boolean toReportCsv() {
-        return toReportCsv;
+    public boolean toReport() {
+        return toReport;
     }
 
     public long memoryMonitorIntervalMs() {
@@ -99,7 +99,7 @@ public class DebugConfig {
         return "DebugConfig{"
                 + "toPrintStackTrace=" + toPrintStackTrace
                 + ", toMonitorMemory=" + toMonitorMemory
-                + ", toReportCsv=" + toReportCsv
+                + ", toReportCsv=" + toReport
                 + ", memoryMonitorInterval=" + memoryMonitorIntervalMs
                 + '}';
     }

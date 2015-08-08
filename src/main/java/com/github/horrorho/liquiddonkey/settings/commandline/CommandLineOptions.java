@@ -150,8 +150,11 @@ public final class CommandLineOptions {
         options.put(HTTP_RELAX_SSL,
                 new Option(null, "relax-ssl", false, "Relaxed SSL verification, for SSL validation errors."));
 
+        options.put(DEBUG_REPORT,
+                new Option("w", "report", false, "Write out rudimentary reports."));
+
         options.put(DEBUG_PRINT_STACK_TRACE,
-                new Option("x", "stack-trace", false, "Prints stack trace on errors, useful for debugging."));
+                new Option("x", "stack-trace", false, "Print stack trace on errors, useful for debugging."));
 
         options.put(ENGINE_DUMP_TOKEN,
                 new Option(null, "token", false,
@@ -170,7 +173,7 @@ public final class CommandLineOptions {
 
     static String itemTypes(Properties properties) {
         Props<Property> props = Props.from(properties);
-        
+
         String prefix = props.getProperty(CONFIG_PREFIX_ITEM_TYPE);
         if (prefix == null) {
             logger.warn("-- itemTypes() > no item type prefix: {}", CONFIG_PREFIX_ITEM_TYPE);
