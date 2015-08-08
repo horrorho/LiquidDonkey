@@ -86,7 +86,7 @@ public final class BackupFormatter implements Function<ICloud.MBSBackup, String>
         backup.getSnapshotList().stream().forEach(snapshot -> {
             ICloud.MBSSnapshotAttributes attr = snapshot.getAttributes();
 
-            String incomplete = snapshot.getCommitted() == 0 ? "Incomplete" : "";
+            String incomplete = snapshot.getCommitted() == 0 ? " Incomplete" : "";
             String lastModifiedStr = dateTimeFormatter.format(Instant.ofEpochSecond(snapshot.getLastModified()));
             String size = Bytes.humanize(snapshot.getQuotaReserved());
 
