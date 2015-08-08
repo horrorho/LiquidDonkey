@@ -55,7 +55,7 @@ public final class CSVWriter {
 
     private static final Logger logger = LoggerFactory.getLogger(CSVWriter.class);
 
-    private static final Object[] HEADER = {"mode", "size", "last_modified", "domain", "relative_path"};
+    private static final Object[] HEADER = {"mode", "size", "last_modified_timestamp", "domain", "relative_path"};
 
     private final CSVFormat csvFormat;
 

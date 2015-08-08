@@ -39,7 +39,6 @@ import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
 import com.github.horrorho.liquiddonkey.cloud.file.Mode;
-import com.github.horrorho.liquiddonkey.cloud.keybag.KeyBagManager;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.HttpClientFactory;
@@ -64,7 +63,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.HttpResponseException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -229,7 +227,7 @@ public final class Looter implements Closeable {
     void snapshot(HttpClient client, Core core, HttpAgent agent, Backup backup, int id)
             throws BadDataException, IOException, InterruptedException {
 
-        Path path = config.file().base().resolve(backup.backupUDID());
+        Path path = config.file().base().resolve(backup.backupUDID()).resolve("reports");
         Predicate<ICloud.MBSFile> nonUndecryptableFilter
                 = file -> !file.getAttributes().hasEncryptionKey() || backup.keyBagManager().fileKey(file) != null;
 
