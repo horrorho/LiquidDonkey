@@ -61,6 +61,7 @@ public enum Property {
     FILE_COMBINED_DIRECTORY("combined"),
     FILE_FLAT("false"),
     FILE_OUTPUT_DIRECTORY("output"),
+    FILE_REPORTS_DIRECTORY("reports"),
     FILTER_DATE_MIN("0000-01-01"),
     FILTER_DATE_MAX("9999-01-01"),
     FILTER_DOMAIN(null),

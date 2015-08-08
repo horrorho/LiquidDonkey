@@ -49,7 +49,8 @@ public final class FileConfig {
                 props.getProperty(Property.FILE_COMBINED, props::asBoolean),
                 props.getProperty(Property.FILE_FLAT, props::asBoolean),
                 props.getProperty(Property.ENGINE_SET_LAST_MODIFIED_TIMESTAMP, props::asBoolean),
-                props.getProperty(Property.FILE_COMBINED_DIRECTORY));
+                props.getProperty(Property.FILE_COMBINED_DIRECTORY),
+                props.getProperty(Property.FILE_REPORTS_DIRECTORY));
     }
 
     public static FileConfig from(
@@ -57,13 +58,15 @@ public final class FileConfig {
             boolean isCombined,
             boolean isFlat,
             boolean setLastModifiedTimestamp,
-            String combinedDirectory) {
+            String combinedDirectory,
+            String reportsDirectory) {
 
         return new FileConfig(base,
                 isCombined,
                 isFlat,
                 setLastModifiedTimestamp,
-                combinedDirectory);
+                combinedDirectory,
+                reportsDirectory);
     }
 
     private final Path base;
@@ -71,19 +74,22 @@ public final class FileConfig {
     private final boolean isFlat;
     private final boolean setLastModifiedTimestamp;
     private final String combinedDirectory;
+    private final String reportsDirectory;
 
     FileConfig(
             Path base,
             boolean isCombined,
             boolean isFlat,
             boolean setLastModifiedTimestamp,
-            String combinedDirectory) {
+            String combinedDirectory,
+            String reportsDirectory) {
 
         this.base = Objects.requireNonNull(base);
         this.isCombined = isCombined;
         this.isFlat = isFlat;
         this.setLastModifiedTimestamp = setLastModifiedTimestamp;
         this.combinedDirectory = Objects.requireNonNull(combinedDirectory);
+        this.reportsDirectory = Objects.requireNonNull(reportsDirectory);
     }
 
     public Path base() {
@@ -106,6 +112,10 @@ public final class FileConfig {
         return combinedDirectory;
     }
 
+    public String reportsDirectory() {
+        return reportsDirectory;
+    }
+
     @Override
     public String toString() {
         return "FileConfig{"
@@ -114,6 +124,7 @@ public final class FileConfig {
                 + ", isFlat=" + isFlat
                 + ", setLastModifiedTimestamp=" + setLastModifiedTimestamp
                 + ", combinedDirectory=" + combinedDirectory
+                + ", reportsDirectory=" + reportsDirectory
                 + '}';
     }
 }

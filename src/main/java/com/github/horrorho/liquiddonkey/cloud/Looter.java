@@ -227,7 +227,7 @@ public final class Looter implements Closeable {
     void snapshot(HttpClient client, Core core, HttpAgent agent, Backup backup, int id)
             throws BadDataException, IOException, InterruptedException {
 
-        Path path = config.file().base().resolve(backup.backupUDID()).resolve("reports");
+        Path path = config.file().base().resolve(backup.backupUDID()).resolve(config.file().reportsDirectory());
         Predicate<ICloud.MBSFile> nonUndecryptableFilter
                 = file -> !file.getAttributes().hasEncryptionKey() || backup.keyBagManager().fileKey(file) != null;
 
