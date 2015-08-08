@@ -183,7 +183,7 @@ public final class Looter implements Closeable {
             throws BadDataException, IOException, InterruptedException {
 
         // Potential for large scale memory leakage. Lightweight memory usage reporting.
-        MemMonitor memMonitor = MemMonitor.from(5000);
+        MemMonitor memMonitor = MemMonitor.from(config.debug().memoryMonitorIntervalMs());
         try {
             Thread thread = new Thread(memMonitor);
             thread.setDaemon(true);

@@ -43,21 +43,39 @@ public class DebugConfig {
     public static DebugConfig from(Properties properties) {
         Props<Property> props = Props.from(properties);
 
-        return from(props.getProperty(Property.DEBUG_PRINT_STACK_TRACE, props::asBoolean), logger.isDebugEnabled());
+        return from(
+                props.getProperty(Property.DEBUG_PRINT_STACK_TRACE, props::asBoolean),
+                props.getProperty(Property.DEBUG_MONITOR_MEMORY, props::asBoolean) || logger.isDebugEnabled(),
+                props.getProperty(Property.DEBUG_WRITE_CSV_REPORTS, props::asBoolean),
+                props.getProperty(Property.DEBUG_MEMORY_MONITOR_INTERVAL_MS, props::asLong));
     }
 
-    public static DebugConfig from(boolean toPrintStackTrace, boolean toMonitorMemory) {
-        return new DebugConfig(toPrintStackTrace, toMonitorMemory);
+    static DebugConfig from(
+            boolean toPrintStackTrace,
+            boolean toMonitorMemory,
+            boolean toReportCsv,
+            long memoryMonitorIntervalMs) {
+
+        return new DebugConfig(toPrintStackTrace, toMonitorMemory, toReportCsv, memoryMonitorIntervalMs);
     }
 
     private static final Logger logger = LoggerFactory.getLogger(DebugConfig.class);
 
     private final boolean toPrintStackTrace;
     private final boolean toMonitorMemory;
+    private final boolean toReportCsv;
+    private final long memoryMonitorIntervalMs;
 
-    DebugConfig(boolean toPrintStackTrace, boolean toMonitorMemory) {
+    private DebugConfig(
+            boolean toPrintStackTrace,
+            boolean toMonitorMemory,
+            boolean toReportCsv,
+            long memoryMonitorIntervalMs) {
+
         this.toPrintStackTrace = toPrintStackTrace;
         this.toMonitorMemory = toMonitorMemory;
+        this.toReportCsv = toReportCsv;
+        this.memoryMonitorIntervalMs = memoryMonitorIntervalMs;
     }
 
     public boolean toPrintStackTrace() {
@@ -68,8 +86,21 @@ public class DebugConfig {
         return toMonitorMemory;
     }
 
+    public boolean toReportCsv() {
+        return toReportCsv;
+    }
+
+    public long memoryMonitorIntervalMs() {
+        return memoryMonitorIntervalMs;
+    }
+
     @Override
     public String toString() {
-        return "DebugConfig{" + "toPrintStackTrace=" + toPrintStackTrace + ", toMonitorMemory=" + toMonitorMemory + '}';
+        return "DebugConfig{"
+                + "toPrintStackTrace=" + toPrintStackTrace
+                + ", toMonitorMemory=" + toMonitorMemory
+                + ", toReportCsv=" + toReportCsv
+                + ", memoryMonitorInterval=" + memoryMonitorIntervalMs
+                + '}';
     }
 }
