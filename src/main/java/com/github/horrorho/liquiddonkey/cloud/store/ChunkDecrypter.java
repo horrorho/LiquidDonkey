@@ -73,15 +73,15 @@ public final class ChunkDecrypter {
     /**
      * Decrypts chunk data.
      *
-     * @param chunkList the chunk info list, not null
+     * @param chunkInfoList the chunk info list, not null
      * @param data the chunk data, not null
      * @return the decrypted chunk list, not null
      * @throws BadDataException if a decryption error occurs
      */
-    public List<byte[]> decrypt(ChunkServer.StorageHostChunkList chunkList, byte[] data) throws BadDataException {
+    public List<byte[]> decrypt(List<ChunkServer.ChunkInfo> chunkInfoList, byte[] data) throws BadDataException {
         List<byte[]> decrypted = new ArrayList<>();
         int offset = 0;
-        for (ChunkServer.ChunkInfo chunkInfo : chunkList.getChunkInfoList()) {
+        for (ChunkServer.ChunkInfo chunkInfo : chunkInfoList) {
             byte[] decryptedChunk = decrypt(chunkInfo, data, offset);
             decrypted.add(decryptedChunk);
             offset += chunkInfo.getChunkLength();
