@@ -32,7 +32,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,19 +47,25 @@ public final class MemoryStore<K> implements Store<K> {
 
     public static MemoryStore create() {
         logger.trace("<< newInstance()");
-        MemoryStore instance = new MemoryStore(new ConcurrentHashMap<>(), new AtomicLong(0));
+        
+        MemoryStore instance = new MemoryStore();
+        
         logger.trace(">> newInstance()");
         return instance;
     }
 
     private static final Logger logger = LoggerFactory.getLogger(MemoryStore.class);
 
-    private final ConcurrentMap<K, List<byte[]>> containers;
+    private final ConcurrentMap<K, byte[]> containers;
     private final AtomicLong size;
 
-    MemoryStore(ConcurrentMap<K, List<byte[]>> containers, AtomicLong size) {
+    MemoryStore(ConcurrentMap<K, byte[]> containers, AtomicLong size) {
         this.containers = Objects.requireNonNull(containers);
         this.size = Objects.requireNonNull(size);
+    }
+
+    MemoryStore() {
+        this(new ConcurrentHashMap<>(), new AtomicLong(0));
     }
 
     @Override
@@ -69,41 +74,36 @@ public final class MemoryStore<K> implements Store<K> {
     }
 
     @Override
-    public boolean put(K key, List<byte[]> chunkData) {
-        if (chunkData.contains(null)) {
-            throw new NullPointerException("Null chunk data entry");
-        }
-        List<byte[]> copy = chunkData.stream()
-                .map(data -> Arrays.copyOf(data, data.length))
-                .collect(Collectors.toList());
+    public boolean put(K key, byte[] data) {
+        Objects.requireNonNull(key);
+        Objects.requireNonNull(data);
 
-        long in = size(chunkData);
-
-        List<byte[]> previousChunkData = containers.put(key, copy);
-        long out = size(previousChunkData);
+        byte[] oldData = containers.put(key, Arrays.copyOf(data, data.length));
+        long in = data.length;
+        long out = oldData == null ? 0 : oldData.length;
 
         long delta = in - out;
         long instant = size.addAndGet(delta);
 
         logger.debug("-- put() > in: {} out: {} size: {}", in, out, instant);
-        return previousChunkData == null;
+        return oldData == null;
     }
 
     @Override
     public boolean remove(K key) {
-        List<byte[]> previousChunkData = containers.remove(key);
-        long out = size(previousChunkData);
+        Objects.requireNonNull(key);
+        
+        byte[] oldData = containers.remove(key);
+        long out = oldData == null ? 0 : oldData.length;
         long instant = size.addAndGet(-out);
 
         logger.debug("-- remove() > out: {} size: {}", out, instant);
-        return previousChunkData != null;
+        return oldData != null;
     }
 
     @Override
     public int size(K key) {
-        return containers.containsKey(key)
-                ? containers.get(key).size()
-                : -1;
+        return containers.get(key).length;
     }
 
     @Override
@@ -112,19 +112,25 @@ public final class MemoryStore<K> implements Store<K> {
     }
 
     @Override
-    public DataWriter writer(K key, int index) {
-        return new Writer(key, index);
+    public DataWriter writer(K key) {
+        return new Writer(key);
+    }
+
+    @Override
+    public boolean contains(K key) {
+        Objects.requireNonNull(key);        
+        return containers.containsKey(key);
     }
 
     public final class Writer implements DataWriter {
 
         private byte[] data;
 
-        Writer(K key, int index) {
-            if (!contains(key, index)) {
-                throw new IllegalStateException("Missing item, key: " + key + " index: " + index);
+        Writer(K key) {
+            if (!contains(key)) {
+                throw new NullPointerException("No such container: " + key);
             }
-            data = containers.get(key).get(index);
+            data = containers.get(key);
         }
 
         @Override
@@ -141,11 +147,5 @@ public final class MemoryStore<K> implements Store<K> {
         public void close() {
             data = null;
         }
-    }
-
-    long size(List<byte[]> chunkData) {
-        return chunkData == null
-                ? 0
-                : chunkData.stream().mapToLong(chunk -> chunk.length).sum();
     }
 }

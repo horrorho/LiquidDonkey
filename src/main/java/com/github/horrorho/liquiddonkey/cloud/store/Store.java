@@ -41,28 +41,36 @@ public interface Store<K> {
     List<K> keys();
 
     /**
-     * Creates the specified container and copies over the specified data.
+     * Creates the referenced container and copies over the specified data.
      *
      * @param key, not null
-     * @param chunkData, not null
+     * @param data, not null
      * @return true if the Store did not already contain the specified container
-     * @throws NullPointerException if the chunkData contains null reference/s
      */
-    boolean put(K key, List<byte[]> chunkData);
+    boolean put(K key, byte[] data);
 
     /**
-     * Removes the specified container from the Store.
+     * Removes the referenced container from the Store.
      *
      * @param key, not null
-     * @return true if the Store contained the specified element
+     * @return true if the Store contained the referenced container
      */
     boolean remove(K key);
 
     /**
-     * Returns the size of the specified container in bytes.
+     * Returns whether the Store contains referenced container.
      *
      * @param key, not null
-     * @return size of the container in bytes, or -1 if no such container exists
+     * @return true is the referenced container is present
+     */
+    boolean contains(K key);
+
+    /**
+     * Returns the size of the referenced container in bytes.
+     *
+     * @param key, not null
+     * @return size of the container in bytes
+     * @throws NullPointerException if no such container exists
      */
     int size(K key);
 
@@ -74,26 +82,13 @@ public interface Store<K> {
     long size();
 
     /**
-     * Returns an DataWriter that writes the referenced data to the specified output stream. Subsequent modifications to
-     * the Store will not alter its output. This writer should be closed when no longer required to release underlying
-     * resources.
+     * Returns a DataWriter that writes the referenced container to the specified output stream. Subsequent
+     * modifications to the Store will not alter its output. This writer should be closed when no longer required to
+     * release underlying resources.
      *
      * @param key, not null
-     * @param index
      * @return immutable writer, not null
-     * @throws NullPointerException if the specified container does not exist
-     * @throws ArrayIndexOutOfBoundsException if the specified index does not exist
+     * @throws NullPointerException if the referenced container does not exist
      */
-    DataWriter writer(K key, int index);
-
-    /**
-     * Returns whether the Store contains the referenced data item.
-     *
-     * @param key, not null
-     * @param index
-     * @return true is the referenced data item is present
-     */
-    default boolean contains(K key, int index) {
-        return index < size(key);
-    }
+    DataWriter writer(K key);
 }
