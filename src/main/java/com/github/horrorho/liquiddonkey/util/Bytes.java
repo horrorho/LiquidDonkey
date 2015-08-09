@@ -24,7 +24,10 @@
 package com.github.horrorho.liquiddonkey.util;
 
 import com.google.protobuf.ByteString;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 
 import net.jcip.annotations.ThreadSafe;
@@ -40,6 +43,12 @@ import org.apache.commons.codec.binary.Hex;
 public final class Bytes {
 
     private static final String[] units = new String[]{"kB", "MB", "GB", "TB", "PB", "EB"};
+
+    public static String hex(Collection<ByteString> byteStrings) {
+        return byteStrings == null
+                ? "null"
+                : byteStrings.stream().map(Bytes::hex).collect(Collectors.toList()).toString();
+    }
 
     public static String hex(ByteString byteString) {
         if (byteString == null) {
