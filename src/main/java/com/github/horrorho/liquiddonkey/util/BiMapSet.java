@@ -24,19 +24,17 @@
 package com.github.horrorho.liquiddonkey.util;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import net.jcip.annotations.ThreadSafe;
 
 /**
  * BiMapSet.
  * <p>
- * Lightweight bi-map of sets with common references. Remove only. No put methods. Null values not permitted. Thread safe.
+ * Lightweight bi-map of sets with common references. Remove only. No put methods. Null values not permitted.
  *
  * @author Ahseya
  * @param <K> key type
@@ -48,8 +46,8 @@ public class BiMapSet<K, V> {
     public static <K, V> BiMapSet<K, V> from(Map<K, ? extends Collection<V>> map) {
         Objects.requireNonNull(map, "Map cannot be null");
 
-        ConcurrentMap<K, Set<V>> kToVSet = new ConcurrentHashMap<>();
-        ConcurrentMap<V, Set<K>> vToKSet = new ConcurrentHashMap<>();
+        Map<K, Set<V>> kToVSet = new HashMap<>();
+        Map<V, Set<K>> vToKSet = new HashMap<>();
 
         map.entrySet().stream()
                 .peek(entry -> {
@@ -61,12 +59,11 @@ public class BiMapSet<K, V> {
                 .forEach(entry -> {
                     K key = entry.getKey();
 
-                    Set<V> set = Collections.newSetFromMap(new ConcurrentHashMap<>());
+                    Set<V> set = new HashSet<>();
 
                     entry.getValue().stream().forEach(value -> {
                         set.add(value);
-                        vToKSet.computeIfAbsent(value, k
-                                -> Collections.newSetFromMap(new ConcurrentHashMap<>())).add(key);
+                        vToKSet.computeIfAbsent(value, k -> new HashSet<>()).add(key);
                     });
 
                     kToVSet.put(key, set);
@@ -75,10 +72,10 @@ public class BiMapSet<K, V> {
         return new BiMapSet(kToVSet, vToKSet);
     }
 
-    final ConcurrentMap<K, Set<V>> kToVSet;    // Requires concurrent Set
-    final ConcurrentMap<V, Set<K>> vToKSet;    // Requires concurrent Set
+    final Map<K, Set<V>> kToVSet;
+    final Map<V, Set<K>> vToKSet;
 
-    BiMapSet(ConcurrentMap kToVSet, ConcurrentMap vToKSet) {
+    BiMapSet(Map kToVSet, Map vToKSet) {
         this.kToVSet = kToVSet;
         this.vToKSet = vToKSet;
     }
@@ -121,7 +118,7 @@ public class BiMapSet<K, V> {
                 : new HashSet<>(set);
     }
 
-    <T, U> Set<U> remove(T t, Map<U, Set<T>> uToTSet, Map<T, Set<U>> tToUSet) {
+    synchronized <T, U> Set<U> remove(T t, Map<U, Set<T>> uToTSet, Map<T, Set<U>> tToUSet) {
         Set<U> removed = new HashSet<>();
         Set<U> uSet = t == null
                 ? null
