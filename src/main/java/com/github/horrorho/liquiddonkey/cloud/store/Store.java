@@ -23,6 +23,7 @@
  */
 package com.github.horrorho.liquiddonkey.cloud.store;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -82,7 +83,7 @@ public interface Store<K> {
     long size();
 
     /**
-     * Returns a DataWriter that writes the referenced container to the specified output stream. Subsequent
+     * Returns a DataWriter that writes the referenced containers bytes to the specified output stream. Subsequent
      * modifications to the Store will not alter its output. This writer should be closed when no longer required to
      * release underlying resources.
      *
@@ -91,4 +92,14 @@ public interface Store<K> {
      * @throws NullPointerException if the referenced container does not exist
      */
     DataWriter writer(K key);
+
+    /**
+     * Returns whether the Store contains all referenced containers.
+     *
+     * @param keys, not null
+     * @return true is all referenced containers are present
+     */
+    default boolean contains(Collection<K> keys) {
+        return keys.stream().allMatch(this::contains);
+    }
 }
