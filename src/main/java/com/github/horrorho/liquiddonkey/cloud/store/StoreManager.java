@@ -27,16 +27,15 @@ import com.github.horrorho.liquiddonkey.util.BiMapSet;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.settings.Markers;
+import com.github.horrorho.liquiddonkey.util.Bytes;
 import com.google.protobuf.ByteString;
-import java.io.IOException;
 import java.util.AbstractMap.SimpleEntry;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -55,134 +54,191 @@ import org.slf4j.MarkerFactory;
 @ThreadSafe
 public final class StoreManager {
 
-    public static StoreManager from(ChunkServer.FileGroups fileGroups) {
-
+    public static StoreManager from(List<ChunkServer.FileChecksumStorageHostChunkLists> fileGroupsList) {
         logger.trace("<< from()");
 
-        ConcurrentMap<ByteString, List<ChunkListReference>> signatureToChunkListReferenceList
-                = fileGroups.getFileGroupsList().stream()
-                .map(ChunkListReference::toMap)
-                .collect(Collectors.reducing((a, b) -> {
-                    a.putAll(b);
-                    return a;
-                })).orElse(new ConcurrentHashMap<>());
+        ConcurrentMap<ByteString, List<ByteString>> signatureToChunks = fileGroupsList
+                .stream()
+                .map(StoreManager::entries)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toConcurrentMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue,
+                                (a, b) -> {
+                                    if (!Objects.equals(a, b)) {
+                                        // Improbable.
+                                        logger.warn("-- toMap() > signature collision: {} {}", a, b);
+                                    }
+                                    return a;
+                                }));
 
-        Function<Map.Entry<?, List<ChunkListReference>>, List<ChunkServer.StorageHostChunkList>> map = entry
-                -> entry.getValue().stream().map(ChunkListReference::chunkList).collect(Collectors.toList());
-
-        Map<ByteString, List<ChunkServer.StorageHostChunkList>> signatureToChunks
-                = signatureToChunkListReferenceList.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, map::apply));
-
-        logger.debug(marker, "-- from() > signatureToChunkListReferenceList: {}", signatureToChunkListReferenceList);
+        logger.debug(marker, "-- from() > signatureToChunks: {}", signatureToChunks);
 
         StoreManager chunkManager = new StoreManager(
                 MemoryStore.create(),
                 BiMapSet.from(signatureToChunks),
-                signatureToChunkListReferenceList,
+                signatureToChunks,
                 ChunkDecrypter::create);
 
         logger.trace(">> from()");
         return chunkManager;
     }
 
+    static List<Map.Entry<ByteString, List<ByteString>>> entries(ChunkServer.FileChecksumStorageHostChunkLists fileGroup) {
+        List<List<ByteString>> containerToChunkChecksums = containerToChunkChecksums(fileGroup);
+
+        Function<ChunkServer.ChunkReference, ByteString> toFileChecksum
+                = reference -> toFileChecksum(containerToChunkChecksums, reference);
+
+        Function<ChunkServer.FileChecksumChunkReferences, Map.Entry<ByteString, List<ByteString>>> toMapEntry
+                = references -> toMapEntry(toFileChecksum, references);
+
+        return fileGroup.getFileChecksumChunkReferencesList().stream()
+                .map(toMapEntry::apply)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+    }
+
+    static List<List<ByteString>> containerToChunkChecksums(ChunkServer.FileChecksumStorageHostChunkLists fileGroup) {
+        return fileGroup.getStorageHostChunkListList()
+                .stream()
+                .map(ChunkServer.StorageHostChunkList::getChunkInfoList)
+                .map(chunkInfos -> chunkInfos
+                        .stream()
+                        .map(chunkInfo -> chunkInfo.getChunkChecksum()).collect(Collectors.toList()))
+                .collect(Collectors.toList());
+    }
+
+    static ByteString toFileChecksum(
+            List<List<ByteString>> containerToChunkChecksums,
+            ChunkServer.ChunkReference reference) {
+
+        int container = (int) reference.getContainerIndex();
+        int index = (int) reference.getChunkIndex();
+
+        if (containerToChunkChecksums.size() <= container) {
+            logger.warn("-- toFileChecksum() > container out of bounds: {}", reference);
+            return null;
+        }
+        List<ByteString> chunkChecksums = containerToChunkChecksums.get(container);
+
+        if (chunkChecksums.size() <= index) {
+            logger.warn("-- toFileChecksum() > index out of bounds: {}", reference);
+            return null;
+        }
+        return chunkChecksums.get(index);
+    }
+
+    static Map.Entry<ByteString, List<ByteString>> toMapEntry(
+            Function<ChunkServer.ChunkReference, ByteString> toFileChecksum,
+            ChunkServer.FileChecksumChunkReferences references) {
+
+        List<ByteString> chunkChecksums = references.getChunkReferencesList().stream()
+                .map(toFileChecksum)
+                .collect(Collectors.toList());
+
+        return chunkChecksums.contains(null)
+                ? null
+                : new SimpleEntry<>(references.getFileChecksum(), chunkChecksums);
+    }
+
     private static final Logger logger = LoggerFactory.getLogger(StoreManager.class);
     private static final Marker marker = MarkerFactory.getMarker(Markers.STORE);
 
-    private final Store<ChunkServer.StorageHostChunkList> store;
-    private final BiMapSet<ByteString, ChunkServer.StorageHostChunkList> references;
-    private final ConcurrentMap<ByteString, List<ChunkListReference>> signatureToChunkListReferenceList;
+    // Chunks referenced by their checksums. SHA-256, collision risk negligible.
+    private final Store<ByteString> store;
+    private final BiMapSet<ByteString, ByteString> signaturesChunks;
+    private final ConcurrentMap<ByteString, List<ByteString>> signatureToChunks;
     private final Supplier<ChunkDecrypter> decrypters;
 
     StoreManager(
-            Store<ChunkServer.StorageHostChunkList> store,
-            BiMapSet<ByteString, ChunkServer.StorageHostChunkList> references,
-            ConcurrentMap<ByteString, List<ChunkListReference>> signatureToChunkListReferenceList,
+            Store<ByteString> store,
+            BiMapSet<ByteString, ByteString> signaturesChunks,
+            ConcurrentMap<ByteString, List<ByteString>> signatureToChunks,
             Supplier<ChunkDecrypter> decrypters) {
 
         this.store = Objects.requireNonNull(store);
-        this.references = Objects.requireNonNull(references);
-        this.signatureToChunkListReferenceList = Objects.requireNonNull(signatureToChunkListReferenceList);
+        this.signaturesChunks = Objects.requireNonNull(signaturesChunks);
+        this.signatureToChunks = Objects.requireNonNull(signatureToChunks);
         this.decrypters = Objects.requireNonNull(decrypters);
     }
 
-    public Map<ByteString, DataWriter> put(ChunkServer.StorageHostChunkList chunkList, byte[] chunkData)
-            throws BadDataException, IOException, InterruptedException {
+    public Map<ByteString, DataWriter> put(List<ChunkServer.ChunkInfo> chunkInfoList, byte[] chunkData)
+            throws BadDataException {
 
-        Objects.requireNonNull(chunkList);
+        Objects.requireNonNull(chunkInfoList);
         Objects.requireNonNull(chunkData);
 
-        logger.trace("<< put() < uri: {} length: {}", chunkList.getHostInfo().getUri(), chunkData.length);
+        logger.trace("<< put() < chunkInfoList length: {} chunkData length: {}", chunkInfoList.size(), chunkData.length);
 
-        List<byte[]> chunks = decrypters.get().decrypt(chunkList, chunkData);
+        List<byte[]> chunks = decrypters.get().decrypt(chunkInfoList, chunkData);
 
-        if (!store.put(chunkList, chunks)) {
-            logger.warn("-- put() > overwritten store container: {}", chunkList.getHostInfo().getUri());
+        for (int i = 0; i < chunkInfoList.size(); i++) {
+            if (!store.put(chunkInfoList.get(i).getChunkChecksum(), chunks.get(i))) {
+                logger.warn("-- put() > overwritten store container: {}", Bytes.hex(chunkInfoList.get(i).getChunkChecksum()));
+            }
         }
 
-        Map<ByteString, DataWriter> writers = process(chunkList);
+        Map<ByteString, DataWriter> writers = process(chunkInfoList);
 
-        writers.keySet().forEach(this::purge);
-
-        logger.trace(">> put() > signatures: {}", writers.keySet());
+        logger.trace(">> put() > signatures: {}", Bytes.hex(writers.keySet()));
         return writers;
     }
 
-    Map<ByteString, DataWriter> process(ChunkServer.StorageHostChunkList chunkList) {
-        Map<ByteString, DataWriter> writers;
-
-        Set<ByteString> signatures = references.keys(chunkList);
-
-        writers = signatures.stream()
+    Map<ByteString, DataWriter> process(List<ChunkServer.ChunkInfo> chunkInfoList) {
+        return signatures(chunkInfoList)
+                .stream()
                 .map(signature -> new SimpleEntry<>(signature, process(signature)))
                 .filter(entry -> entry.getValue() != null)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        return writers;
     }
 
     DataWriter process(ByteString signature) {
-        List<ChunkListReference> list = signatureToChunkListReferenceList.get(signature);
+        List<ByteString> chunks = signatureToChunks.get(signature);
 
-        // Exit if any chunks are missing.
-        if (!list.stream().allMatch(reference -> store.contains(reference.chunkList(), reference.index()))) {
+        if (!store.contains(chunks) || signatureToChunks.remove(signature) == null) {
             return null;
         }
 
-        // We have all the chunks, clear reference. Null if another thread beat us to it.
-        if (signatureToChunkListReferenceList.remove(signature) == null) {
-            return null;
-        }
-
-        // Writer.
-        List<DataWriter> writers = list.stream()
-                .map(reference -> store.writer(reference.chunkList(), reference.index()))
+        List<DataWriter> writers = chunks.stream()
+                .map(store::writer)
                 .collect(Collectors.toList());
+
+        signaturesChunks.removeKey(signature).forEach(store::remove);
 
         return CompoundWriter.from(writers);
     }
 
-    public Set<ByteString> fail(ChunkServer.StorageHostChunkList chunkList) {
-        logger.trace("<< fail() < uri: {}", chunkList.getHostInfo().getUri());
+    public Set<ByteString> fail(List<ChunkServer.ChunkInfo> chunkInfoList) {
+        logger.trace("<< fail() < chunkInfoList length: {}", chunkInfoList.size());
 
-        Set<ByteString> signatures = references.keys(chunkList);
-        signatures.forEach(this::purge);
+        Set<ByteString> failed = signatures(chunkInfoList)
+                .stream()
+                .filter(signature -> signatureToChunks.remove(signature) != null)
+                .collect(Collectors.toSet());
 
-        logger.trace(">> put() > signatures: {}", signatures);
-        return signatures;
+        failed.forEach(signature -> signaturesChunks.removeKey(signature).forEach(store::remove));
+
+        logger.trace(">> fail() > signatures: {}", Bytes.hex(failed));
+        return failed;
     }
 
-    void purge(ByteString signature) {
-        Set<ChunkServer.StorageHostChunkList> list = references.removeKey(signature);
-        list.forEach(store::remove);
-        signatureToChunkListReferenceList.remove(signature);
+    Set<ByteString> signatures(List<ChunkServer.ChunkInfo> chunkInfoList) {
+        return chunkInfoList.stream()
+                .map(ChunkServer.ChunkInfo::getChunkChecksum)
+                .map(signaturesChunks::keys)
+                .flatMap(Collection::stream)
+                .collect(Collectors.toSet());
     }
 
     public Set<ByteString> remainingSignatures() {
-        return new HashSet<>(signatureToChunkListReferenceList.keySet());
+        return new HashSet<>(signatureToChunks.keySet());
     }
 
-    public List<ChunkServer.StorageHostChunkList> chunkListList() {
-        return new ArrayList<>(references.valueSet());
+    public List<ByteString> remaining() {
+        return signatureToChunks.values()
+                .stream()
+                .flatMap(Collection::stream)
+                .collect(Collectors.toList());
     }
 }
