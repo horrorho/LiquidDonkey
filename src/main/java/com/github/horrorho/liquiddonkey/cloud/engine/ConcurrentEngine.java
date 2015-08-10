@@ -29,7 +29,7 @@ import com.github.horrorho.liquiddonkey.cloud.SignatureManager;
 import com.github.horrorho.liquiddonkey.cloud.client.ChunksClient;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
+import com.github.horrorho.liquiddonkey.cloud.store.ChunkManager;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.github.horrorho.liquiddonkey.util.SyncSupplier;
 import java.io.IOException;
@@ -84,12 +84,17 @@ public class ConcurrentEngine {
 
     public void execute(
             HttpAgent agent,
-            StoreManager storeManager,
+            ChunkManager storeManager,
             SignatureManager signatureManager,
-            Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer
+            Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer,
+            List<ChunkServer.StorageHostChunkList> chunkListList
     ) throws InterruptedException, IOException, TimeoutException {
 
-        List<ChunkServer.StorageHostChunkList> chunks = storeManager.chunkListList().stream().collect(Collectors.toList());
+        
+        
+        
+        
+        List<ChunkServer.StorageHostChunkList> chunks = chunkListList.stream().collect(Collectors.toList());
         logger.debug("-- execute() > chunks count: {}", chunks.size());
 
         SyncSupplier<ChunkServer.StorageHostChunkList> syncSupplier = SyncSupplier.from(chunks);

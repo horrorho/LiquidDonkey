@@ -30,7 +30,7 @@ import com.github.horrorho.liquiddonkey.cloud.client.ChunksClient;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.cloud.store.DataWriter;
-import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
+import com.github.horrorho.liquiddonkey.cloud.store.ChunkManager;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
@@ -56,7 +56,7 @@ class Donkey {
 
     private final HttpAgent agent;
     private final ChunksClient chunksClient;
-    private final StoreManager storeManager;
+    private final ChunkManager storeManager;
     private final SignatureManager signatureManager;
     private final int retryCount;
     private final AtomicReference<HttpUriRequest> request;
@@ -64,7 +64,7 @@ class Donkey {
     Donkey(
             HttpAgent agent,
             ChunksClient chunksClient,
-            StoreManager storeManager,
+            ChunkManager storeManager,
             SignatureManager signatureManager,
             int retryCount,
             AtomicReference<HttpUriRequest> request) {
@@ -80,7 +80,7 @@ class Donkey {
     Donkey(
             HttpAgent agent,
             ChunksClient chunksClient,
-            StoreManager storeManager,
+            ChunkManager storeManager,
             SignatureManager signatureManager,
             int retryCount) {
 
@@ -104,7 +104,7 @@ class Donkey {
 
             try {
                 byte[] data = agent.execute(client -> client.execute(request.get(), chunksClient.responseHandler()));
-                writers = storeManager.put(chunkList, data);
+                writers = storeManager.put(chunkList.getChunkInfoList(), data);
 
             } catch (HttpResponseException ex) {
                 if (ex.getStatusCode() == 401) {
@@ -159,7 +159,7 @@ class Donkey {
 
     Map<ICloud.MBSFile, Outcome> fail(Exception ex, ChunkServer.StorageHostChunkList chunkList) {
         logger.warn("-- fail() > chunkList: {} exception: {}", chunkList.getHostInfo().getUri(), ex);
-        Set<ByteString> failedSignatures = storeManager.fail(chunkList);
+        Set<ByteString> failedSignatures = storeManager.fail(chunkList.getChunkInfoList());
         return signatureManager.fail(failedSignatures);
     }
 

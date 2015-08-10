@@ -47,19 +47,19 @@ import org.slf4j.Marker;
 import org.slf4j.MarkerFactory;
 
 /**
- * StoreManager.
+ * ChunkManager.
  *
  * @author Ahseya
  */
 @ThreadSafe
-public final class StoreManager {
+public final class ChunkManager {
 
-    public static StoreManager from(List<ChunkServer.FileChecksumStorageHostChunkLists> fileGroupsList) {
+    public static ChunkManager from(List<ChunkServer.FileChecksumStorageHostChunkLists> fileGroupsList) {
         logger.trace("<< from()");
 
         ConcurrentMap<ByteString, List<ByteString>> signatureToChunks = fileGroupsList
                 .stream()
-                .map(StoreManager::entries)
+                .map(ChunkManager::entries)
                 .flatMap(Collection::stream)
                 .collect(Collectors.toConcurrentMap(
                                 Map.Entry::getKey,
@@ -72,9 +72,9 @@ public final class StoreManager {
                                     return a;
                                 }));
 
-        logger.debug(marker, "-- from() > signatureToChunks: {}", signatureToChunks);
+        logger.debug(marker, "-- from() > signatureToChunks: {}", Bytes.hex(signatureToChunks, Bytes::hex));
 
-        StoreManager chunkManager = new StoreManager(
+        ChunkManager chunkManager = new ChunkManager(
                 MemoryStore.create(),
                 BiMapSet.from(signatureToChunks),
                 signatureToChunks,
@@ -142,7 +142,7 @@ public final class StoreManager {
                 : new SimpleEntry<>(references.getFileChecksum(), chunkChecksums);
     }
 
-    private static final Logger logger = LoggerFactory.getLogger(StoreManager.class);
+    private static final Logger logger = LoggerFactory.getLogger(ChunkManager.class);
     private static final Marker marker = MarkerFactory.getMarker(Markers.STORE);
 
     // Chunks referenced by their checksums. SHA-256, collision risk negligible.
@@ -151,7 +151,7 @@ public final class StoreManager {
     private final ConcurrentMap<ByteString, List<ByteString>> signatureToChunks;
     private final Supplier<ChunkDecrypter> decrypters;
 
-    StoreManager(
+    ChunkManager(
             Store<ByteString> store,
             BiMapSet<ByteString, ByteString> signaturesChunks,
             ConcurrentMap<ByteString, List<ByteString>> signatureToChunks,
@@ -235,7 +235,7 @@ public final class StoreManager {
         return new HashSet<>(signatureToChunks.keySet());
     }
 
-    public List<ByteString> remaining() {
+    public List<ByteString> remainingChunks() {
         return signatureToChunks.values()
                 .stream()
                 .flatMap(Collection::stream)

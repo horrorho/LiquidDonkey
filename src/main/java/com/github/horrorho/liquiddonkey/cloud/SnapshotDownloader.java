@@ -31,18 +31,21 @@ import com.github.horrorho.liquiddonkey.cloud.data.Snapshot;
 import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ChunkServer;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
-import com.github.horrorho.liquiddonkey.cloud.store.StoreManager;
+import com.github.horrorho.liquiddonkey.cloud.store.ChunkManager;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.settings.config.EngineConfig;
 import com.github.horrorho.liquiddonkey.settings.config.FileConfig;
 import com.google.protobuf.ByteString;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 import net.jcip.annotations.ThreadSafe;
 import org.slf4j.Logger;
@@ -108,7 +111,7 @@ public final class SnapshotDownloader {
                     = agent.execute((client, mmeAuthToken) -> FileGroups.from(client, core, mmeAuthToken, get));
 
             // Store manager
-            StoreManager storeManager = StoreManager.from(fileGroups);
+            ChunkManager storeManager = ChunkManager.from(fileGroups.getFileGroupsList());
 
             // Filter snapshots to reflect downloadbles.  
             // ICloud.MBSFiles may be non-downloadable, e.g. directories, empty files.
@@ -123,8 +126,15 @@ public final class SnapshotDownloader {
                     storeManager.remainingSignatures().size(), signatureManager.remainingSignatures().size());
 
             try {
+                
+                List<ChunkServer.StorageHostChunkList> collect = fileGroups.getFileGroupsList()
+                        .stream()
+                        .map(x -> x.getStorageHostChunkListList())
+                        .flatMap(Collection::stream)
+                        .collect(Collectors.toList());
+                
                 // Execute.
-                engine.execute(agent, storeManager, signatureManager, outcomes);
+                engine.execute(agent, storeManager, signatureManager, outcomes, collect);
                 isCompleted = true;
                 
             } catch (TimeoutException ex) {
@@ -141,7 +151,7 @@ public final class SnapshotDownloader {
             Set<ICloud.MBSFile> remaining = signatureManager.remainingFiles();
             snapshot = Snapshots.from(snapshot, file -> remaining.contains(file));
 
-            // TODO checksum/ salvage completed chunks from the StoreManager in the case of timeout downloads.
+            // TODO checksum/ salvage completed chunks from the ChunkManager in the case of timeout downloads.
             
             logger.debug("-- download() > end loop, is completed: {} remaining files: {}",
                     isCompleted,  snapshot.filesCount());
