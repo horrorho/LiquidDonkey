@@ -25,8 +25,9 @@ package com.github.horrorho.liquiddonkey.util;
 
 import com.google.protobuf.ByteString;
 import java.util.Collection;
-import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import net.jcip.annotations.Immutable;
 
@@ -43,6 +44,12 @@ import org.apache.commons.codec.binary.Hex;
 public final class Bytes {
 
     private static final String[] units = new String[]{"kB", "MB", "GB", "TB", "PB", "EB"};
+
+    public static <T> String hex(Map<ByteString, T> map, Function<T, String> function) {
+        return map == null
+                ? "null"
+                : map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> function.apply(entry.getValue()))).toString();
+    }
 
     public static String hex(Collection<ByteString> byteStrings) {
         return byteStrings == null
