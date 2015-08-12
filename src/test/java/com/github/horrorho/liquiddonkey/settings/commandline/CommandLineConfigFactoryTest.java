@@ -26,6 +26,8 @@ package com.github.horrorho.liquiddonkey.settings.commandline;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import com.github.horrorho.liquiddonkey.settings.config.Config;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -38,7 +40,6 @@ import junitparams.Parameters;
 import static org.hamcrest.CoreMatchers.is;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 /**
@@ -53,11 +54,8 @@ public class CommandLineConfigFactoryTest {
     @Parameters
     public <T> void testFromArgs(String in, Function<Config, T> function, T expected) {
         String[] args = in.split("\\s");
-        System.out.println("args >> "+ Arrays.asList(args));
         Config config = CommandLineConfigFactory.getInstance().fromArgs(args);
-        
-        System.out.println(">> "+config);
-        
+
         T value = function.apply(config);
         assertThat(value, is(expected));
     }
@@ -97,8 +95,8 @@ public class CommandLineConfigFactoryTest {
             o("u p", config -> config.fileFilter().domainContains(), set("")),
             o("u p --domain first", config -> config.fileFilter().domainContains(), set("first")),
             o("u p --domain first Second", config -> config.fileFilter().domainContains(), set("first", "Second")),
-            o("u p --min-date 0000-01-01", config -> config.fileFilter().minDate(), -62167219125L),
-            o("u p --max-date 9999-01-01", config -> config.fileFilter().maxDate(), 253370764800L),
+            o("u p --min-date 0000-01-01", config -> config.fileFilter().minDate(), date("0000-01-01")),
+            o("u p --max-date 9999-01-01", config -> config.fileFilter().maxDate(), date("9999-01-01")),
             o("u p --min-size 0", config -> config.fileFilter().minSize(), 0L),
             o("u p --min-size 64", config -> config.fileFilter().minSize(), 65536L),
             o("u p --max-size 0", config -> config.fileFilter().maxSize(), 0L),
@@ -106,6 +104,12 @@ public class CommandLineConfigFactoryTest {
             o("u p", config -> config.engine().toDumpToken(), false),
             o("u p --token", config -> config.engine().toDumpToken(), true)
         };
+    }
+
+    public static long date(String date) {
+        return LocalDate.parse(
+                date,
+                Property.commandLineInputDateTimeFormatter()).atStartOfDay(ZoneId.systemDefault()).toEpochSecond();
     }
 
     public static <T> Object[] o(String in, Function<Config, T> function, T expected) {
