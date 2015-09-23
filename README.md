@@ -2,6 +2,9 @@
 ## LiquidDonkey 
 Download iCloud backups. 
 
+### * iOS breaking changes *
+Backups created with iOS 9 devices are unrecoverable with LiquidDonkey. Until the underlying mechanism for the new API are described, this situation will not change. I apologise in advance.
+
 ### What is it?
 Java command-line tool to download iCloud backups, reworked from [iLoot](https://github.com/hackappcom/iloot), [iphone-dataprotection](https://code.google.com/p/iphone-dataprotection/) and [mobileme](https://code.google.com/p/mobileme/) scripts. All copyrights belong to their respective owners.
 
