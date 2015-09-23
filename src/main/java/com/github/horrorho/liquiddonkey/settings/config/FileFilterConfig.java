@@ -27,6 +27,7 @@ import com.github.horrorho.liquiddonkey.util.Props;
 import com.github.horrorho.liquiddonkey.settings.Property;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
