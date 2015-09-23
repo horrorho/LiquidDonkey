@@ -63,7 +63,7 @@ public final class FileFilterConfig {
         }
 
         if (props.containsProperty(Property.FILTER_ITEM_TYPES)) {
-            relativePath.addAll(itemTypes.paths(props.getProperty(Property.FILTER_ITEM_TYPES, props::asList)));
+            relativePath.addAll(itemTypes.paths(props.<List<String>>getProperty(Property.FILTER_ITEM_TYPES, props::asList)));
         }
 
         if (relativePath.isEmpty()) {
