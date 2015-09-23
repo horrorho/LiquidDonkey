@@ -2,7 +2,7 @@
 ## LiquidDonkey 
 Download iCloud backups. 
 
-### * iOS breaking changes *
+### * iOS 9 breaking changes *
 Backups created with iOS 9 devices are unrecoverable with LiquidDonkey. Until the underlying mechanism for the new API are described, this situation will not change. I apologise in advance.
 
 ### What is it?
