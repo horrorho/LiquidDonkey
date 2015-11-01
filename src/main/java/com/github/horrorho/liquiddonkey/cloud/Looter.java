@@ -24,7 +24,6 @@
 package com.github.horrorho.liquiddonkey.cloud;
 
 import com.github.horrorho.liquiddonkey.cloud.outcome.Outcomes;
-import com.github.horrorho.liquiddonkey.cloud.outcome.OutcomesProgress;
 import com.github.horrorho.liquiddonkey.cloud.outcome.OutcomesPrinter;
 import com.github.horrorho.liquiddonkey.cloud.outcome.Outcome;
 import com.github.horrorho.liquiddonkey.cloud.data.Backup;
@@ -39,6 +38,7 @@ import com.github.horrorho.liquiddonkey.cloud.data.Snapshots;
 import com.github.horrorho.liquiddonkey.cloud.file.FileFilter;
 import com.github.horrorho.liquiddonkey.cloud.file.LocalFileFilter;
 import com.github.horrorho.liquiddonkey.cloud.file.Mode;
+import com.github.horrorho.liquiddonkey.cloud.outcome.OutcomesProgressPercentage;
 import com.github.horrorho.liquiddonkey.cloud.protobuf.ICloud;
 import com.github.horrorho.liquiddonkey.exception.BadDataException;
 import com.github.horrorho.liquiddonkey.http.HttpClientFactory;
@@ -301,7 +301,7 @@ public final class Looter implements Closeable {
 
         // Retrieve
         Outcomes outcomes = Outcomes.create();
-        OutcomesProgress progress = OutcomesProgress.from(snapshot, std);
+        OutcomesProgressPercentage progress = OutcomesProgressPercentage.from(snapshot, std);
         Consumer<Map<ICloud.MBSFile, Outcome>> outcomesConsumer = outcomes.andThen(progress);
         std.println();
         std.println("Retrieving: " + Bytes.humanize(progress.totalBytes()));
