@@ -127,6 +127,11 @@
             <artifactId>commons-csv</artifactId>
             <version>1.1</version>
         </dependency>
+        <dependency>
+            <groupId>com.hynnet</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.4</version>
+        </dependency>
     </dependencies>
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

@@ -31,6 +31,7 @@ import com.google.protobuf.ByteString;
 import java.nio.file.Path;
 import java.util.function.Function;
 import net.jcip.annotations.NotThreadSafe;
+import org.apache.commons.lang3.SystemUtils;
 import org.bouncycastle.crypto.digests.GeneralDigest;
 import org.bouncycastle.crypto.digests.SHA1Digest;
 
@@ -80,7 +81,7 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
                 : new NonFlatSnapshotDirectory(folder, sha1);
     }
 
-    private static final String FILTER = "[:|*<>?\"].";
+    private static final String FILTER = "[\u0001-\u001f\\\\:*?\"<>|\u007f]";
     private static final String REPLACE = "_";
     private static final ByteString HYPHEN = ByteString.copyFromUtf8("-");
 
@@ -90,10 +91,6 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
     SnapshotDirectory(Path folder, GeneralDigest digest) {
         this.folder = folder;
         this.digest = digest;
-    }
-
-    String clean(String string) {
-        return string.replaceAll(FILTER, REPLACE);
     }
 
     @NotThreadSafe
@@ -107,7 +104,7 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
         public Path apply(ICloud.MBSFile file) {
             return super.folder
                     .resolve(clean(file.getDomain()))
-                    .resolve(file.getRelativePath());
+                    .resolve(clean(file.getRelativePath()));
         }
     }
 
@@ -129,5 +126,11 @@ public abstract class SnapshotDirectory implements Function<ICloud.MBSFile, Path
 
             return super.folder.resolve(Bytes.hex(hash));
         }
+    }
+
+    String clean(String name) {
+        return SystemUtils.IS_OS_WINDOWS
+                ? name.replaceAll(FILTER, REPLACE)
+                : name; // Assumed Nix/ MacOS mapping directly.
     }
 }
